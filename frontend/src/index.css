@@ -1,0 +1,216 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+        "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+        sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+    font-family:
+        source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+
+@layer base {
+    :root {
+        /* Professional Blue-Gray Color System for Customer Service Platform */
+        --background: 0 0% 98%;
+        --foreground: 210 29% 24%;
+        
+        /* Card backgrounds */
+        --card: 0 0% 100%;
+        --card-foreground: 210 29% 24%;
+        
+        /* Popover */
+        --popover: 0 0% 100%;
+        --popover-foreground: 210 29% 24%;
+        
+        /* Primary - Trust Blue */
+        --primary: 220 90% 50%;
+        --primary-foreground: 0 0% 100%;
+        --primary-hover: 220 90% 45%;
+        --primary-light: 220 90% 96%;
+        
+        /* Secondary - Soft Blue */
+        --secondary: 210 40% 96%;
+        --secondary-foreground: 210 29% 24%;
+        
+        /* Accent - Professional Blue */
+        --accent: 210 100% 65%;
+        --accent-foreground: 0 0% 100%;
+        
+        /* Muted */
+        --muted: 210 16% 93%;
+        --muted-foreground: 210 10% 48%;
+        
+        /* Status Colors */
+        --success: 142 76% 45%;
+        --success-foreground: 0 0% 100%;
+        --success-light: 142 76% 96%;
+        
+        --warning: 38 92% 50%;
+        --warning-foreground: 0 0% 100%;
+        --warning-light: 38 92% 96%;
+        
+        --info: 210 100% 65%;
+        --info-foreground: 0 0% 100%;
+        --info-light: 210 100% 96%;
+        
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 0 0% 100%;
+        
+        /* Borders and Inputs */
+        --border: 210 16% 88%;
+        --input: 210 16% 88%;
+        --ring: 220 90% 50%;
+        
+        /* Gradients */
+        --gradient-primary: linear-gradient(135deg, hsl(220 90% 50%), hsl(210 100% 65%));
+        --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 40% 98%));
+        
+        /* Shadows */
+        --shadow-sm: 0 1px 2px 0 hsl(210 20% 20% / 0.05);
+        --shadow-md: 0 4px 6px -1px hsl(210 20% 20% / 0.1), 0 2px 4px -1px hsl(210 20% 20% / 0.06);
+        --shadow-lg: 0 10px 15px -3px hsl(210 20% 20% / 0.1), 0 4px 6px -2px hsl(210 20% 20% / 0.05);
+        --shadow-xl: 0 20px 25px -5px hsl(210 20% 20% / 0.1), 0 10px 10px -5px hsl(210 20% 20% / 0.04);
+        
+        /* Transitions */
+        --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        
+        /* Border Radius */
+        --radius: 0.5rem;
+    }
+    
+    .dark {
+        --background: 210 29% 12%;
+        --foreground: 0 0% 98%;
+        --card: 210 29% 16%;
+        --card-foreground: 0 0% 98%;
+        --popover: 210 29% 16%;
+        --popover-foreground: 0 0% 98%;
+        --primary: 220 90% 55%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 210 20% 24%;
+        --secondary-foreground: 0 0% 98%;
+        --muted: 210 20% 24%;
+        --muted-foreground: 210 10% 60%;
+        --accent: 210 100% 65%;
+        --accent-foreground: 0 0% 100%;
+        --destructive: 0 62% 50%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 210 20% 24%;
+        --input: 210 20% 24%;
+        --ring: 220 90% 55%;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
+}
+
+@layer utilities {
+    .btn-transition {
+        transition: var(--transition-smooth);
+    }
+    
+    .card-shadow {
+        box-shadow: var(--shadow-md);
+    }
+    
+    .card-shadow-hover {
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .text-balance {
+        text-wrap: balance;
+    }
+}
+
+/* Custom Animations */
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideInUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.animate-slide-in-right {
+    animation: slideInRight 0.3s ease-out;
+}
+
+.animate-slide-in-up {
+    animation: slideInUp 0.4s ease-out;
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+@layer base {
+    [data-debug-wrapper="true"] {
+        display: contents !important;
+    }
+
+    [data-debug-wrapper="true"] > * {
+        margin-left: inherit;
+        margin-right: inherit;
+        margin-top: inherit;
+        margin-bottom: inherit;
+        padding-left: inherit;
+        padding-right: inherit;
+        padding-top: inherit;
+        padding-bottom: inherit;
+        column-gap: inherit;
+        row-gap: inherit;
+        gap: inherit;
+        border-left-width: inherit;
+        border-right-width: inherit;
+        border-top-width: inherit;
+        border-bottom-width: inherit;
+        border-left-style: inherit;
+        border-right-style: inherit;
+        border-top-style: inherit;
+        border-bottom-style: inherit;
+        border-left-color: inherit;
+        border-right-color: inherit;
+        border-top-color: inherit;
+        border-bottom-color: inherit;
+    }
+}
