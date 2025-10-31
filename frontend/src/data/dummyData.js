@@ -22,7 +22,7 @@ export const users = {
   vendor: {
     email: 'vendor@intellica.com',
     password: 'vendor123',
-    name: 'Rachita',
+    name: 'Aman_vendor',
     role: 'vendor'
   }
 };
@@ -245,5 +245,145 @@ export const notifications = [
     timestamp: '2024-01-22T16:30:00',
     read: true,
     type: 'refund'
+  }
+];
+
+// Vendor Dashboard Data
+export const vendorDashboardStats = {
+  totalComplaintsThisMonth: 145,
+  overallReturnRate: 4.2,
+  topIssueCategory: 'Audio Issues',
+  totalProducts: 12
+};
+
+export const productComplaints = [
+  {
+    id: 1,
+    productName: 'Wireless Headphones Pro',
+    issue: 'Left earbud not working properly - keeps cutting out during calls',
+    severity: 'high',
+    status: 'open',
+    reportedDate: '2024-01-23'
+  },
+  {
+    id: 2,
+    productName: 'Smart Watch Ultra',
+    issue: 'Battery drains too quickly - only lasts 8 hours',
+    severity: 'medium',
+    status: 'in-progress',
+    reportedDate: '2024-01-22'
+  },
+  {
+    id: 3,
+    productName: 'Bluetooth Speaker Max',
+    issue: 'Distorted sound at high volume levels',
+    severity: 'medium',
+    status: 'resolved',
+    reportedDate: '2024-01-21'
+  },
+  {
+    id: 4,
+    productName: 'Wireless Charging Pad',
+    issue: 'Device not charging consistently',
+    severity: 'low',
+    status: 'open',
+    reportedDate: '2024-01-20'
+  },
+  {
+    id: 5,
+    productName: 'Gaming Mouse RGB',
+    issue: 'DPI button not responding',
+    severity: 'low',
+    status: 'resolved',
+    reportedDate: '2024-01-19'
+  },
+  {
+    id: 6,
+    productName: 'Mechanical Keyboard',
+    issue: 'Some keys sticking intermittently',
+    severity: 'medium',
+    status: 'in-progress',
+    reportedDate: '2024-01-18'
+  }
+];
+
+export const vendorProducts = [
+  {
+    id: 'prod-001',
+    name: 'Wireless Headphones Pro',
+    category: 'Audio',
+    totalComplaints: 45,
+    returnRate: 3.2,
+    topIssues: ['Audio Issues', 'Connectivity', 'Battery'],
+    complaintsTrend: [
+      { month: 'Oct', count: 12 },
+      { month: 'Nov', count: 18 },
+      { month: 'Dec', count: 15 }
+    ]
+  },
+  {
+    id: 'prod-002',
+    name: 'Smart Watch Ultra',
+    category: 'Wearables',
+    totalComplaints: 32,
+    returnRate: 5.1,
+    topIssues: ['Battery Problems', 'Display', 'Sensors'],
+    complaintsTrend: [
+      { month: 'Oct', count: 8 },
+      { month: 'Nov', count: 14 },
+      { month: 'Dec', count: 10 }
+    ]
+  },
+  {
+    id: 'prod-003',
+    name: 'Bluetooth Speaker Max',
+    category: 'Audio',
+    totalComplaints: 28,
+    returnRate: 2.8,
+    topIssues: ['Audio Issues', 'Connectivity', 'Hardware'],
+    complaintsTrend: [
+      { month: 'Oct', count: 6 },
+      { month: 'Nov', count: 12 },
+      { month: 'Dec', count: 10 }
+    ]
+  },
+  {
+    id: 'prod-004',
+    name: 'Wireless Charging Pad',
+    category: 'Accessories',
+    totalComplaints: 15,
+    returnRate: 1.9,
+    topIssues: ['Charging Issues', 'Compatibility', 'Hardware'],
+    complaintsTrend: [
+      { month: 'Oct', count: 3 },
+      { month: 'Nov', count: 7 },
+      { month: 'Dec', count: 5 }
+    ]
+  },
+  {
+    id: 'prod-005',
+    name: 'Gaming Mouse RGB',
+    category: 'Gaming',
+    totalComplaints: 22,
+    returnRate: 4.5,
+    topIssues: ['DPI Issues', 'Connectivity', 'Hardware'],
+    complaintsTrend: [
+      { month: 'Oct', count: 5 },
+      { month: 'Nov', count: 9 },
+      { month: 'Dec', count: 8 }
+    ]
+  },
+  {
+    id: 'prod-006',
+    name: 'Mechanical Keyboard',
+    category: 'Gaming',
+    totalComplaints: 18,
+    returnRate: 3.8,
+    topIssues: ['Key Issues', 'Connectivity', 'Hardware'],
+    complaintsTrend: [
+      { month: 'Oct', count: 4 },
+      { month: 'Nov', count: 8 },
+      { month: 'Dec', count: 6 }
+    ]
   }
 ];

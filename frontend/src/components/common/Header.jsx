@@ -32,18 +32,46 @@ export const Header = () => {
     navigate('/login');
   };
 
-  const navLinks = [
-    { name: 'Dashboard', path: '/customer/dashboard' },
-    { name: 'My Tickets', path: '/customer/tickets' },
-    { name: 'My Orders', path: '/customer/orders' },
-  ];
+  const getNavLinks = () => {
+    switch (user?.role) {
+      case 'customer':
+        return [
+          { name: 'Dashboard', path: '/customer/dashboard' },
+          { name: 'My Tickets', path: '/customer/tickets' },
+          { name: 'My Orders', path: '/customer/orders' },
+        ];
+      case 'agent':
+        return [
+          { name: 'Dashboard', path: '/agent/dashboard' },
+        ];
+      case 'supervisor':
+        return [
+          { name: 'Dashboard', path: '/supervisor/dashboard' },
+        ];
+      case 'vendor':
+        return [
+          { name: 'Dashboard', path: '/vendor/dashboard' },
+          { name: 'Complaints', path: '/vendor/complaints' },
+          { name: 'Analytics', path: '/vendor/analytics' },
+        ];
+      default:
+        return [];
+    }
+  };
+
+  const navLinks = getNavLinks();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link to="/customer/dashboard" className="flex items-center space-x-2">
+          <Link to={
+            user?.role === 'vendor' ? '/vendor/dashboard' :
+            user?.role === 'agent' ? '/agent/dashboard' :
+            user?.role === 'supervisor' ? '/supervisor/dashboard' :
+            '/customer/dashboard'
+          } className="flex items-center space-x-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent">
               <span className="text-xl font-bold text-primary-foreground">I</span>
             </div>
