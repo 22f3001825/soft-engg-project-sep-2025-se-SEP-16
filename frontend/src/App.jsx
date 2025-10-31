@@ -18,7 +18,13 @@ import { ReturnRefundPage } from './pages/customer/ReturnRefundPage';
 
 // Other Portals
 import { AgentDashboard } from './pages/agent/AgentDashboard';
+
+
 import { SupervisorDashboard } from './pages/supervisor/SupervisorDashboard';
+import { TeamManagement } from './pages/supervisor/TeamManagement';
+import { Escalations } from './pages/supervisor/Escalations';
+import { Settings } from './pages/supervisor/Settings';
+
 import { VendorDashboard } from './pages/vendor/VendorDashboard';
 import AnalyticsDashboard from './pages/vendor/AnalyticsDashboard';
 import { ProductComplaintsPage } from './pages/vendor/ProductComplaintsPage';
@@ -110,6 +116,30 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['supervisor']}>
                   <SupervisorDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/supervisor/team_management"
+              element={
+                <ProtectedRoute allowedRoles={['supervisor']}>
+                  <TeamManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/supervisor/escalations"
+              element={
+                <ProtectedRoute allowedRoles={['supervisor']}>
+                  <Escalations />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/supervisor/settings"
+              element={
+                <ProtectedRoute allowedRoles={['supervisor']}>
+                  <Settings />
                 </ProtectedRoute>
               }
             />

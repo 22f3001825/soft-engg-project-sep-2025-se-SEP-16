@@ -16,7 +16,7 @@ export const users = {
   supervisor: {
     email: 'supervisor@intellica.com',
     password: 'supervisor123',
-    name: 'Harshita Supervisor',
+    name: 'Harsh Mathur',
     role: 'supervisor'
   },
   vendor: {
