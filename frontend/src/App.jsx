@@ -20,6 +20,9 @@ import { ReturnRefundPage } from './pages/customer/ReturnRefundPage';
 import { AgentDashboard } from './pages/agent/AgentDashboard';
 import { SupervisorDashboard } from './pages/supervisor/SupervisorDashboard';
 import { VendorDashboard } from './pages/vendor/VendorDashboard';
+import AnalyticsDashboard from './pages/vendor/AnalyticsDashboard';
+import { ProductComplaintsPage } from './pages/vendor/ProductComplaintsPage';
+import { ProductDetailsPage } from './pages/vendor/ProductDetailsPage';
 
 import './App.css';
 
@@ -31,10 +34,10 @@ function App() {
           <Routes>
             {/* Default redirect */}
             <Route path="/" element={<Navigate to="/login" replace />} />
-            
+
             {/* Auth Routes */}
             <Route path="/login" element={<LoginPage />} />
-            
+
             {/* Customer Portal Routes */}
             <Route
               path="/customer/dashboard"
@@ -92,7 +95,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            
+
             {/* Other Portal Routes */}
             <Route
               path="/agent/dashboard"
@@ -118,11 +121,35 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            
+            <Route
+              path="/vendor/analytics"
+              element={
+                <ProtectedRoute allowedRoles={['vendor']}>
+                  <AnalyticsDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vendor/complaints"
+              element={
+                <ProtectedRoute allowedRoles={['vendor']}>
+                  <ProductComplaintsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vendor/products/:productId"
+              element={
+                <ProtectedRoute allowedRoles={['vendor']}>
+                  <ProductDetailsPage />
+                </ProtectedRoute>
+              }
+            />
+
             {/* 404 - Catch all */}
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
-          
+
           <Toaster position="top-right" richColors />
         </div>
       </BrowserRouter>
