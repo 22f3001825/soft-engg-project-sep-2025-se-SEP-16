@@ -1,0 +1,264 @@
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import { Textarea } from '../../components/ui/textarea';
+import { users, orders, tickets } from '../../data/dummyData';
+import { User, Mail, Phone, ShoppingBag, MessageSquare, FileText, TrendingUp, Calendar, AlertCircle, CheckCircle2, Clock, Sparkles } from 'lucide-react';
+import { toast } from 'sonner';
+
+const customer = users.supervisor;
+const customerOrders = orders;
+const customerTickets = tickets.filter(t => t.messages[0]?.senderName === customer.name);
+const mainEmail = 'harsh@example.com';
+const mainWhatsApp = '+1 415 555 0198';
+
+export const CustomerProfile = () => {
+  const [note, setNote] = useState('');
+
+  // Dummy Communication History (using ticket messages)
+  const commHistory = [
+    {
+      type: 'Email',
+      ts: '2h ago',
+      content: 'Refund approved message sent for ORD-10492. Tracking enabled (opens, clicks).'
+    },
+    {
+      type: 'WhatsApp',
+      ts: '2h ago',
+      content: 'Confirmation sent: refund processing timeline and reference ID.'
+    }
+  ];
+
+  const totalLTV = customerOrders.reduce((sum, o) => sum + o.total, 0);
+
+  return (
+    <div className="flex flex-col gap-8 animate-slide-in-up">
+      {/* Header */}
+      <Card className="relative overflow-hidden border-2 border-primary/20 shadow-xl">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/5 to-transparent"></div>
+        <div className="relative p-6 flex flex-col gap-4 md:flex-row items-start md:items-center">
+          <div className="relative">
+            <Avatar className="h-20 w-20 mr-4 border-4 border-primary/20 shadow-lg">
+              <AvatarImage src="https://randomuser.me/api/portraits/men/32.jpg" alt={customer.name} />
+              <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-xl font-bold">
+                {customer.name.split(' ').map(w=>w[0]).join('')}
+              </AvatarFallback>
+            </Avatar>
+            <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-success border-2 border-background flex items-center justify-center">
+              <CheckCircle2 className="h-3 w-3 text-success-foreground" />
+            </div>
+          </div>
+          <div className="flex-1 space-y-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-3xl font-bold text-foreground">{customer.name}</h1>
+              <Badge className="bg-primary/10 text-primary border-primary/20">
+                <Mail className="h-3 w-3 mr-1" />
+                {mainEmail}
+              </Badge>
+              <Badge variant="outline" className="border-primary/30">
+                <Calendar className="h-3 w-3 mr-1" />
+                Member since Mar 12, 1947
+              </Badge>
+            </div>
+            <div className="flex gap-6 mt-3">
+              <div className="flex flex-col gap-1 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                <span className="text-muted-foreground text-xs flex items-center gap-1">
+                  <ShoppingBag className="h-3 w-3" />
+                  Total orders
+                </span>
+                <span className="font-bold text-xl text-primary">{customerOrders.length}</span>
+              </div>
+              <div className="flex flex-col gap-1 p-3 rounded-lg bg-accent/10 border border-accent/20">
+                <span className="text-muted-foreground text-xs flex items-center gap-1">
+                  <TrendingUp className="h-3 w-3" />
+                  Lifetime value
+                </span>
+                <span className="font-bold text-xl text-accent">${totalLTV.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 min-w-44">
+            <div className="rounded-lg border-2 border-primary/20 px-4 py-3 bg-gradient-to-br from-card to-primary/5 shadow-sm">
+              <div className="text-xs font-semibold text-primary mb-2 flex items-center gap-1">
+                <Phone className="h-3 w-3" />
+                Preferred Contact
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-primary/10 border-primary/30">
+                    <Mail className="h-3 w-3 mr-1" />
+                    Email
+                  </Badge>
+                  <span className="text-xs truncate">{mainEmail}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-success/10 border-success/30">
+                    <MessageSquare className="h-3 w-3 mr-1" />
+                    WhatsApp
+                  </Badge>
+                  <span className="text-xs">{mainWhatsApp}</span>
+                </div>
+              </div>
+            </div>
+            <div className="text-xs text-muted-foreground p-2 bg-muted/30 rounded border border-muted">
+              <Sparkles className="h-3 w-3 inline mr-1" />
+              Email for order updates; WhatsApp for urgent delivery changes.
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Order History */}
+        <Card className="shadow-lg border-2 border-primary/10 bg-gradient-to-br from-background to-primary/5">
+          <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent border-b">
+            <CardTitle className="flex items-center gap-2 text-primary">
+              <ShoppingBag className="h-5 w-5" />
+              Order History
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3 pt-6">
+            {customerOrders.map((o, i) => (
+              <div key={o.id} className="flex gap-4 items-center p-4 border-2 border-primary/10 rounded-lg hover:bg-gradient-to-r hover:from-primary/5 hover:to-accent/5 hover:border-primary/30 hover:shadow-md btn-transition cursor-pointer group">
+                <Badge variant="outline" className="bg-primary/10 border-primary/30 text-primary font-semibold">
+                  {o.id}
+                </Badge>
+                <span className="flex-1 truncate font-medium">{o.items.join(', ')}</span>
+                <span className="text-sm font-bold text-accent">${o.total}</span>
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {o.date}
+                </span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+        {/* Communication History & Notes */}
+        <div className="space-y-6">
+          <Card className="shadow-lg border-2 border-accent/10 bg-gradient-to-br from-background to-accent/5">
+            <CardHeader className="bg-gradient-to-r from-accent/10 to-transparent border-b">
+              <CardTitle className="flex items-center gap-2 text-accent">
+                <MessageSquare className="h-5 w-5" />
+                Communication History
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-6">
+              {commHistory.map((item,i)=>(
+                <div key={i} className="flex items-start gap-3 p-4 border-2 rounded-lg bg-gradient-to-r from-card to-primary/5 hover:from-primary/5 hover:to-accent/5 hover:border-primary/30 transition-all shadow-sm">
+                  <div className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${item.type === 'Email' ? 'bg-primary/10' : 'bg-success/10'}`}>
+                    {item.type === 'Email' ? (
+                      <Mail className={`h-4 w-4 ${item.type === 'Email' ? 'text-primary' : 'text-success'}`} />
+                    ) : (
+                      <MessageSquare className="h-4 w-4 text-success" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-bold text-foreground">{item.type}</span>
+                      <Clock className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">{item.ts}</span>
+                    </div>
+                    <span className="text-sm text-foreground">{item.content}</span>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+          <Card className="shadow-lg border-2 border-warning/10 bg-gradient-to-br from-background to-warning/5">
+            <CardHeader className="bg-gradient-to-r from-warning/10 to-transparent border-b">
+              <CardTitle className="flex items-center gap-2 text-warning">
+                <FileText className="h-5 w-5" />
+                Notes
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3 pt-6">
+              <Textarea 
+                rows={3} 
+                placeholder="Internal notes about preferences, tone, and past resolutions. Keep concise and actionable." 
+                value={note} 
+                onChange={e => setNote(e.target.value)}
+                className="border-2 focus:border-warning transition-colors"
+              />
+              <div className="flex justify-end">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    if (note.trim()) {
+                      toast.success('Note saved', { description: 'Your note has been saved successfully.' });
+                    } else {
+                      toast.error('Please enter a note');
+                    }
+                  }}
+                  className="hover:bg-warning/10 hover:border-warning/50 hover:text-warning"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Save note
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Support Tickets */}
+        <Card className="shadow-lg border-2 border-info/10 bg-gradient-to-br from-background to-info/5">
+          <CardHeader className="bg-gradient-to-r from-info/10 to-transparent border-b">
+            <CardTitle className="flex items-center gap-2 text-info">
+              <AlertCircle className="h-5 w-5" />
+              Previous Support Tickets
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2 pt-6">
+            {customerTickets.map((t,i)=>(
+              <div key={t.id} className="flex gap-4 items-center p-4 border-2 border-info/10 rounded-lg bg-gradient-to-r from-card to-info/5 hover:from-info/5 hover:to-primary/5 hover:border-info/30 hover:shadow-md transition-all group">
+                <Badge variant="outline" className="capitalize bg-info/10 border-info/30 text-info font-semibold">
+                  {t.id}
+                </Badge>
+                <span className="flex-1 truncate font-medium">{t.subject}</span>
+                <Badge 
+                  variant="secondary" 
+                  className={`capitalize ${
+                    t.status === 'resolved' ? 'bg-success/20 text-success border-success/30' :
+                    t.status === 'open' ? 'bg-info/20 text-info border-info/30' :
+                    'bg-warning/20 text-warning border-warning/30'
+                  }`}
+                >
+                  {t.status}
+                </Badge>
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {new Date(t.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+        {/* AI customer insight summary */}
+        <Card className="shadow-lg border-2 border-purple-500/20 bg-gradient-to-br from-background via-purple-500/5 to-accent/5">
+          <CardHeader className="bg-gradient-to-r from-purple-500/10 to-transparent border-b">
+            <CardTitle className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
+              <Sparkles className="h-5 w-5" />
+              AI Customer Insights
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 pt-6">
+            <div className="border-2 border-purple-500/20 rounded-lg bg-gradient-to-br from-purple-500/10 to-purple-500/5 p-5 text-sm leading-relaxed shadow-inner">
+              <div className="flex items-start gap-2 mb-2">
+                <Sparkles className="h-4 w-4 text-purple-600 dark:text-purple-400 mt-0.5" />
+                <b className="text-purple-700 dark:text-purple-300">Summary:</b>
+              </div>
+              <p className="text-foreground">
+                High-value customer with consistent quarterly purchases. Most sensitive to delivery delays; responds well to proactive status updates and small goodwill credits.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+
