@@ -7,7 +7,7 @@ import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { Ticket, Plus, Search, Filter } from 'lucide-react';
+import { Ticket, Plus, Search, Filter, ArrowRight, Eye } from 'lucide-react';
 import { tickets } from '../../data/dummyData';
 
 export const TicketsPage = () => {
@@ -57,7 +57,7 @@ export const TicketsPage = () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">My Support Tickets</h1>
-            <p className="text-muted-foreground">Manage and track your support requests</p>
+            <p className="text-muted-foreground">Manage and track your support requests. Click on any ticket to view details.</p>
           </div>
           <Button onClick={() => navigate('/customer/tickets/new')} size="lg">
             <Plus className="mr-2 h-5 w-5" />
@@ -110,16 +110,16 @@ export const TicketsPage = () => {
             </Card>
           ) : (
             filteredTickets.map((ticket) => (
-              <Card key={ticket.id} className="hover:shadow-lg btn-transition cursor-pointer" onClick={() => navigate(`/customer/tickets/${ticket.id}`)}>
+              <Card key={ticket.id} className="group hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 cursor-pointer border-0 shadow-lg hover:-translate-y-1" onClick={() => navigate(`/customer/tickets/${ticket.id}`)}>
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row md:items-center gap-4">
-                    <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <Ticket className="h-6 w-6 text-primary" />
+                    <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                      <Ticket className="h-6 w-6 text-blue-600" />
                     </div>
-                    
+
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-2">
-                        <h3 className="text-lg font-semibold text-foreground">{ticket.subject}</h3>
+                        <h3 className="text-lg font-semibold text-foreground group-hover:text-blue-700 transition-colors duration-300">{ticket.subject}</h3>
                         <Badge variant="outline" className="text-xs">{ticket.id}</Badge>
                       </div>
                       <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
@@ -130,7 +130,7 @@ export const TicketsPage = () => {
                         <span>{ticket.messages.length} messages</span>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <Badge className={getPriorityColor(ticket.priority)}>
                         {ticket.priority}
@@ -138,6 +138,9 @@ export const TicketsPage = () => {
                       <Badge className={getStatusColor(ticket.status)}>
                         {ticket.status}
                       </Badge>
+                      <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <ArrowRight className="h-4 w-4 text-blue-600" />
+                      </div>
                     </div>
                   </div>
                 </CardContent>

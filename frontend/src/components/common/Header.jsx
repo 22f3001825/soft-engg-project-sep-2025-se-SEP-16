@@ -77,7 +77,12 @@ export const Header = () => {
             </div>
             <div className="flex flex-col">
               <span className="text-lg font-bold leading-none text-foreground">Intellica</span>
-              <span className="text-xs text-muted-foreground">Customer Support</span>
+              <span className="text-xs text-muted-foreground">
+                {user?.role === 'customer' ? 'Customer Portal' :
+                 user?.role === 'vendor' ? 'Vendor Portal' :
+                 user?.role === 'agent' ? 'Agent Portal' :
+                 'Customer Support'}
+              </span>
             </div>
           </Link>
 
@@ -163,11 +168,11 @@ export const Header = () => {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(`/${user?.role}/profile`)}>
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(`/${user?.role}/settings`)}>
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
                 </DropdownMenuItem>

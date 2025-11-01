@@ -8,7 +8,7 @@ import { Badge } from '../../components/ui/badge';
 import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
-import { ArrowLeft, Send, Paperclip, Calendar, Package } from 'lucide-react';
+import { ArrowLeft, Send, Paperclip, Calendar, Package, MessageSquare, Clock, User } from 'lucide-react';
 import { tickets } from '../../data/dummyData';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
@@ -85,14 +85,21 @@ export const TicketDetailsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 relative overflow-hidden">
+      {/* Animated Background Pattern */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-400/20 via-purple-400/20 to-pink-400/20 animate-pulse"></div>
+        <div className="absolute top-10 left-10 w-32 h-32 bg-gradient-to-r from-cyan-300/30 to-blue-300/30 rounded-full blur-xl animate-bounce"></div>
+        <div className="absolute bottom-10 right-10 w-40 h-40 bg-gradient-to-r from-purple-300/30 to-pink-300/30 rounded-full blur-xl animate-pulse"></div>
+      </div>
+
       <Header />
-      
-      <main className="container mx-auto px-4 py-8">
-        <Button 
-          variant="ghost" 
+
+      <main className="container mx-auto px-4 py-8 relative">
+        <Button
+          variant="ghost"
           onClick={() => navigate('/customer/tickets')}
-          className="mb-6"
+          className="mb-6 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-300"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Tickets
@@ -101,66 +108,84 @@ export const TicketDetailsPage = () => {
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main Conversation */}
           <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <CardHeader>
+            <Card className="group relative overflow-hidden bg-gradient-to-br from-white to-blue-50/30 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 border-2 border-gray-300 shadow-lg">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <CardHeader className="relative">
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                   <div className="flex-1">
-                    <CardTitle className="text-2xl mb-2">{ticketData.subject}</CardTitle>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="outline">{ticketData.id}</Badge>
-                      <Badge className={getStatusColor(ticketData.status)}>
+                    <CardTitle className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-slate-800 to-gray-700 bg-clip-text text-transparent mb-3">{ticketData.subject}</CardTitle>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Badge variant="outline" className="px-3 py-1 text-sm font-medium">{ticketData.id}</Badge>
+                      <Badge className={`${getStatusColor(ticketData.status)} px-3 py-1 text-sm font-medium`}>
                         {ticketData.status}
                       </Badge>
-                      <Badge className={getPriorityColor(ticketData.priority)}>
+                      <Badge className={`${getPriorityColor(ticketData.priority)} px-3 py-1 text-sm font-medium`}>
                         {ticketData.priority} priority
                       </Badge>
                     </div>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5 text-blue-600" />
+                    <span className="text-sm font-medium text-gray-600">{ticketData.messages.length} messages</span>
+                  </div>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="relative">
                 <div className="space-y-6">
                   {/* Messages */}
-                  {ticketData.messages.map((message) => (
-                    <div key={message.id} className="flex gap-4 animate-slide-in-up">
-                      <Avatar className="h-10 w-10 flex-shrink-0">
-                        <AvatarImage src={message.sender === 'customer' ? user?.avatar : undefined} />
-                        <AvatarFallback className={message.sender === 'agent' ? 'bg-primary text-primary-foreground' : ''}>
-                          {message.senderName.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center gap-2">
+                  {ticketData.messages.map((message, index) => (
+                    <div key={message.id} className={`flex gap-4 animate-slide-in-up ${message.sender === 'customer' ? 'justify-end' : 'justify-start'}`}>
+                      {message.sender !== 'customer' && (
+                        <Avatar className="h-10 w-10 flex-shrink-0">
+                          <AvatarImage src={message.sender === 'customer' ? user?.avatar : undefined} />
+                          <AvatarFallback className={message.sender === 'agent' ? 'bg-gradient-to-br from-blue-500 to-cyan-500 text-white' : ''}>
+                            {message.senderName.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
+                      <div className={`flex-1 space-y-2 max-w-[70%] ${message.sender === 'customer' ? 'flex flex-col items-end' : ''}`}>
+                        <div className={`flex items-center gap-2 ${message.sender === 'customer' ? 'flex-row-reverse' : ''}`}>
                           <span className="font-semibold text-foreground">{message.senderName}</span>
                           <span className="text-xs text-muted-foreground">
                             {new Date(message.timestamp).toLocaleString()}
                           </span>
                         </div>
-                        <div className="bg-secondary rounded-lg p-4">
-                          <p className="text-foreground">{message.message}</p>
+                        <div className={`rounded-2xl p-4 shadow-sm ${message.sender === 'customer' ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : 'bg-gradient-to-r from-gray-50 to-slate-100 text-gray-900'}`}>
+                          <p className="leading-relaxed">{message.message}</p>
                         </div>
                       </div>
+                      {message.sender === 'customer' && (
+                        <Avatar className="h-10 w-10 flex-shrink-0">
+                          <AvatarImage src={user?.avatar} />
+                          <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-500 text-white">
+                            {user?.name?.charAt(0) || 'Y'}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
                     </div>
                   ))}
                 </div>
 
                 {/* Reply Section */}
-                <div className="mt-8 pt-6 border-t">
-                  <h4 className="font-semibold text-foreground mb-4">Add Reply</h4>
-                  <div className="space-y-3">
+                <div className="mt-8 pt-6 border-t border-gray-200">
+                  <h4 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5 text-blue-600" />
+                    Add Reply
+                  </h4>
+                  <div className="space-y-4">
                     <Textarea
                       placeholder="Type your message here..."
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       rows={4}
-                      className="resize-none"
+                      className="resize-none border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     />
                     <div className="flex items-center justify-between">
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" className="hover:bg-blue-50 hover:border-blue-300">
                         <Paperclip className="mr-2 h-4 w-4" />
                         Attach File
                       </Button>
-                      <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
+                      <Button onClick={handleSendMessage} disabled={!newMessage.trim()} className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white shadow-lg hover:shadow-xl transition-all duration-300">
                         <Send className="mr-2 h-4 w-4" />
                         Send Message
                       </Button>
@@ -173,38 +198,58 @@ export const TicketDetailsPage = () => {
 
           {/* Sidebar Info */}
           <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Ticket Information</CardTitle>
+            <Card className="group relative overflow-hidden bg-gradient-to-br from-white to-emerald-50/30 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 border-2 border-gray-300 shadow-lg">
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-teal-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <CardHeader className="relative">
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <User className="h-5 w-5 text-emerald-600" />
+                  Ticket Information
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
+              <CardContent className="relative space-y-4">
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-gradient-to-r from-blue-50 to-cyan-50">
+                  <Calendar className="h-5 w-5 text-blue-600 mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-foreground">Created</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm font-medium text-gray-900">Created</p>
+                    <p className="text-sm text-gray-600">
                       {new Date(ticketData.createdAt).toLocaleString()}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <Package className="h-5 w-5 text-muted-foreground mt-0.5" />
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50">
+                  <Package className="h-5 w-5 text-purple-600 mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-foreground">Related Order</p>
-                    <p className="text-sm text-muted-foreground">{ticketData.orderId}</p>
+                    <p className="text-sm font-medium text-gray-900">Related Order</p>
+                    <p className="text-sm text-gray-600">{ticketData.orderId}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50">
+                  <Clock className="h-5 w-5 text-amber-600 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Last Updated</p>
+                    <p className="text-sm text-gray-600">
+                      {ticketData.messages.length > 0 ? new Date(ticketData.messages[ticketData.messages.length - 1].timestamp).toLocaleString() : 'N/A'}
+                    </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Attachments</CardTitle>
+            <Card className="group relative overflow-hidden bg-gradient-to-br from-white to-purple-50/30 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300 border-2 border-gray-300 shadow-lg">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <CardHeader className="relative">
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <Paperclip className="h-5 w-5 text-purple-600" />
+                  Attachments
+                </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="relative">
                 <div className="text-center py-8">
-                  <Paperclip className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground">No attachments</p>
+                  <div className="w-16 h-16 mx-auto bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center mb-3">
+                    <Paperclip className="h-8 w-8 text-purple-600" />
+                  </div>
+                  <p className="text-sm text-gray-600 font-medium">No attachments yet</p>
+                  <p className="text-xs text-gray-500 mt-1">You can attach files when replying</p>
                 </div>
               </CardContent>
             </Card>

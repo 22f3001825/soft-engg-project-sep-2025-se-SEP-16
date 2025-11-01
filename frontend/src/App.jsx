@@ -15,6 +15,8 @@ import { NewTicketPage } from './pages/customer/NewTicketPage';
 import { OrdersPage } from './pages/customer/OrdersPage';
 import { OrderTrackingPage } from './pages/customer/OrderTrackingPage';
 import { ReturnRefundPage } from './pages/customer/ReturnRefundPage';
+import { ProfilePage as CustomerProfilePage } from './pages/customer/ProfilePage';
+import { SettingsPage as CustomerSettingsPage } from './pages/customer/SettingsPage';
 
 // Other Portals
 import { AgentDashboard } from './pages/agent/AgentDashboard';
@@ -29,6 +31,8 @@ import { VendorDashboard } from './pages/vendor/VendorDashboard';
 import AnalyticsDashboard from './pages/vendor/AnalyticsDashboard';
 import { ProductComplaintsPage } from './pages/vendor/ProductComplaintsPage';
 import { ProductDetailsPage } from './pages/vendor/ProductDetailsPage';
+import { ProfilePage as VendorProfilePage } from './pages/vendor/ProfilePage';
+import { SettingsPage as VendorSettingsPage } from './pages/vendor/SettingsPage';
 
 import './App.css';
 
@@ -98,6 +102,22 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['customer']}>
                   <ReturnRefundPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/customer/profile"
+              element={
+                <ProtectedRoute allowedRoles={['customer']}>
+                  <CustomerProfilePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/customer/settings"
+              element={
+                <ProtectedRoute allowedRoles={['customer']}>
+                  <CustomerSettingsPage />
                 </ProtectedRoute>
               }
             />
@@ -172,6 +192,22 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['vendor']}>
                   <ProductDetailsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vendor/profile"
+              element={
+                <ProtectedRoute allowedRoles={['vendor']}>
+                  <VendorProfilePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vendor/settings"
+              element={
+                <ProtectedRoute allowedRoles={['vendor']}>
+                  <VendorSettingsPage />
                 </ProtectedRoute>
               }
             />
