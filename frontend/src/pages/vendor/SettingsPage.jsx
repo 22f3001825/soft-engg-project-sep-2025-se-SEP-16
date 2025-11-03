@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Header } from '../../components/common/Header';
+import { ChatBot } from '../../components/common/ChatBot';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Switch } from '../../components/ui/switch';
-import { Save, Plus } from 'lucide-react';
+import { Save, Download, Settings as SettingsIcon, Bell, Shield, Palette, Globe, TrendingUp, Plus } from 'lucide-react';
 
 export const SettingsPage = () => {
   const { user } = useAuth();
@@ -19,80 +20,77 @@ export const SettingsPage = () => {
     },
     notifications: {
       newComplaints: true,
-      resolvedComplaints: true,
-      escalations: true,
-      reportAvailability: false
-    },
-    reportPreferences: {
-      defaultFormat: 'pdf',
-      autoEmail: false,
-      recipients: ['']
+      resolvedComplaints: true
     }
   });
 
   const handleSave = () => {
     // Save settings logic here
     console.log('Settings saved:', settings);
+    // Apply theme changes
+    if (settings.general.theme === 'dark') {
+      document.documentElement.classList.add('theme-dark');
+      document.documentElement.classList.remove('theme-light');
+    } else if (settings.general.theme === 'light') {
+      document.documentElement.classList.add('theme-light');
+      document.documentElement.classList.remove('theme-dark');
+    } else {
+      // System theme - could implement later
+      document.documentElement.classList.remove('theme-light', 'theme-dark');
+    }
   };
 
-  const addRecipient = () => {
-    setSettings({
-      ...settings,
-      reportPreferences: {
-        ...settings.reportPreferences,
-        recipients: [...settings.reportPreferences.recipients, '']
-      }
-    });
-  };
 
-  const updateRecipient = (index, email) => {
-    const newRecipients = [...settings.reportPreferences.recipients];
-    newRecipients[index] = email;
-    setSettings({
-      ...settings,
-      reportPreferences: {
-        ...settings.reportPreferences,
-        recipients: newRecipients
-      }
-    });
-  };
-
-  const removeRecipient = (index) => {
-    const newRecipients = settings.reportPreferences.recipients.filter((_, i) => i !== index);
-    setSettings({
-      ...settings,
-      reportPreferences: {
-        ...settings.reportPreferences,
-        recipients: newRecipients
-      }
-    });
-  };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 relative overflow-hidden">
+      {/* Animated Background Pattern */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-400/20 via-purple-400/20 to-pink-400/20 animate-pulse"></div>
+        <div className="absolute top-10 left-10 w-32 h-32 bg-gradient-to-r from-cyan-300/30 to-blue-300/30 rounded-full blur-xl animate-bounce"></div>
+        <div className="absolute bottom-10 right-10 w-40 h-40 bg-gradient-to-r from-purple-300/30 to-pink-300/30 rounded-full blur-xl animate-pulse"></div>
+      </div>
+
       <Header />
+
+      {/* Header Section */}
+      <div className="relative bg-gradient-to-r from-white via-slate-50 to-gray-50 border-b border-gray-200/50 shadow-sm backdrop-blur-sm">
+        <div className="container mx-auto px-6 py-4">
+          <div className="text-center animate-fade-in-up">
+            <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-900 via-slate-800 to-gray-700 bg-clip-text text-transparent animate-gradient-x">
+              Vendor Settings
+            </h1>
+            <p className="text-gray-600 mt-1 text-base animate-fade-in-up animation-delay-200">Configure your dashboard preferences and notification settings</p>
+          </div>
+        </div>
+      </div>
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Vendor Settings</h1>
-            <p className="text-muted-foreground">Configure your dashboard preferences and notification settings</p>
+          <div className="animate-fade-in-up">
+            <Button onClick={handleSave} size="lg" className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300 group/btn">
+              <Save className="h-5 w-5 mr-2 group-hover/btn:scale-110 transition-transform duration-300" />
+              Save Settings
+            </Button>
           </div>
-          <Button onClick={handleSave} size="lg" className="shadow-lg">
-            <Save className="h-5 w-5 mr-2" />
-            Save Settings
-          </Button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* General Settings */}
-          <Card className="rounded-xl shadow-sm">
-            <CardHeader>
-              <CardTitle>General Settings</CardTitle>
+          <Card className="group relative overflow-hidden bg-gradient-to-br from-white to-gray-50/50 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 border-0 shadow-lg hover:-translate-y-1 animate-fade-in-up">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <CardHeader className="relative">
+              <CardTitle className="flex items-center gap-2">
+                <SettingsIcon className="h-5 w-5 text-blue-600" />
+                General Settings
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="relative space-y-6">
               <div>
-                <Label htmlFor="dashboardRange">Default Dashboard Range</Label>
+                <Label htmlFor="dashboardRange" className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-purple-600" />
+                  Default Dashboard Range
+                </Label>
                 <Select
                   value={settings.general.dashboardRange}
                   onValueChange={(value) =>
@@ -102,7 +100,7 @@ export const SettingsPage = () => {
                     })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="focus:ring-2 focus:ring-blue-500/20">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -115,7 +113,10 @@ export const SettingsPage = () => {
               </div>
 
               <div>
-                <Label htmlFor="timezone">Timezone</Label>
+                <Label htmlFor="timezone" className="flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-green-600" />
+                  Timezone
+                </Label>
                 <Select
                   value={settings.general.timezone}
                   onValueChange={(value) =>
@@ -125,7 +126,7 @@ export const SettingsPage = () => {
                     })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="focus:ring-2 focus:ring-blue-500/20">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -139,7 +140,10 @@ export const SettingsPage = () => {
               </div>
 
               <div>
-                <Label htmlFor="theme">Theme</Label>
+                <Label htmlFor="theme" className="flex items-center gap-2">
+                  <Palette className="h-4 w-4 text-amber-600" />
+                  Theme
+                </Label>
                 <Select
                   value={settings.general.theme}
                   onValueChange={(value) =>
@@ -149,7 +153,7 @@ export const SettingsPage = () => {
                     })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="focus:ring-2 focus:ring-blue-500/20">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -163,15 +167,19 @@ export const SettingsPage = () => {
           </Card>
 
           {/* Notification Settings */}
-          <Card className="rounded-xl shadow-sm">
-            <CardHeader>
-              <CardTitle>Notification Settings</CardTitle>
+          <Card className="group relative overflow-hidden bg-gradient-to-br from-white to-gray-50/50 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 border-0 shadow-lg hover:-translate-y-1 animate-fade-in-up animation-delay-200">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <CardHeader className="relative">
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="h-5 w-5 text-indigo-600" />
+                Notification Settings
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="relative space-y-6">
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50/50 to-cyan-50/50 rounded-lg border border-blue-100">
                   <div>
-                    <Label htmlFor="new-complaints">New Complaints</Label>
+                    <Label htmlFor="new-complaints" className="font-medium text-gray-900">New Complaints</Label>
                     <p className="text-sm text-muted-foreground">Get notified when new complaints are filed</p>
                   </div>
                   <Switch
@@ -183,12 +191,13 @@ export const SettingsPage = () => {
                         notifications: {...settings.notifications, newComplaints: checked}
                       })
                     }
+                    className="data-[state=checked]:bg-blue-600"
                   />
                 </div>
 
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50/50 to-emerald-50/50 rounded-lg border border-green-100">
                   <div>
-                    <Label htmlFor="resolved-complaints">Resolved Complaints</Label>
+                    <Label htmlFor="resolved-complaints" className="font-medium text-gray-900">Resolved Complaints</Label>
                     <p className="text-sm text-muted-foreground">Get notified when complaints are resolved</p>
                   </div>
                   <Switch
@@ -200,129 +209,15 @@ export const SettingsPage = () => {
                         notifications: {...settings.notifications, resolvedComplaints: checked}
                       })
                     }
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="escalations">Escalations</Label>
-                    <p className="text-sm text-muted-foreground">Get notified when complaints are escalated</p>
-                  </div>
-                  <Switch
-                    id="escalations"
-                    checked={settings.notifications.escalations}
-                    onCheckedChange={(checked) =>
-                      setSettings({
-                        ...settings,
-                        notifications: {...settings.notifications, escalations: checked}
-                      })
-                    }
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="report-availability">Report Availability</Label>
-                    <p className="text-sm text-muted-foreground">Get notified when new reports are available</p>
-                  </div>
-                  <Switch
-                    id="report-availability"
-                    checked={settings.notifications.reportAvailability}
-                    onCheckedChange={(checked) =>
-                      setSettings({
-                        ...settings,
-                        notifications: {...settings.notifications, reportAvailability: checked}
-                      })
-                    }
+                    className="data-[state=checked]:bg-green-600"
                   />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Report Preferences */}
-          <Card className="rounded-xl shadow-sm lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Report Preferences</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <Label htmlFor="defaultFormat">Default Report Format</Label>
-                  <Select
-                    value={settings.reportPreferences.defaultFormat}
-                    onValueChange={(value) =>
-                      setSettings({
-                        ...settings,
-                        reportPreferences: {...settings.reportPreferences, defaultFormat: value}
-                      })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pdf">PDF</SelectItem>
-                      <SelectItem value="csv">CSV</SelectItem>
-                      <SelectItem value="excel">Excel</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
 
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="auto-email"
-                    checked={settings.reportPreferences.autoEmail}
-                    onCheckedChange={(checked) =>
-                      setSettings({
-                        ...settings,
-                        reportPreferences: {...settings.reportPreferences, autoEmail: checked}
-                      })
-                    }
-                  />
-                  <div>
-                    <Label htmlFor="auto-email">Auto-email Summary</Label>
-                    <p className="text-sm text-muted-foreground">Automatically send reports to recipients</p>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <Label className="flex items-center justify-between">
-                  Report Recipients
-                  <Button variant="outline" size="sm" onClick={addRecipient}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Recipient
-                  </Button>
-                </Label>
-                <div className="space-y-2 mt-2">
-                  {settings.reportPreferences.recipients.map((email, index) => (
-                    <div key={index} className="flex gap-2">
-                      <Input
-                        type="email"
-                        placeholder="Enter email address"
-                        value={email}
-                        onChange={(e) => updateRecipient(index, e.target.value)}
-                      />
-                      {settings.reportPreferences.recipients.length > 1 && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeRecipient(index)}
-                          className="px-3"
-                        >
-                          ×
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
-
-
       </main>
     </div>
   );

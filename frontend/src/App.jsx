@@ -175,7 +175,7 @@ function App() {
               path="/vendor/analytics"
               element={
                 <ProtectedRoute allowedRoles={['vendor']}>
-                  <AnalyticsDashboard />
+                  <VendorDashboard />
                 </ProtectedRoute>
               }
             />

@@ -39,20 +39,27 @@ export const Header = () => {
           { name: 'Dashboard', path: '/customer/dashboard' },
           { name: 'My Tickets', path: '/customer/tickets' },
           { name: 'My Orders', path: '/customer/orders' },
+          { name: 'Profile', path: '/customer/profile' },
+          { name: 'Settings', path: '/customer/settings' },
         ];
       case 'agent':
         return [
           { name: 'Dashboard', path: '/agent/dashboard' },
+          { name: 'Profile', path: '/agent/profile' },
+          { name: 'Settings', path: '/agent/settings' },
         ];
       case 'supervisor':
         return [
           { name: 'Dashboard', path: '/supervisor/dashboard' },
+          { name: 'Profile', path: '/supervisor/profile' },
+          { name: 'Settings', path: '/supervisor/settings' },
         ];
       case 'vendor':
         return [
           { name: 'Dashboard', path: '/vendor/dashboard' },
           { name: 'Complaints', path: '/vendor/complaints' },
-          { name: 'Analytics', path: '/vendor/analytics' },
+          { name: 'Profile', path: '/vendor/profile' },
+          { name: 'Settings', path: '/vendor/settings' },
         ];
       default:
         return [];
@@ -73,7 +80,9 @@ export const Header = () => {
             '/customer/dashboard'
           } className="flex items-center space-x-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent">
-              <span className="text-xl font-bold text-primary-foreground">I</span>
+              <span className="text-xl font-bold text-primary-foreground">
+                I
+              </span>
             </div>
             <div className="flex flex-col">
               <span className="text-lg font-bold leading-none text-foreground">Intellica</span>
@@ -84,6 +93,7 @@ export const Header = () => {
                  'Customer Support'}
               </span>
             </div>
+
           </Link>
 
           {/* Desktop Navigation */}
@@ -100,14 +110,21 @@ export const Header = () => {
           </nav>
 
           {/* Right Section */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-4">
+            {/* Company Name for Vendor */}
+            {user?.role === 'vendor' && (
+              <div className="hidden md:flex items-center px-3 py-1 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                <span className="text-sm font-semibold text-blue-700">TechCorp Solutions</span>
+              </div>
+            )}
+
             {/* Notifications */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative">
                   <Bell className="h-5 w-5" />
                   {unreadCount > 0 && (
-                    <Badge 
+                    <Badge
                       className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
                       variant="destructive"
                     >
@@ -147,42 +164,16 @@ export const Header = () => {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Profile Menu */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center space-x-2 px-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={user?.avatar} alt={user?.name} />
-                    <AvatarFallback>
-                      {user?.name?.charAt(0) || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="hidden md:block text-sm font-medium">{user?.name}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium">{user?.name}</p>
-                    <p className="text-xs text-muted-foreground">{user?.email}</p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate(`/${user?.role}/profile`)}>
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate(`/${user?.role}/settings`)}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-destructive">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Logout</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* Logout Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              <span className="hidden md:block">Logout</span>
+            </Button>
 
             {/* Mobile Menu */}
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
