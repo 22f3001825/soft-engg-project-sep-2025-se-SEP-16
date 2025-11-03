@@ -84,13 +84,14 @@ export const TicketDetailsPage = () => {
     }
   };
 
+
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 relative overflow-hidden">
       {/* Animated Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-400/20 via-purple-400/20 to-pink-400/20 animate-pulse"></div>
-        <div className="absolute top-10 left-10 w-32 h-32 bg-gradient-to-r from-cyan-300/30 to-blue-300/30 rounded-full blur-xl animate-bounce"></div>
-        <div className="absolute bottom-10 right-10 w-40 h-40 bg-gradient-to-r from-purple-300/30 to-pink-300/30 rounded-full blur-xl animate-pulse"></div>
+      <div className="absolute inset-0 opacity-8 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-violet-400/25 via-fuchsia-400/20 to-rose-400/25 animate-pulse"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-blue-300/20 to-indigo-300/20 rounded-full blur-2xl animate-pulse"></div>
       </div>
 
       <Header />
@@ -99,7 +100,7 @@ export const TicketDetailsPage = () => {
         <Button
           variant="ghost"
           onClick={() => navigate('/customer/tickets')}
-          className="mb-6 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-300"
+          className="mb-6 hover:bg-gray-50 hover:text-gray-700 transition-colors duration-300"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Tickets
@@ -108,7 +109,7 @@ export const TicketDetailsPage = () => {
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main Conversation */}
           <div className="lg:col-span-2 space-y-6">
-            <Card className="group relative overflow-hidden bg-gradient-to-br from-white to-blue-50/30 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 border-2 border-gray-300 shadow-lg">
+            <Card className="group relative overflow-hidden bg-white/95 backdrop-blur-sm border-2 border-white/20 shadow-xl hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1">
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <CardHeader className="relative">
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
@@ -118,9 +119,6 @@ export const TicketDetailsPage = () => {
                       <Badge variant="outline" className="px-3 py-1 text-sm font-medium">{ticketData.id}</Badge>
                       <Badge className={`${getStatusColor(ticketData.status)} px-3 py-1 text-sm font-medium`}>
                         {ticketData.status}
-                      </Badge>
-                      <Badge className={`${getPriorityColor(ticketData.priority)} px-3 py-1 text-sm font-medium`}>
-                        {ticketData.priority} priority
                       </Badge>
                     </div>
                   </div>
@@ -198,7 +196,7 @@ export const TicketDetailsPage = () => {
 
           {/* Sidebar Info */}
           <div className="space-y-6">
-            <Card className="group relative overflow-hidden bg-gradient-to-br from-white to-emerald-50/30 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 border-2 border-gray-300 shadow-lg">
+            <Card className="group relative overflow-hidden bg-white/95 backdrop-blur-sm border-2 border-white/20 shadow-xl hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-300 hover:-translate-y-1">
               <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-teal-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <CardHeader className="relative">
                 <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -223,8 +221,8 @@ export const TicketDetailsPage = () => {
                     <p className="text-sm text-gray-600">{ticketData.orderId}</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50">
-                  <Clock className="h-5 w-5 text-amber-600 mt-0.5" />
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-gradient-to-r from-gray-50 to-slate-50">
+                  <Clock className="h-5 w-5 text-gray-600 mt-0.5" />
                   <div>
                     <p className="text-sm font-medium text-gray-900">Last Updated</p>
                     <p className="text-sm text-gray-600">
@@ -235,7 +233,7 @@ export const TicketDetailsPage = () => {
               </CardContent>
             </Card>
 
-            <Card className="group relative overflow-hidden bg-gradient-to-br from-white to-purple-50/30 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300 border-2 border-gray-300 shadow-lg">
+            <Card className="group relative overflow-hidden bg-white/95 backdrop-blur-sm border-2 border-white/20 shadow-xl hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-300 hover:-translate-y-1">
               <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <CardHeader className="relative">
                 <CardTitle className="text-lg font-semibold flex items-center gap-2">

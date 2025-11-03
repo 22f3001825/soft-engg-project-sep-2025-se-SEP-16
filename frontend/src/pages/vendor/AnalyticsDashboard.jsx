@@ -100,7 +100,13 @@ const AnalyticsDashboard = () => {
   const maxComplaints = Math.max(...complaintsTrend.map(d => d.complaints));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 relative overflow-hidden">
+      {/* Animated Background Pattern */}
+      <div className="absolute inset-0 opacity-8 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-violet-400/25 via-fuchsia-400/20 to-rose-400/25 animate-pulse"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-blue-300/20 to-indigo-300/20 rounded-full blur-2xl animate-pulse"></div>
+      </div>
+
       <Header />
 
       <div className="container mx-auto px-4 py-8">
@@ -257,55 +263,17 @@ const AnalyticsDashboard = () => {
               </Card>
             </div>
 
-            {/* Enhanced Additional Analytics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 border-gray-200 bg-white/90 backdrop-blur-sm">
-                <CardHeader className="bg-gradient-to-r from-red-50 to-red-100 rounded-t-lg">
-                  <CardTitle className="text-lg flex items-center gap-2 text-red-800">
-                    <TrendingUp className={`h-5 w-5 ${trendChange >= 0 ? 'text-red-500' : 'text-green-500'}`} />
-                    Trend Analysis
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Complaints have {trendChange >= 0 ? 'increased' : 'decreased'} by {Math.abs(trendChange).toFixed(1)}% over selected period.
-                  </p>
-                  <div className={`text-3xl font-bold ${trendChange >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    {trendChange >= 0 ? '↗️' : '↘️'} {Math.abs(trendChange).toFixed(1)}%
-                  </div>
-                  <p className="text-xs text-gray-500">vs previous period</p>
-                </CardContent>
-              </Card>
 
-              <Card className="shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 border-gray-200 bg-white/90 backdrop-blur-sm">
-                <CardHeader className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-t-lg">
-                  <CardTitle className="text-lg text-blue-800">Top Issue Category</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Audio Issues represent the largest category of complaints.
-                  </p>
-                  <div className="text-3xl font-bold text-blue-600">Audio Issues</div>
-                  <p className="text-xs text-gray-500">45 complaints (30%)</p>
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 border-gray-200 bg-white/90 backdrop-blur-sm">
-                <CardHeader className="bg-gradient-to-r from-green-50 to-green-100 rounded-t-lg">
-                  <CardTitle className="text-lg text-green-800">Resolution Rate</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600 mb-4">
-                    78% of complaints are resolved within 7 days.
-                  </p>
-                  <div className="text-3xl font-bold text-green-600">78%</div>
-                  <p className="text-xs text-gray-500">within 7 days</p>
-                </CardContent>
-              </Card>
-            </div>
           </div>
 
           {/* AI Insights Panel */}
+          {!showInsights && (
+            <div className="w-80">
+              <Button onClick={() => setShowInsights(true)} className="w-full">
+                Show Insights
+              </Button>
+            </div>
+          )}
           {showInsights && (
             <div className="w-80">
               <Card className="shadow-lg border-2 border-gray-200 bg-white/90 backdrop-blur-sm">

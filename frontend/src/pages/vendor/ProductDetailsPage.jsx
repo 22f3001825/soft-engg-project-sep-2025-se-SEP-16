@@ -15,9 +15,15 @@ const ProductDetailsPage = () => {
   const product = vendorProducts.find(p => p.id === productId);
 
   if (!product) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <Header />
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 relative overflow-hidden">
+      {/* Animated Background Pattern */}
+      <div className="absolute inset-0 opacity-8 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-violet-400/25 via-fuchsia-400/20 to-rose-400/25 animate-pulse"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-blue-300/20 to-indigo-300/20 rounded-full blur-2xl animate-pulse"></div>
+      </div>
+
+      <Header />
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">Product Not Found</h1>
@@ -53,7 +59,13 @@ const ProductDetailsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 relative overflow-hidden">
+      {/* Animated Background Pattern */}
+      <div className="absolute inset-0 opacity-8 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-violet-400/25 via-fuchsia-400/20 to-rose-400/25 animate-pulse"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-blue-300/20 to-indigo-300/20 rounded-full blur-2xl animate-pulse"></div>
+      </div>
+
       <Header />
 
       <div className="container mx-auto px-4 py-8">
@@ -61,7 +73,7 @@ const ProductDetailsPage = () => {
           <Button
             onClick={() => navigate('/vendor/complaints')}
             variant="outline"
-            className="mb-4 hover:bg-blue-50 hover:border-blue-300 transition-colors"
+            className="mb-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white border-blue-600 hover:border-blue-800 shadow-lg hover:shadow-xl transition-all duration-300 font-semibold"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Products
@@ -159,7 +171,7 @@ const ProductDetailsPage = () => {
                     <span className="font-medium text-gray-800">{issue}</span>
                   </div>
                   <span className="text-sm text-gray-600 font-medium">
-                    {Math.floor(Math.random() * 20) + 5} reports
+                    5 reports
                   </span>
                 </div>
               ))}
@@ -185,7 +197,7 @@ const ProductDetailsPage = () => {
                       <AlertTriangle className="h-4 w-4" />
                       Total Reports
                     </h4>
-                    <p className="text-3xl font-bold text-blue-700">{Math.floor(Math.random() * 20) + 5}</p>
+                    <p className="text-3xl font-bold text-blue-700">5</p>
                   </div>
                   <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border-2 border-red-200">
                     <h4 className="font-semibold text-red-800 mb-2 flex items-center gap-2">
@@ -196,53 +208,54 @@ const ProductDetailsPage = () => {
                   </div>
                 </div>
 
-                <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
-                  <h4 className="font-semibold mb-3 text-gray-800 flex items-center gap-2">
-                    <BarChart3 className="h-4 w-4" />
-                    Recent Complaints
+                {/* Recent Reports Section */}
+                <div className="border-t border-gray-200 pt-6">
+                  <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-red-600" />
+                    Recent Reports
                   </h4>
-                  <div className="space-y-3">
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
                     {[
-                      "Customer reported issue with product functionality",
-                      "Multiple users experiencing the same problem",
-                      "Issue persists after multiple attempts to fix",
-                      "Customer demands immediate resolution",
-                      "Similar complaints from different regions"
-                    ].map((complaint, idx) => (
-                      <div key={idx} className="bg-white p-3 rounded border-l-4 border-blue-500 shadow-sm border-2 border-gray-200">
-                        <p className="text-sm text-gray-700">{complaint}</p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Reported {Math.floor(Math.random() * 30) + 1} days ago
-                        </p>
+                      {
+                        id: 1,
+                        customer: "John Doe",
+                        reportDate: "2024-01-15",
+                        description: "The product stopped working after 2 weeks of use. Very disappointed with the quality.",
+                        severity: "high"
+                      },
+                      {
+                        id: 2,
+                        customer: "Jane Smith",
+                        reportDate: "2024-01-12",
+                        description: "Same issue as described. Battery drains extremely fast even when not in use.",
+                        severity: "medium"
+                      },
+                      {
+                        id: 3,
+                        customer: "Mike Johnson",
+                        reportDate: "2024-01-10",
+                        description: "Purchased this product thinking it would be reliable. Major battery issues from day one.",
+                        severity: "high"
+                      },
+                      {
+                        id: 4,
+                        customer: "Sarah Wilson",
+                        reportDate: "2024-01-08",
+                        description: "Battery life is terrible. Can't use the device for more than a few hours.",
+                        severity: "medium"
+                      },
+                      {
+                        id: 5,
+                        customer: "Tom Brown",
+                        reportDate: "2024-01-05",
+                        description: "Product arrived with battery already drained. Had to charge it for hours before first use.",
+                        severity: "low"
+                      }
+                    ].map((report, index) => (
+                      <div key={report.id} className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors">
+                        <p className="text-gray-700 text-sm">{report.description}</p>
                       </div>
                     ))}
-                  </div>
-                </div>
-
-                <div className="bg-green-50 p-4 rounded-lg border-2 border-green-200">
-                  <h4 className="font-semibold mb-3 text-green-800 flex items-center gap-2">
-                    <Package className="h-4 w-4" />
-                    Common Solutions
-                  </h4>
-                  <ul className="list-disc list-inside space-y-1 text-sm text-green-700">
-                    <li>Check product specifications and compatibility</li>
-                    <li>Verify installation and setup procedures</li>
-                    <li>Update firmware/software to latest version</li>
-                    <li>Replace defective components if applicable</li>
-                    <li>Provide customer support training materials</li>
-                  </ul>
-                </div>
-
-                <div className="bg-yellow-50 p-4 rounded-lg border-2 border-yellow-200">
-                  <h4 className="font-semibold mb-2 text-yellow-800 flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4" />
-                    Impact Analysis
-                  </h4>
-                  <div className="bg-white p-3 rounded border-l-4 border-yellow-500 border-2 border-gray-200">
-                    <p className="text-sm text-gray-700">
-                      This issue affects approximately {Math.floor(Math.random() * 15) + 5}% of customers
-                      and has resulted in {Math.floor(Math.random() * 10) + 1} product returns this month.
-                    </p>
                   </div>
                 </div>
               </div>

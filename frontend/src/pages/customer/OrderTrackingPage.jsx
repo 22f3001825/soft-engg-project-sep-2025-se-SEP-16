@@ -14,9 +14,15 @@ export const OrderTrackingPage = () => {
   const order = orders.find(o => o.id === orderId);
 
   if (!order) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 relative overflow-hidden">
+      {/* Animated Background Pattern */}
+      <div className="absolute inset-0 opacity-8 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-violet-400/25 via-fuchsia-400/20 to-rose-400/25 animate-pulse"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-blue-300/20 to-indigo-300/20 rounded-full blur-2xl animate-pulse"></div>
+      </div>
+
+      <Header />
         <main className="container mx-auto px-4 py-8">
           <Card>
             <CardContent className="py-16 text-center">
@@ -40,7 +46,13 @@ export const OrderTrackingPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 relative overflow-hidden">
+      {/* Animated Background Pattern */}
+      <div className="absolute inset-0 opacity-8 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-violet-400/25 via-fuchsia-400/20 to-rose-400/25 animate-pulse"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-blue-300/20 to-indigo-300/20 rounded-full blur-2xl animate-pulse"></div>
+      </div>
+
       <Header />
       
       <main className="container mx-auto px-4 py-8 max-w-5xl">
@@ -55,14 +67,14 @@ export const OrderTrackingPage = () => {
 
         <div className="space-y-6">
           {/* Header Card */}
-          <Card>
+          <Card className="bg-white/95 backdrop-blur-sm border-2 border-white/20 shadow-xl">
             <CardHeader>
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
                   <CardTitle className="text-2xl mb-2">Order Tracking</CardTitle>
                   <p className="text-muted-foreground">Order ID: {order.id}</p>
                 </div>
-                <Badge 
+                <Badge
                   className="text-base px-4 py-2 w-fit"
                   variant={order.status === 'delivered' ? 'default' : 'secondary'}
                 >
@@ -73,7 +85,7 @@ export const OrderTrackingPage = () => {
           </Card>
 
           {/* Tracking Timeline */}
-          <Card>
+          <Card className="bg-white/95 backdrop-blur-sm border-2 border-white/20 shadow-xl">
             <CardHeader>
               <CardTitle>Delivery Status</CardTitle>
             </CardHeader>
@@ -127,7 +139,7 @@ export const OrderTrackingPage = () => {
           {/* Delivery Details Grid */}
           <div className="grid md:grid-cols-2 gap-6">
             {/* Current Location */}
-            <Card>
+            <Card className="bg-white/95 backdrop-blur-sm border-2 border-white/20 shadow-xl">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <MapPin className="h-5 w-5 text-primary" />
@@ -148,7 +160,7 @@ export const OrderTrackingPage = () => {
             </Card>
 
             {/* Courier Info */}
-            <Card>
+            <Card className="bg-white/95 backdrop-blur-sm border-2 border-white/20 shadow-xl">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Truck className="h-5 w-5 text-accent" />
@@ -173,7 +185,7 @@ export const OrderTrackingPage = () => {
           </div>
 
           {/* Order Items */}
-          <Card>
+          <Card className="bg-white/95 backdrop-blur-sm border-2 border-white/20 shadow-xl">
             <CardHeader>
               <CardTitle className="text-lg">Order Items</CardTitle>
             </CardHeader>
