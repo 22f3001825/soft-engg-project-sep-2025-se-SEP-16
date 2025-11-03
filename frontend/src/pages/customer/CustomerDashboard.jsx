@@ -96,7 +96,7 @@ export const CustomerDashboard = () => {
     { name: "Others", value: 10 },
   ];
 
-  const COLORS = ['#1E40AF', '#059669', '#7C3AED', '#374151', '#DC2626'];
+  const COLORS = ['#6366f1', '#14b8a6', '#f43f5e', '#8b5cf6', '#f59e0b'];
 
   const stats = [
     {
@@ -104,92 +104,87 @@ export const CustomerDashboard = () => {
       value: dashboardStats.openTickets,
       icon: Ticket,
       color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
+      bgColor: 'bg-gradient-to-br from-blue-500 to-blue-600',
     },
     {
       title: 'Active Orders',
       value: dashboardStats.activeOrders,
       icon: Package,
-      color: 'text-emerald-600',
-      bgColor: 'bg-emerald-50',
+      color: 'text-green-600',
+      bgColor: 'bg-gradient-to-br from-green-500 to-green-600',
     },
     {
       title: 'Pending Refunds',
       value: dashboardStats.pendingRefunds,
       icon: DollarSign,
-      color: 'text-amber-600',
-      bgColor: 'bg-amber-50',
+      color: 'text-purple-600',
+      bgColor: 'bg-gradient-to-br from-purple-500 to-purple-600',
     },
     {
       title: 'Resolved Tickets',
       value: dashboardStats.resolvedTickets,
       icon: CheckCircle2,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
+      color: 'text-orange-600',
+      bgColor: 'bg-gradient-to-br from-orange-500 to-orange-600',
     }
   ];
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'delivered':
-        return 'bg-green-100 text-green-800 border border-green-200';
+        return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
       case 'in-transit':
-        return 'bg-blue-100 text-blue-800 border border-blue-200';
+        return 'bg-sky-50 text-sky-700 border border-sky-200';
       case 'processing':
-        return 'bg-amber-100 text-amber-800 border border-amber-200';
+        return 'bg-amber-50 text-amber-700 border border-amber-200';
       case 'open':
-        return 'bg-blue-100 text-blue-800 border border-blue-200';
+        return 'bg-indigo-50 text-indigo-700 border border-indigo-200';
       case 'in-progress':
-        return 'bg-purple-100 text-purple-800 border border-purple-200';
+        return 'bg-violet-50 text-violet-700 border border-violet-200';
       case 'resolved':
-        return 'bg-green-100 text-green-800 border border-green-200';
+        return 'bg-teal-50 text-teal-700 border border-teal-200';
       default:
-        return 'bg-gray-100 text-gray-800 border border-gray-200';
+        return 'bg-slate-50 text-slate-700 border border-slate-200';
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 relative overflow-hidden">
       {/* Animated Background Pattern */}
-      <div className="absolute inset-0 opacity-5 pointer-events-none">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-400/20 via-purple-400/20 to-pink-400/20 animate-pulse"></div>
-        <div className="absolute top-10 left-10 w-32 h-32 bg-gradient-to-r from-cyan-300/30 to-blue-300/30 rounded-full blur-xl animate-bounce"></div>
-        <div className="absolute bottom-10 right-10 w-40 h-40 bg-gradient-to-r from-purple-300/30 to-pink-300/30 rounded-full blur-xl animate-pulse"></div>
+      <div className="absolute inset-0 opacity-8 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-violet-400/25 via-fuchsia-400/20 to-rose-400/25 animate-pulse"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-blue-300/20 to-indigo-300/20 rounded-full blur-2xl animate-pulse"></div>
       </div>
 
       <Header />
 
       {/* Header Section */}
-      <div className="relative bg-gradient-to-r from-white via-slate-50 to-gray-50 border-b border-gray-200/50 shadow-sm backdrop-blur-sm">
-        <div className="container mx-auto px-6 py-6">
-          <div className="text-left animate-fade-in-up">
-            <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-900 via-slate-800 to-gray-700 bg-clip-text text-transparent animate-gradient-x">
-              Welcome back, {user?.name}
-            </h1>
-            <p className="text-slate-500 mt-2 text-base animate-fade-in-up animation-delay-200 font-medium">Here's what's happening with your account today</p>
+      <div className="relative bg-gradient-to-r from-indigo-50 via-purple-50/40 to-pink-50/60 border border-gray-200 shadow-lg backdrop-blur-sm p-6 rounded-xl overflow-hidden mx-6 mt-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl shadow-lg">
+              <Users className="h-6 w-6 text-indigo-600" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.name}</h1>
+              <p className="text-gray-600">Here's what's happening with your account today</p>
+            </div>
           </div>
         </div>
       </div>
 
-      <main className="container mx-auto px-6 py-8 space-y-8">
+      <main className="container mx-auto px-6 py-8 space-y-6">
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map((stat, index) => (
-            <Card key={index} className="group relative overflow-hidden bg-gradient-to-br from-white to-gray-50/50 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 border-0 shadow-lg hover:-translate-y-1">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <CardContent className="relative p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-gray-700 mb-2">{stat.title}</p>
-                    <p className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</p>
-                  </div>
-                  <div className="relative">
-                    <div className={`p-4 rounded-2xl ${stat.bgColor} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                      <stat.icon className={`h-7 w-7 ${stat.color}`} />
-                    </div>
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  </div>
-                </div>
+            <Card key={index} className={`bg-gradient-to-br ${stat.bgColor} border-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105`} style={{borderColor: stat.bgColor.replace('from-', '').replace('to-', '').replace('-50', '-400').replace('-100', '-400')}}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-white">{stat.title}</CardTitle>
+                <stat.icon className={`h-5 w-5 text-white`} />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-white mb-1">{stat.value}</div>
+                <p className="text-xs text-gray-100">Current status</p>
               </CardContent>
             </Card>
           ))}
@@ -198,12 +193,12 @@ export const CustomerDashboard = () => {
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Order Activity Chart */}
-          <Card className="group relative overflow-hidden bg-gradient-to-br from-white to-blue-50/30 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 border-0 shadow-lg hover:-translate-y-1">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <Card className="group relative overflow-hidden bg-gradient-to-br from-indigo-50 to-cyan-50 border-2 border-indigo-200 shadow-xl hover:shadow-2xl hover:shadow-indigo-500/20 transition-all duration-300 hover:-translate-y-1 hover:scale-105">
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-transparent to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
             <CardHeader className="relative pb-4">
               <CardTitle className="text-lg font-semibold text-gray-900 flex items-center justify-between">
-                <span className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">Order Activity Trend</span>
-                <MoreVertical className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors duration-300" />
+                <span className="bg-gradient-to-r from-indigo-600 to-cyan-600 bg-clip-text text-transparent">Order Activity Trend</span>
+                <MoreVertical className="h-4 w-4 text-gray-400 group-hover:text-indigo-500 transition-colors duration-300" />
               </CardTitle>
               <p className="text-sm text-gray-600">Monthly order performance</p>
             </CardHeader>
@@ -238,12 +233,12 @@ export const CustomerDashboard = () => {
                     dataKey="orders"
                     stroke="url(#gradientLine)"
                     strokeWidth={3}
-                    dot={{ fill: '#3b82f6', strokeWidth: 3, r: 5, stroke: '#ffffff' }}
-                    activeDot={{ r: 8, fill: '#3b82f6', stroke: '#ffffff', strokeWidth: 3 }}
+                    dot={{ fill: '#6366f1', strokeWidth: 3, r: 5, stroke: '#ffffff' }}
+                    activeDot={{ r: 8, fill: '#6366f1', stroke: '#ffffff', strokeWidth: 3 }}
                   />
                   <defs>
                     <linearGradient id="gradientLine" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#3b82f6" />
+                      <stop offset="0%" stopColor="#6366f1" />
                       <stop offset="100%" stopColor="#06b6d4" />
                     </linearGradient>
                   </defs>
@@ -253,12 +248,12 @@ export const CustomerDashboard = () => {
           </Card>
 
           {/* Spending Distribution */}
-          <Card className="group relative overflow-hidden bg-gradient-to-br from-white to-purple-50/30 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300 border-0 shadow-lg hover:-translate-y-1">
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <Card className="group relative overflow-hidden bg-gradient-to-br from-violet-50 to-fuchsia-50 border-2 border-violet-200 shadow-xl hover:shadow-2xl hover:shadow-violet-500/20 transition-all duration-300 hover:-translate-y-1 hover:scale-105">
+            <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-fuchsia-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
             <CardHeader className="relative pb-4">
               <CardTitle className="text-lg font-semibold text-gray-900 flex items-center justify-between">
-                <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Spending Distribution</span>
-                <MoreVertical className="h-4 w-4 text-gray-400 group-hover:text-purple-500 transition-colors duration-300" />
+                <span className="bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">Spending Distribution</span>
+                <MoreVertical className="h-4 w-4 text-gray-400 group-hover:text-violet-500 transition-colors duration-300" />
               </CardTitle>
               <p className="text-sm text-gray-600">Product category breakdown</p>
             </CardHeader>
@@ -301,12 +296,12 @@ export const CustomerDashboard = () => {
         </div>
 
         {/* Quick Actions */}
-        <Card className="group relative overflow-hidden bg-gradient-to-br from-white to-emerald-50/30 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 border-0 shadow-lg hover:-translate-y-1">
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-teal-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <Card className="group relative overflow-hidden bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 border-2 border-indigo-200/50 shadow-xl hover:shadow-2xl hover:shadow-indigo-500/20 transition-all duration-300 hover:-translate-y-1 hover:scale-105 backdrop-blur-sm">
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
           <CardHeader className="relative">
             <CardTitle className="text-lg font-semibold text-gray-900 flex items-center">
-              <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Quick Actions</span>
-              <div className="ml-2 w-2 h-2 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full animate-pulse"></div>
+              <span className="bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">Quick Actions</span>
+              <div className="ml-2 w-2 h-2 bg-gradient-to-r from-teal-400 to-emerald-500 rounded-full animate-pulse"></div>
             </CardTitle>
             <p className="text-sm text-gray-600">Frequently used tasks</p>
           </CardHeader>
@@ -314,54 +309,45 @@ export const CustomerDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="outline" className="group/btn w-full h-16 justify-start px-4 border-gray-300 hover:border-purple-400 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20">
-                    <div className="p-2 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg mr-3 group-hover/btn:scale-110 transition-transform duration-300">
-                      <HelpCircle className="h-4 w-4 text-purple-600" />
+                  <Button variant="outline" className="group/btn w-full h-16 justify-start px-4 bg-white/90 backdrop-blur-sm border-slate-300 hover:border-violet-400 hover:bg-white hover:shadow-lg hover:shadow-violet-500/20 transition-all duration-300">
+                    <div className="p-2 bg-gradient-to-br from-violet-100 to-fuchsia-100 rounded-lg mr-3 group-hover/btn:scale-110 transition-transform duration-300">
+                      <HelpCircle className="h-4 w-4 text-violet-600" />
                     </div>
                     <div className="text-left">
-                      <span className="font-medium text-gray-900 group-hover/btn:text-purple-700 transition-colors duration-300">FAQ</span>
+                      <span className="font-medium text-gray-900 group-hover/btn:text-violet-700 transition-colors duration-300">FAQ</span>
                       <p className="text-xs text-gray-600">Frequently asked questions</p>
                     </div>
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-white via-slate-50/80 to-gray-50/60 border-0 shadow-2xl">
-                  <DialogHeader className="text-center pb-8 relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 via-purple-600/5 to-pink-600/5 rounded-t-lg"></div>
-                    <div className="relative mx-auto w-20 h-20 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mb-6 shadow-xl rotate-3 hover:rotate-0 transition-transform duration-500">
-                      <HelpCircle className="h-10 w-10 text-white" />
+                <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto bg-gradient-to-br from-white via-slate-50/80 to-gray-50/60 border-0 shadow-2xl">
+                  <DialogHeader className="text-center pb-6 relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/5 via-violet-600/5 to-fuchsia-600/5 rounded-t-lg"></div>
+                    <div className="relative mx-auto w-16 h-16 bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 rounded-xl flex items-center justify-center mb-4 shadow-lg">
+                      <HelpCircle className="h-8 w-8 text-white" />
                     </div>
-                    <DialogTitle className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">
+                    <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 bg-clip-text text-transparent mb-2">
                       Frequently Asked Questions
                     </DialogTitle>
-                    <p className="text-slate-600 text-lg font-medium max-w-2xl mx-auto leading-relaxed text-center">
+                    <p className="text-slate-600 text-base font-medium max-w-xl mx-auto leading-relaxed text-center">
                       Find quick answers to the most common questions about our platform and services
                     </p>
-                    <div className="flex justify-center mt-4">
-                      <div className="w-24 h-1 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full"></div>
-                    </div>
                   </DialogHeader>
-                  <div className="space-y-6 mt-8 px-4">
+                  <div className="space-y-4 mt-6 px-4">
                     {faqData.map((faq, index) => (
-                      <div key={index} className="group bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-md border border-gray-100/80 hover:shadow-2xl hover:border-blue-200/60 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] relative overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-50/20 via-transparent to-purple-50/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <div className="relative flex items-start gap-6">
-                          <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 mt-1">
-                            <span className="text-white font-bold text-lg leading-none">{index + 1}</span>
-                          </div>
-                          <div className="flex-1 min-w-0 pt-1">
-                            <h3 className="font-bold text-gray-900 mb-4 text-xl leading-tight group-hover:text-blue-700 transition-colors duration-300">
-                              {faq.question}
-                            </h3>
-                            <p className="text-gray-700 leading-relaxed text-base font-medium">{faq.answer}</p>
-                          </div>
+                      <div key={index} className="group bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-md border border-gray-100/80 hover:shadow-lg hover:border-indigo-200/60 transition-all duration-300 hover:-translate-y-1 relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-50/20 via-transparent to-violet-50/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        <div className="relative">
+                          <h3 className="font-bold text-gray-900 mb-3 text-lg leading-tight group-hover:text-indigo-700 transition-colors duration-300">
+                            {faq.question}
+                          </h3>
+                          <p className="text-gray-700 leading-relaxed text-sm font-medium">{faq.answer}</p>
                         </div>
-                        <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
                       </div>
                     ))}
                   </div>
-                  <div className="mt-12 text-center relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-50/30 via-purple-50/30 to-pink-50/30 rounded-b-lg"></div>
-                    <div className="relative py-6">
+                  <div className="mt-8 text-center relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-50/30 via-violet-50/30 to-fuchsia-50/30 rounded-b-lg"></div>
+                    <div className="relative py-4">
                       <p className="text-slate-500 text-sm font-medium">
                         For additional assistance, please contact our support team
                       </p>
@@ -370,18 +356,18 @@ export const CustomerDashboard = () => {
                 </DialogContent>
               </Dialog>
               <Link to="/customer/tickets/new">
-                <Button variant="outline" className="group/btn w-full h-16 justify-start px-4 border-gray-300 hover:border-green-400 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/20">
-                  <div className="p-2 bg-gradient-to-br from-green-100 to-emerald-100 rounded-lg mr-3 group-hover/btn:scale-110 transition-transform duration-300">
-                    <FileText className="h-4 w-4 text-green-600" />
+                <Button variant="outline" className="group/btn w-full h-16 justify-start px-4 bg-white/90 backdrop-blur-sm border-slate-300 hover:border-emerald-400 hover:bg-white hover:shadow-lg hover:shadow-emerald-500/20 transition-all duration-300">
+                  <div className="p-2 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-lg mr-3 group-hover/btn:scale-110 transition-transform duration-300">
+                    <FileText className="h-4 w-4 text-emerald-600" />
                   </div>
                   <div className="text-left">
-                    <span className="font-medium text-gray-900 group-hover/btn:text-green-700 transition-colors duration-300">Create Ticket</span>
+                    <span className="font-medium text-gray-900 group-hover/btn:text-emerald-700 transition-colors duration-300">Create Ticket</span>
                     <p className="text-xs text-gray-600">Get support</p>
                   </div>
                 </Button>
               </Link>
               <Link to="/customer/orders">
-                <Button variant="outline" className="group/btn w-full h-16 justify-start px-4 border-gray-300 hover:border-amber-400 hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/20">
+                <Button variant="outline" className="group/btn w-full h-16 justify-start px-4 bg-white/90 backdrop-blur-sm border-slate-300 hover:border-amber-400 hover:bg-white hover:shadow-lg hover:shadow-amber-500/20 transition-all duration-300">
                   <div className="p-2 bg-gradient-to-br from-amber-100 to-orange-100 rounded-lg mr-3 group-hover/btn:scale-110 transition-transform duration-300">
                     <TrendingUp className="h-4 w-4 text-amber-600" />
                   </div>
@@ -398,7 +384,8 @@ export const CustomerDashboard = () => {
         {/* Recent Activity */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Recent Orders */}
-          <Card className="border border-gray-200">
+          <Card className="group relative overflow-hidden bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 border-2 border-indigo-200/50 shadow-xl hover:shadow-2xl hover:shadow-indigo-500/20 transition-all duration-300 hover:-translate-y-1 hover:scale-105">
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
             <CardHeader className="flex flex-row items-center justify-between pb-4">
               <div>
                 <CardTitle className="text-lg font-semibold text-gray-900">Recent Orders</CardTitle>
@@ -408,21 +395,21 @@ export const CustomerDashboard = () => {
                 onClick={() => navigate('/customer/orders')}
                 variant="outline"
                 size="sm"
-                className="text-blue-600 hover:text-blue-800 border-blue-300 hover:border-blue-400 hover:bg-blue-50 transition-all duration-300"
+                className="text-indigo-600 hover:text-indigo-800 border-indigo-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all duration-300"
               >
                 View More <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {recentOrders.map((order) => (
                   <div
                     key={order.id}
-                    className="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-150"
+                    className="flex items-center justify-between p-4 rounded-lg border-2 border-slate-200 bg-white/90 shadow-sm hover:bg-slate-50/80 hover:border-slate-300 hover:shadow-md transition-all duration-200"
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <ShoppingBag className="h-4 w-4 text-blue-600" />
+                      <div className="p-2 bg-indigo-100 rounded-lg border border-indigo-200">
+                        <ShoppingBag className="h-4 w-4 text-indigo-600" />
                       </div>
                       <div>
                         <p className="font-medium text-gray-900 text-sm">{order.id}</p>
@@ -435,7 +422,7 @@ export const CustomerDashboard = () => {
                         </p>
                       </div>
                     </div>
-                    <Badge className={`${getStatusColor(order.status)} text-xs font-medium`}>
+                    <Badge className={`${getStatusColor(order.status)} text-xs font-medium border-2`}>
                       {order.status}
                     </Badge>
                   </div>
@@ -445,7 +432,8 @@ export const CustomerDashboard = () => {
           </Card>
 
           {/* Recent Tickets */}
-          <Card className="border border-gray-200">
+          <Card className="group relative overflow-hidden bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 border-2 border-indigo-200/50 shadow-xl hover:shadow-2xl hover:shadow-indigo-500/20 transition-all duration-300 hover:-translate-y-1 hover:scale-105">
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
             <CardHeader className="flex flex-row items-center justify-between pb-4">
               <div>
                 <CardTitle className="text-lg font-semibold text-gray-900">Recent Tickets</CardTitle>
@@ -455,19 +443,19 @@ export const CustomerDashboard = () => {
                 onClick={() => navigate('/customer/tickets')}
                 variant="outline"
                 size="sm"
-                className="text-blue-600 hover:text-blue-800 border-blue-300 hover:border-blue-400 hover:bg-blue-50 transition-all duration-300"
+                className="text-indigo-600 hover:text-indigo-800 border-indigo-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all duration-300"
               >
                 View All <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {recentTickets.map((ticket) => (
                   <Link key={ticket.id} to={`/customer/tickets/${ticket.id}`}>
-                    <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-150">
+                    <div className="flex items-center justify-between p-4 rounded-lg border-2 border-slate-200 bg-white/90 shadow-sm hover:bg-slate-50/80 hover:border-slate-300 hover:shadow-md transition-all duration-200">
                       <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-purple-100 rounded-lg">
-                          <Ticket className="h-4 w-4 text-purple-600" />
+                        <div className="p-2 bg-violet-100 rounded-lg border border-violet-200">
+                          <Ticket className="h-4 w-4 text-violet-600" />
                         </div>
                         <div>
                           <p className="font-medium text-gray-900 text-sm">{ticket.subject}</p>
@@ -478,7 +466,7 @@ export const CustomerDashboard = () => {
                           </p>
                         </div>
                       </div>
-                      <Badge className={`${getStatusColor(ticket.status)} text-xs font-medium`}>
+                      <Badge className={`${getStatusColor(ticket.status)} text-xs font-medium border-2`}>
                         {ticket.status}
                       </Badge>
                     </div>

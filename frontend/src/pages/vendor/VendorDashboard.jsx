@@ -99,7 +99,13 @@ const VendorDashboard = React.memo(() => {
   }, [recentComplaints]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 relative overflow-hidden">
+      {/* Animated Background Pattern */}
+      <div className="absolute inset-0 opacity-8 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-violet-400/25 via-fuchsia-400/20 to-rose-400/25 animate-pulse"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-blue-300/20 to-indigo-300/20 rounded-full blur-2xl animate-pulse"></div>
+      </div>
+
       <Header />
 
       <div className="container mx-auto px-4 py-8">
@@ -211,7 +217,7 @@ const VendorDashboard = React.memo(() => {
         {/* Date Range Filter */}
         <div className="mb-8">
           <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger className="w-48 bg-white shadow-lg border-0">
+            <SelectTrigger className="w-48 bg-white/95 backdrop-blur-sm shadow-xl border-2 border-gray-300 hover:border-gray-400 transition-all duration-200">
               <SelectValue placeholder="Select date range" />
             </SelectTrigger>
             <SelectContent>
@@ -224,45 +230,47 @@ const VendorDashboard = React.memo(() => {
 
         {/* Enhanced Overview Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 border-blue-400 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border-2">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-red-800">Total Complaints</CardTitle>
-              <AlertTriangle className="h-5 w-5 text-red-600" />
+              <CardTitle className="text-sm font-medium text-white">Total Complaints</CardTitle>
+              <AlertTriangle className="h-5 w-5 text-white" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-red-700 mb-1">{stats.totalComplaintsThisMonth}</div>
+              <div className="text-3xl font-bold text-white mb-1">{stats.totalComplaintsThisMonth}</div>
+              <p className="text-xs text-blue-100">This month</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <Card className="bg-gradient-to-br from-green-500 to-green-600 border-green-400 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border-2">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-green-800">Return Rate</CardTitle>
-              <TrendingUp className="h-5 w-5 text-green-600" />
+              <CardTitle className="text-sm font-medium text-white">Return Rate</CardTitle>
+              <TrendingUp className="h-5 w-5 text-white" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-green-700 mb-1">{stats.overallReturnRate}%</div>
+              <div className="text-3xl font-bold text-white mb-1">{stats.overallReturnRate}%</div>
+              <p className="text-xs text-green-100">Overall performance</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 border-purple-400 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border-2">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-blue-800">Top Issue</CardTitle>
-              <BarChart3 className="h-5 w-5 text-blue-600" />
+              <CardTitle className="text-sm font-medium text-white">Top Issue</CardTitle>
+              <BarChart3 className="h-5 w-5 text-white" />
             </CardHeader>
             <CardContent>
-              <div className="text-sm font-bold text-blue-700 mb-1">{stats.topIssueCategory}</div>
-              <p className="text-xs text-blue-600">Most reported issue</p>
+              <div className="text-sm font-bold text-white mb-1">{stats.topIssueCategory}</div>
+              <p className="text-xs text-purple-100">Most reported issue</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <Card className="bg-gradient-to-br from-orange-500 to-orange-600 border-orange-400 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border-2">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-purple-800">Products</CardTitle>
-              <Package className="h-5 w-5 text-purple-600" />
+              <CardTitle className="text-sm font-medium text-white">Products</CardTitle>
+              <Package className="h-5 w-5 text-white" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-purple-700 mb-1">{stats.totalProducts}</div>
-              <p className="text-xs text-purple-600">Products with Complaints</p>
+              <div className="text-3xl font-bold text-white mb-1">{stats.totalProducts}</div>
+              <p className="text-xs text-orange-100">Products with Complaints</p>
             </CardContent>
           </Card>
         </div>
@@ -379,7 +387,7 @@ const VendorDashboard = React.memo(() => {
                 </TableHeader>
                 <TableBody>
                   {recentComplaints.map((complaint, index) => (
-                    <TableRow key={complaint.id} className={`hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                    <TableRow key={complaint.id} className={`hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-200 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
                       <TableCell className="font-medium text-gray-900 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
@@ -394,19 +402,25 @@ const VendorDashboard = React.memo(() => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={
-                          complaint.severity === 'high' ? 'destructive' :
-                          complaint.severity === 'medium' ? 'default' : 'secondary'
-                        } className="font-medium shadow-sm">
+                        <Badge className={`font-medium px-3 py-1 rounded-md text-xs uppercase tracking-wider border ${
+                          complaint.severity === 'high'
+                            ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+                            : complaint.severity === 'medium'
+                            ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                            : 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+                        }`}>
                           {complaint.severity}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={
-                          complaint.status === 'open' ? 'destructive' :
-                          complaint.status === 'in-progress' ? 'default' : 'secondary'
-                        } className="font-medium shadow-sm">
-                          {complaint.status}
+                        <Badge className={`font-medium px-3 py-1 rounded-md text-xs uppercase tracking-wider border ${
+                          complaint.status === 'open'
+                            ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+                            : complaint.status === 'in-progress'
+                            ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                            : 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+                        }`}>
+                          {complaint.status.replace('-', ' ')}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-gray-600 font-medium">

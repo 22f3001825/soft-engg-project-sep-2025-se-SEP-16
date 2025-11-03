@@ -36,18 +36,17 @@ export const SettingsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 relative overflow-hidden">
       {/* Animated Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-400/20 via-purple-400/20 to-pink-400/20 animate-pulse"></div>
-        <div className="absolute top-10 left-10 w-32 h-32 bg-gradient-to-r from-cyan-300/30 to-blue-300/30 rounded-full blur-xl animate-bounce"></div>
-        <div className="absolute bottom-10 right-10 w-40 h-40 bg-gradient-to-r from-purple-300/30 to-pink-300/30 rounded-full blur-xl animate-pulse"></div>
+      <div className="absolute inset-0 opacity-8 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-violet-400/25 via-fuchsia-400/20 to-rose-400/25 animate-pulse"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-blue-300/20 to-indigo-300/20 rounded-full blur-2xl animate-pulse"></div>
       </div>
 
       <Header />
 
       {/* Header Section */}
-      <div className="relative bg-gradient-to-r from-white via-slate-50 to-gray-50 border-b border-gray-200/50 shadow-sm backdrop-blur-sm">
+      <div className="relative bg-gradient-to-r from-indigo-50 via-purple-50/40 to-pink-50/60 border-b border-indigo-200/50 shadow-sm backdrop-blur-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="text-center animate-fade-in-up">
             <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-900 via-slate-800 to-gray-700 bg-clip-text text-transparent animate-gradient-x">
@@ -58,7 +57,7 @@ export const SettingsPage = () => {
         </div>
       </div>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-6 py-8 space-y-6">
         <div className="mb-8 flex items-center justify-between">
           <div className="animate-fade-in-up">
             <Button onClick={handleSave} size="lg" className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300 group/btn">
@@ -70,7 +69,7 @@ export const SettingsPage = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* General Settings */}
-          <Card className="group relative overflow-hidden bg-gradient-to-br from-white to-gray-50/50 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 border-0 shadow-lg hover:-translate-y-1 animate-fade-in-up">
+          <Card className="group relative overflow-hidden bg-white hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 shadow-lg hover:-translate-y-1 animate-fade-in-up">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <CardHeader className="relative">
               <CardTitle className="flex items-center gap-2">
@@ -79,88 +78,90 @@ export const SettingsPage = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="relative space-y-6">
-              <div>
-                <Label htmlFor="theme" className="flex items-center gap-2">
-                  <Palette className="h-4 w-4 text-purple-600" />
-                  Theme
-                </Label>
-                <Select
-                  value={settings.general.theme}
-                  onValueChange={(value) =>
-                    setSettings({
-                      ...settings,
-                      general: {...settings.general, theme: value}
-                    })
-                  }
-                >
-                  <SelectTrigger className="focus:ring-2 focus:ring-blue-500/20">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="light">Light</SelectItem>
-                    <SelectItem value="dark">Dark</SelectItem>
-                    <SelectItem value="system">System</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="theme" className="flex items-center gap-2 mb-2">
+                    <Palette className="h-4 w-4 text-purple-600" />
+                    Theme
+                  </Label>
+                  <Select
+                    value={settings.general.theme}
+                    onValueChange={(value) =>
+                      setSettings({
+                        ...settings,
+                        general: {...settings.general, theme: value}
+                      })
+                    }
+                  >
+                    <SelectTrigger className="focus:ring-2 focus:ring-blue-500/20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="light">Light</SelectItem>
+                      <SelectItem value="dark">Dark</SelectItem>
+                      <SelectItem value="system">System</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div>
-                <Label htmlFor="timezone" className="flex items-center gap-2">
-                  <Globe className="h-4 w-4 text-green-600" />
-                  Timezone
-                </Label>
-                <Select
-                  value={settings.general.timezone}
-                  onValueChange={(value) =>
-                    setSettings({
-                      ...settings,
-                      general: {...settings.general, timezone: value}
-                    })
-                  }
-                >
-                  <SelectTrigger className="focus:ring-2 focus:ring-blue-500/20">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="UTC-8">Pacific Time (UTC-8)</SelectItem>
-                    <SelectItem value="UTC-5">Eastern Time (UTC-5)</SelectItem>
-                    <SelectItem value="UTC+0">GMT (UTC+0)</SelectItem>
-                    <SelectItem value="UTC+1">Central European Time (UTC+1)</SelectItem>
-                    <SelectItem value="UTC+5:30">India Time (UTC+5:30)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                <div>
+                  <Label htmlFor="timezone" className="flex items-center gap-2 mb-2">
+                    <Globe className="h-4 w-4 text-green-600" />
+                    Timezone
+                  </Label>
+                  <Select
+                    value={settings.general.timezone}
+                    onValueChange={(value) =>
+                      setSettings({
+                        ...settings,
+                        general: {...settings.general, timezone: value}
+                      })
+                    }
+                  >
+                    <SelectTrigger className="focus:ring-2 focus:ring-blue-500/20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="UTC-8">Pacific Time (UTC-8)</SelectItem>
+                      <SelectItem value="UTC-5">Eastern Time (UTC-5)</SelectItem>
+                      <SelectItem value="UTC+0">GMT (UTC+0)</SelectItem>
+                      <SelectItem value="UTC+1">Central European Time (UTC+1)</SelectItem>
+                      <SelectItem value="UTC+5:30">India Time (UTC+5:30)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div>
-                <Label htmlFor="currency" className="flex items-center gap-2">
-                  <span className="text-amber-600">$</span>
-                  Currency
-                </Label>
-                <Select
-                  value={settings.general.currency}
-                  onValueChange={(value) =>
-                    setSettings({
-                      ...settings,
-                      general: {...settings.general, currency: value}
-                    })
-                  }
-                >
-                  <SelectTrigger className="focus:ring-2 focus:ring-blue-500/20">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="USD">USD ($)</SelectItem>
-                    <SelectItem value="EUR">EUR (€)</SelectItem>
-                    <SelectItem value="GBP">GBP (£)</SelectItem>
-                    <SelectItem value="INR">INR (₹)</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div>
+                  <Label htmlFor="currency" className="flex items-center gap-2 mb-2">
+                    <span className="text-amber-600">$</span>
+                    Currency
+                  </Label>
+                  <Select
+                    value={settings.general.currency}
+                    onValueChange={(value) =>
+                      setSettings({
+                        ...settings,
+                        general: {...settings.general, currency: value}
+                      })
+                    }
+                  >
+                    <SelectTrigger className="focus:ring-2 focus:ring-blue-500/20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">USD ($)</SelectItem>
+                      <SelectItem value="EUR">EUR (€)</SelectItem>
+                      <SelectItem value="GBP">GBP (£)</SelectItem>
+                      <SelectItem value="INR">INR (₹)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Notification Settings */}
-          <Card className="group relative overflow-hidden bg-gradient-to-br from-white to-gray-50/50 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 border-0 shadow-lg hover:-translate-y-1 animate-fade-in-up animation-delay-200">
+          <Card className="group relative overflow-hidden bg-white hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 shadow-lg hover:-translate-y-1 animate-fade-in-up animation-delay-200">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <CardHeader className="relative">
               <CardTitle className="flex items-center gap-2">

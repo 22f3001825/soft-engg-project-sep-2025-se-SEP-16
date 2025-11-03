@@ -102,7 +102,13 @@ export const ReturnRefundPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 relative overflow-hidden">
+      {/* Animated Background Pattern */}
+      <div className="absolute inset-0 opacity-8 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-violet-400/25 via-fuchsia-400/20 to-rose-400/25 animate-pulse"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-blue-300/20 to-indigo-300/20 rounded-full blur-2xl animate-pulse"></div>
+      </div>
+
       <Header />
       
       <main className="container mx-auto px-4 py-8 max-w-4xl">
@@ -115,7 +121,7 @@ export const ReturnRefundPage = () => {
           Back to Orders
         </Button>
 
-        <Card>
+        <Card className="bg-white/95 backdrop-blur-sm border-2 border-white/20 shadow-xl">
           <CardHeader>
             <CardTitle className="text-2xl text-center">Return & Refund Request</CardTitle>
           </CardHeader>
@@ -236,7 +242,7 @@ export const ReturnRefundPage = () => {
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold">Review your refund request</h3>
                 
-                <Card className="bg-secondary/50">
+                <Card className="bg-white/95 backdrop-blur-sm border-2 border-white/20 shadow-xl">
                   <CardContent className="pt-6 space-y-4">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Order ID:</span>
