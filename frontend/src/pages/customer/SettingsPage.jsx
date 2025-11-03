@@ -7,7 +7,7 @@ import { Button } from '../../components/ui/button';
 import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Switch } from '../../components/ui/switch';
-import { Save, Download, Settings as SettingsIcon, Bell, Shield, Palette, Globe } from 'lucide-react';
+import { Save, Settings as SettingsIcon, Bell, Palette, Globe } from 'lucide-react';
 
 export const SettingsPage = () => {
   const { user } = useAuth();
@@ -20,12 +20,8 @@ export const SettingsPage = () => {
     notifications: {
       orderUpdates: true,
       refundUpdates: true,
-      newOffers: false,
       supportReplies: true,
       chatbotAlerts: true
-    },
-    privacy: {
-      allowChatbotData: true
     }
   });
 
@@ -57,7 +53,7 @@ export const SettingsPage = () => {
             <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-900 via-slate-800 to-gray-700 bg-clip-text text-transparent animate-gradient-x">
               Account Settings
             </h1>
-            <p className="text-gray-600 mt-1 text-base animate-fade-in-up animation-delay-200">Customize your account preferences and privacy settings</p>
+            <p className="text-gray-600 mt-1 text-base animate-fade-in-up animation-delay-200">Customize your account preferences</p>
           </div>
         </div>
       </div>
@@ -210,23 +206,7 @@ export const SettingsPage = () => {
                   />
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50/50 to-pink-50/50 rounded-lg border border-purple-100">
-                  <div>
-                    <Label htmlFor="new-offers" className="font-medium text-gray-900">New Offers</Label>
-                    <p className="text-sm text-muted-foreground">Receive promotional offers and discounts</p>
-                  </div>
-                  <Switch
-                    id="new-offers"
-                    checked={settings.notifications.newOffers}
-                    onCheckedChange={(checked) =>
-                      setSettings({
-                        ...settings,
-                        notifications: {...settings.notifications, newOffers: checked}
-                      })
-                    }
-                    className="data-[state=checked]:bg-purple-600"
-                  />
-                </div>
+
 
                 <div className="flex items-center justify-between p-4 bg-gradient-to-r from-amber-50/50 to-orange-50/50 rounded-lg border border-amber-100">
                   <div>
@@ -267,52 +247,7 @@ export const SettingsPage = () => {
             </CardContent>
           </Card>
 
-          {/* Privacy Settings */}
-          <Card className="group relative overflow-hidden bg-gradient-to-br from-white to-gray-50/50 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 border-0 shadow-lg hover:-translate-y-1 animate-fade-in-up animation-delay-400 lg:col-span-2">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <CardHeader className="relative">
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-red-600" />
-                Privacy Settings
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="relative space-y-6">
-              <div className="flex items-center justify-between p-6 bg-gradient-to-r from-red-50/50 to-pink-50/50 rounded-lg border border-red-100">
-                <div>
-                  <Label htmlFor="chatbot-data" className="font-medium text-gray-900">Allow Chatbot Data Usage</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Allow the AI assistant to use your conversation data to improve responses
-                  </p>
-                </div>
-                <Switch
-                  id="chatbot-data"
-                  checked={settings.privacy.allowChatbotData}
-                  onCheckedChange={(checked) =>
-                    setSettings({
-                      ...settings,
-                      privacy: {...settings.privacy, allowChatbotData: checked}
-                    })
-                  }
-                  className="data-[state=checked]:bg-red-600"
-                />
-              </div>
 
-              <div className="pt-4 border-t border-gray-200">
-                <div className="flex items-center justify-between p-6 bg-gradient-to-r from-gray-50/50 to-slate-50/50 rounded-lg border border-gray-100">
-                  <div>
-                    <Label className="font-medium text-gray-900">Data Download</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Download a copy of all your personal data
-                    </p>
-                  </div>
-                  <Button variant="outline" onClick={handleDownloadData} className="border-gray-300 hover:border-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/20 group/btn">
-                    <Download className="h-4 w-4 mr-2 group-hover/btn:scale-110 transition-transform duration-300" />
-                    Download Data
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </main>
 

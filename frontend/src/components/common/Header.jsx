@@ -118,6 +118,19 @@ export const Header = () => {
               </div>
             )}
 
+            {/* Customer Name with Avatar */}
+            {user?.role === 'customer' && (
+              <div className="hidden md:flex items-center space-x-2 px-3 py-1 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                <Avatar className="h-6 w-6">
+                  <AvatarImage src={user?.avatar} alt={user?.name} />
+                  <AvatarFallback className="text-xs bg-green-100 text-green-700">
+                    {user?.name?.charAt(0)?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-sm font-semibold text-green-700">{user?.name}</span>
+              </div>
+            )}
+
             {/* Notifications */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

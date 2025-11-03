@@ -47,8 +47,7 @@ export const ProfilePage = () => {
     ],
     preferences: {
       email: true,
-      whatsapp: false,
-      sms: true
+      whatsapp: false
     }
   });
 
@@ -382,23 +381,7 @@ export const ProfilePage = () => {
                       className="data-[state=checked]:bg-green-600"
                     />
                   </div>
-                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50/50 to-pink-50/50 rounded-lg border border-purple-100">
-                    <div>
-                      <Label htmlFor="sms-pref" className="font-medium text-gray-900">SMS Notifications</Label>
-                      <p className="text-sm text-muted-foreground">Receive updates via SMS</p>
-                    </div>
-                    <Switch
-                      id="sms-pref"
-                      checked={profileData.preferences.sms}
-                      onCheckedChange={(checked) =>
-                        setProfileData({
-                          ...profileData,
-                          preferences: {...profileData.preferences, sms: checked}
-                        })
-                      }
-                      className="data-[state=checked]:bg-purple-600"
-                    />
-                  </div>
+
                 </div>
               </CardContent>
             </Card>
