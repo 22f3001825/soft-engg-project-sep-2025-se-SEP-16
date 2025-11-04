@@ -5,13 +5,15 @@ import { Textarea } from '../../components/ui/textarea';
 import { Button } from '../../components/ui/button';
 import { Switch } from '../../components/ui/switch';
 import { storage } from './utils';
-import { User, Bell, FileText, Save, Settings as SettingsIcon, Mail, Palette } from 'lucide-react';
+import { User, Bell, FileText, Save, Settings as SettingsIcon, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
 const KEY = 'agent.settings';
 
 export const Settings = () => {
   const [settings, setSettings] = React.useState(() => storage.get(KEY, { name: '', signature: '', notifications: true }));
+
+  
 
   const save = () => {
     storage.set(KEY, settings);
@@ -72,7 +74,9 @@ export const Settings = () => {
             </div>
           </CardContent>
         </Card>
+
         
+
         <Card className="shadow-lg border-2 border-accent/10 bg-gradient-to-br from-background to-accent/5">
           <CardHeader className="bg-gradient-to-r from-accent/10 to-transparent border-b">
             <CardTitle className="flex items-center gap-2 text-accent">

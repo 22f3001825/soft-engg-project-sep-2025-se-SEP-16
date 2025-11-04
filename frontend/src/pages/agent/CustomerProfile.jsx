@@ -5,19 +5,23 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Textarea } from '../../components/ui/textarea';
 import { users, orders, tickets } from '../../data/dummyData';
+import { agentCustomers } from './customerData';
 import { User, Mail, Phone, ShoppingBag, MessageSquare, FileText, TrendingUp, Calendar, AlertCircle, CheckCircle2, Clock, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
-const customer = users.supervisor;
 const customerOrders = orders;
-const customerTickets = tickets.filter(t => t.messages[0]?.senderName === customer.name);
-const mainEmail = 'harsh@example.com';
 const mainWhatsApp = '+1 415 555 0198';
 
 export const CustomerProfile = () => {
   const [note, setNote] = useState('');
+  const [selectedCustomerId, setSelectedCustomerId] = useState(null);
 
-  // Dummy Communication History (using ticket messages)
+  const selected = agentCustomers.find(c => c.id === selectedCustomerId) || null;
+  const customer = selected ? { name: selected.name, email: selected.email, avatar: selected.avatar, joinedAt: selected.joinedAt } : null;
+  const customerTickets = customer ? tickets.filter(t => t.messages[0]?.senderName === customer.name) : [];
+  const mainEmail = customer?.email || '';
+
+  // Dummy Communication History
   const commHistory = [
     {
       type: 'Email',
@@ -35,13 +39,48 @@ export const CustomerProfile = () => {
 
   return (
     <div className="flex flex-col gap-8 animate-slide-in-up">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {agentCustomers.map(c => (
+          <button
+            key={c.id}
+            onClick={() => setSelectedCustomerId(c.id)}
+            className={`group relative w-full text-left rounded-xl border-2 transition-all btn-transition overflow-hidden ${
+              c.id === selectedCustomerId
+                ? 'bg-gradient-to-br from-indigo-500 to-cyan-500 border-indigo-300 shadow-lg'
+                : 'bg-white/90 border-slate-200 hover:border-indigo-300 hover:shadow-md'
+            }`}
+          >
+            <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-br from-indigo-500/5 via-purple-500/5 to-cyan-500/5" />
+            <div className="relative p-4 flex items-center gap-3">
+              <Avatar className={`h-10 w-10 ring-2 ${c.id === selectedCustomerId ? 'ring-white' : 'ring-indigo-100'} shadow` }>
+                <AvatarImage src={c.avatar} alt={c.name} />
+                <AvatarFallback className={`${c.id === selectedCustomerId ? 'bg-white/20 text-white' : 'bg-indigo-50 text-indigo-700'} font-semibold`}>
+                  {c.name?.split(' ').map(w=>w[0]).join('')}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <div className={`truncate font-semibold ${c.id === selectedCustomerId ? 'text-white' : 'text-slate-900'}`}>{c.name}</div>
+                <div className={`text-xs ${c.id === selectedCustomerId ? 'text-white/80' : 'text-slate-500'}`}>{c.email}</div>
+              </div>
+              {c.id === selectedCustomerId ? (
+                <Badge className="bg-white/20 text-white border-white/30">Selected</Badge>
+              ) : (
+                <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-indigo-200">Choose</Badge>
+              )}
+            </div>
+          </button>
+        ))}
+      </div>
+      
+      {customer && (
+      <>
       {/* Header */}
       <Card className="relative overflow-hidden border-2 border-primary/20 shadow-xl">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/5 to-transparent"></div>
         <div className="relative p-6 flex flex-col gap-4 md:flex-row items-start md:items-center">
           <div className="relative">
             <Avatar className="h-20 w-20 mr-4 border-4 border-primary/20 shadow-lg">
-              <AvatarImage src="https://randomuser.me/api/portraits/men/32.jpg" alt={customer.name} />
+              <AvatarImage src={customer.avatar} alt={customer.name} />
               <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-xl font-bold">
                 {customer.name.split(' ').map(w=>w[0]).join('')}
               </AvatarFallback>
@@ -59,7 +98,7 @@ export const CustomerProfile = () => {
               </Badge>
               <Badge variant="outline" className="border-primary/30">
                 <Calendar className="h-3 w-3 mr-1" />
-                Member since Mar 12, 1947
+                Member since {customer.joinedAt}
               </Badge>
             </div>
             <div className="flex gap-6 mt-3">
@@ -257,6 +296,8 @@ export const CustomerProfile = () => {
           </CardContent>
         </Card>
       </div>
+      </>
+      )}
     </div>
   );
 };
