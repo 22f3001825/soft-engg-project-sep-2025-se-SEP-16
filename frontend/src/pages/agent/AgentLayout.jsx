@@ -13,20 +13,19 @@ export const AgentLayout = ({ active, onNavigate, actions, children }) => {
     { key: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
     { key: 'ticket', label: 'Ticket Details', icon: FileText },
     { key: 'templates', label: 'Response Templates', icon: FileText },
-    { key: 'comm', label: 'Communication Tools', icon: Mail },
     { key: 'customer', label: 'Customer Profile', icon: IdCard },
     { key: 'settings', label: 'Settings', icon: Settings }
   ];
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="border-b bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50 flex-shrink-0">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 relative overflow-hidden flex flex-col">
+      <header className="border-b border-sky-200/50 bg-gradient-to-r from-sky-50 via-blue-50 to-cyan-50 backdrop-blur supports-[backdrop-filter]:bg-sky-50/95 shadow-md flex-shrink-0">
         <div className="max-w-full mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-md bg-primary/20 flex items-center justify-center">
-              <MessageSquare className="h-4 w-4 text-primary" />
+            <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-indigo-500 via-blue-500 to-cyan-500 flex items-center justify-center shadow-lg">
+              <MessageSquare className="h-4 w-4 text-white" />
             </div>
-            <span className="font-semibold">Intellica — Agent</span>
+            <span className="font-semibold text-sky-900">Intellica — Agent</span>
           </div>
           <div className="flex items-center gap-3">
             {actions}
@@ -44,34 +43,34 @@ export const AgentLayout = ({ active, onNavigate, actions, children }) => {
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        <aside className="w-64 border-r bg-card shadow-lg flex flex-col flex-shrink-0">
+        <aside className="w-64 border-r bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 border-indigo-200/50 border-2 shadow-xl backdrop-blur-sm flex flex-col flex-shrink-0">
           <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
             {items.map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
                 className={cn(
-                  'w-full flex items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium transition-all duration-200',
-                  'hover:bg-accent hover:shadow-md hover:scale-[1.02]',
+                  'w-full flex items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-semibold transition-all duration-200',
+                  'hover:bg-indigo-50/80 hover:shadow-md hover:translate-x-[2px] border border-transparent',
                   active === key 
-                    ? 'bg-primary text-primary-foreground shadow-lg scale-[1.02] border-l-4 border-primary-foreground' 
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'bg-gradient-to-r from-indigo-500 to-cyan-500 text-white shadow-lg border-indigo-300' 
+                    : 'text-slate-600 hover:text-slate-900'
                 )}
                 onClick={() => onNavigate(key)}
               >
                 <div className={cn(
                   'p-1.5 rounded-md transition-colors',
-                  active === key ? 'bg-primary-foreground/20' : 'bg-muted'
+                  active === key ? 'bg-white/20' : 'bg-white'
                 )}>
                   <Icon className={cn(
                     'h-5 w-5',
-                    active === key ? 'text-primary-foreground' : 'text-muted-foreground'
+                    active === key ? 'text-white' : 'text-slate-500'
                   )} />
                 </div>
                 <span className="flex-1">{label}</span>
               </button>
             ))}
           </nav>
-          <div className="p-4 border-t bg-muted/30">
+          <div className="p-4 border-t bg-white/60">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Avatar className="h-6 w-6">
                 <AvatarImage src={user?.avatar} alt={user?.name} />

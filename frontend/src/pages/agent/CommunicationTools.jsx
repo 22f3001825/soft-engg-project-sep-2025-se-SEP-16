@@ -18,10 +18,10 @@ const cannedTemplates = [
   { label: 'Polite closing', text: 'Let us know if there is anything else we can help you with!' },
 ];
 
-export const CommunicationTools = () => {
+export const CommunicationTools = ({ ticketId }) => {
   const [activity, setActivity] = useState(() => storage.get(KEY, []));
   // Email
-  const [email, setEmail] = useState({ to: 'jamie.rivera@example.com', subject: 'Refund Approved — Order ORD-10492', body: '' });
+  const [email, setEmail] = useState({ to: 'jamie.rivera@example.com', subject: 'Refund Approved', body: '' });
   // WhatsApp 
   const [whatsapp, setWhatsapp] = useState({ to: '+1 415 555 0198', body: '' });
   // Compose textareas
@@ -59,19 +59,13 @@ export const CommunicationTools = () => {
               <p className="text-xs text-muted-foreground">Email & WhatsApp integration</p>
             </div>
           </div>
-          <Badge variant="secondary" className="ml-2 bg-primary/10 text-primary border-primary/20">
-            <Clock className="h-3 w-3 mr-1" />
-            Ticket #4031
-          </Badge>
+          {ticketId && (
+            <Badge variant="secondary" className="ml-2 bg-primary/10 text-primary border-primary/20">
+              <Clock className="h-3 w-3 mr-1" />
+              Ticket #{ticketId}
+            </Badge>
+          )}
           <div className="flex-1"></div>
-          <Button size="sm" variant="outline" className="ml-2 hover:bg-primary/10 hover:border-primary/50 hover:text-primary transition-all">
-            <Link2 className="h-3 w-3 mr-1" />
-            Link to ticket
-          </Button>
-          <Button size="sm" className="ml-1 bg-gradient-to-r from-accent to-accent/80 hover:from-accent/90 hover:to-accent text-white shadow-md">
-            <Activity className="h-3 w-3 mr-1" />
-            Activity
-          </Button>
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
