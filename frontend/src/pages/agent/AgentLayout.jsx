@@ -22,10 +22,13 @@ export const AgentLayout = ({ active, onNavigate, actions, children }) => {
       <header className="border-b border-sky-200/50 bg-gradient-to-r from-sky-50 via-blue-50 to-cyan-50 backdrop-blur supports-[backdrop-filter]:bg-sky-50/95 shadow-md flex-shrink-0">
         <div className="max-w-full mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-indigo-500 via-blue-500 to-cyan-500 flex items-center justify-center shadow-lg">
-              <MessageSquare className="h-4 w-4 text-white" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent">
+              <span className="text-xl font-bold text-primary-foreground">I</span>
             </div>
-            <span className="font-semibold text-sky-900">Intellica — Agent</span>
+            <div className="flex flex-col">
+              <span className="text-lg font-bold leading-none text-foreground">Intellica</span>
+              <span className="text-xs text-muted-foreground">Agent Portal</span>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             {actions}
