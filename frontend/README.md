@@ -25,7 +25,7 @@ yarn build
 
 ## Demo Credentials
 
-You can use the following credentials to log in:
+Select the desired role from the dropdown in the login form, then use one of the following credentials:
 
 * **Customer**
 
