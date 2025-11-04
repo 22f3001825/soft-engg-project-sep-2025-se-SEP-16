@@ -116,11 +116,8 @@ export const Header = () => {
             } 
             className="flex items-center space-x-3 group"
           >
-            <div className={`relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${getRoleGradient()} shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105`}>
-              <Sparkles className="h-5 w-5 text-white absolute animate-pulse" />
-              <span className="text-xl font-bold text-white relative z-10">
-                I
-              </span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent">
+              <span className="text-xl font-bold text-primary-foreground">I</span>
             </div>
             <div className="flex flex-col">
               <span className="text-lg font-bold leading-none text-sky-900 group-hover:text-sky-700 transition-colors">
