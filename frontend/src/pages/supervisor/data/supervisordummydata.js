@@ -1,6 +1,8 @@
-// SUPERVISOR PORTAL DUMMY DATA
+// ================================
+// 🔹 SUPERVISOR PORTAL DUMMY DATA
+// ================================
 
-// 🔹 Supervisor Profile
+// 🔸 Supervisor Profile
 export const supervisor = {
   email: "supervisor@intellica.com",
   password: "supervisor123",
@@ -8,120 +10,203 @@ export const supervisor = {
   role: "supervisor",
 };
 
-// 🔹 Dashboard Overview
+// 🔸 Dashboard Overview
 export const dashboardStats = [
   {
     title: "Total Tickets",
-    value: 320,
+    value: 420,
     icon: "BarChart3",
     color: "text-primary",
     bgColor: "bg-primary/10",
   },
   {
     title: "Avg Resolution Time",
-    value: "2h 10m",
+    value: "1h 45m",
     icon: "Activity",
     color: "text-accent",
     bgColor: "bg-accent/10",
   },
   {
-    title: "CSAT Score",
-    value: "94%",
+    title: "Avg Customer Rating",
+    value: "4.7/5",
     icon: "TrendingUp",
     color: "text-success",
     bgColor: "bg-success-light",
   },
   {
     title: "Fraud Prevention",
-    value: "$18,540",
+    value: "Rs.24,830",
     icon: "CheckCircle2",
     color: "text-warning",
     bgColor: "bg-warning-light",
   },
 ];
 
-// 🔹 Ticket Summary Chart Data
+// 🔸 Ticket Summary Chart Data
 export const ticketChartData = [
-  { name: "Resolved", value: 60 },
-  { name: "Pending", value: 25 },
-  { name: "Escalated", value: 15 },
+  { name: "Open", value: 80 },
+  { name: "Assigned", value: 100 },
+  { name: "Resolved", value: 160 },
+  { name: "Closed", value: 80 },
 ];
 
-// 🔹 Alerts
+// 🔸 Alerts
 export const alerts = [
-  { id: 1, message: "Refund surge detected in Asia region", type: "critical" },
-  { id: 2, message: "High response delay on weekend shifts", type: "warning" },
+  { id: 1, message: "High refund requests detected this week", type: "critical" },
+  { id: 2, message: "Average response time exceeded 3 hours yesterday", type: "warning" },
 ];
 
-// 🔹 Team Performance
+// 🔸 Team Performance
 export const teamPerformance = [
-  { name: "Alex Morgan", solved: 124, avg: "2h", csat: "95%" },
-  { name: "Jordan Smith", solved: 112, avg: "2.5h", csat: "91%" },
-  { name: "Riya Patel", solved: 98, avg: "1.8h", csat: "97%" },
-  { name: "Priya Shah", solved: 106, avg: "2.2h", csat: "92%" },
+  { name: "Alex Morgan", solved: 142, avg: "1.8h" },
+  { name: "Jordan Smith", solved: 128, avg: "2.2h" },
+  { name: "Riya Patel", solved: 117, avg: "1.9h" },
+  { name: "Priya Shah", solved: 109, avg: "2.0h" },
 ];
 
-// 🔹 Agents and Tickets (linked by ticket IDs)
+// 🔸 Agents and Tickets
 export const agents = [
   {
     name: "Alex Morgan",
     status: "Online",
-    tickets: [1, 2, 3, 4, 5],
-    rating: 4.9,
-    csat: "95%",
+    tickets: [1, 2, 3, 4, 5, 6],
+    rating: 4.8,
+    solved: 142,
+    avgTime: "1.8h",
   },
   {
     name: "Priya Shah",
     status: "Away",
-    tickets: [6, 7, 8, 9],
-    rating: 4.2,
-    csat: "90%",
+    tickets: [7, 8, 9, 10],
+    rating: 4.3,
+    solved: 109,
+    avgTime: "2.0h",
   },
   {
     name: "Jordan Smith",
     status: "Busy",
-    tickets: [10, 11, 12, 13, 14],
-    rating: 3.5,
-    csat: "93%",
+    tickets: [11, 12, 13, 14, 15],
+    rating: 3.9,
+    solved: 128,
+    avgTime: "2.2h",
   },
   {
     name: "Riya Patel",
     status: "Online",
-    tickets: [15, 16, 17, 18, 19, 20],
-    rating: 2.9,
-    csat: "96%",
+    tickets: [16, 17, 18, 19, 20],
+    rating: 4.5,
+    solved: 117,
+    avgTime: "1.9h",
+  },
+  {
+    name: "Aarav Mehta",
+    status: "Online",
+    tickets: [21, 22, 23],
+    rating: 4.1,
+    solved: 95,
+    avgTime: "2.1h",
+  },
+  {
+    name: "Rahul Verma",
+    status: "Offline",
+    tickets: [],
+    rating: 2.8,
+    solved: 78,
+    avgTime: "2.5h",
   },
 ];
 
-// 🔹 Escalations (linked directly with ticket IDs and agent names)
+// 🔸 Escalations
 export const escalations = [
   { id: 1, customer: "Maria Gomez", reason: "Duplicate Charge", agent: "Priya Shah" },
   { id: 2, customer: "John Lee", reason: "Refund Delay", agent: "Alex Morgan" },
   { id: 3, customer: "Sara Khan", reason: "Incorrect Billing", agent: "Jordan Smith" },
   { id: 4, customer: "Marie", reason: "Payment Failure", agent: "Riya Patel" },
-  { id: 5, customer: "Gomez", reason: "Delayed Refund", agent: "Alex Morgan" },
-  { id: 6, customer: "Rohit", reason: "Incorrect Billing", agent: "Jordan Smith" },
-  { id: 7, customer: "Aarav", reason: "Duplicate Payment", agent: "Priya Shah" },
-  { id: 8, customer: "Nina", reason: "Late Delivery", agent: "Riya Patel" },
-  { id: 9, customer: "Krishna", reason: "Refund Not Processed", agent: "Priya Shah" },
-  { id: 10, customer: "Vikram", reason: "Item Not Delivered", agent: "Jordan Smith" },
-  { id: 11, customer: "Ananya", reason: "Incorrect Item Sent", agent: "Riya Patel" },
-  { id: 12, customer: "Liam", reason: "Product Damage", agent: "Alex Morgan" },
-  { id: 13, customer: "Esha", reason: "Warranty Claim", agent: "Priya Shah" },
-  { id: 14, customer: "Noah", reason: "Partial Refund Issue", agent: "Jordan Smith" },
-  { id: 15, customer: "Meera", reason: "Subscription Cancel Issue", agent: "Riya Patel" },
-  { id: 16, customer: "Karan", reason: "Fraudulent Charge", agent: "Alex Morgan" },
-  { id: 17, customer: "Aditi", reason: "Account Access Issue", agent: "Jordan Smith" },
-  { id: 18, customer: "Sam", reason: "Double Delivery", agent: "Riya Patel" },
-  { id: 19, customer: "Neha", reason: "Missing Accessories", agent: "Priya Shah" },
-  { id: 20, customer: "Ravi", reason: "Late Refund", agent: "Alex Morgan" },
+  { id: 5, customer: "Aarav Mehta", reason: "Late Refund", agent: "Alex Morgan" },
+  { id: 6, customer: "Rohit Sharma", reason: "Incorrect Billing", agent: "Jordan Smith" },
+  { id: 7, customer: "Nina Patel", reason: "Delayed Response", agent: "Priya Shah" },
+  { id: 8, customer: "Vikram Nair", reason: "Item Not Delivered", agent: "Riya Patel" },
+  { id: 9, customer: "Ananya Verma", reason: "Incorrect Item Sent", agent: "Jordan Smith" },
+  { id: 10, customer: "Esha Bansal", reason: "Warranty Claim Delay", agent: "Priya Shah" },
 ];
 
-// 🔹 Settings Configuration
+// 🔸 Customers (linked with escalations)
+export const customers = [
+  {
+    name: "Maria Gomez",
+    status: "Active",
+    totalOrders: 12,
+    totalTickets: 2,
+    activeTickets: 1,
+  },
+  {
+    name: "John Lee",
+    status: "Active",
+    totalOrders: 8,
+    totalTickets: 1,
+    activeTickets: 0,
+  },
+  {
+    name: "Sara Khan",
+    status: "Active",
+    totalOrders: 14,
+    totalTickets: 1,
+    activeTickets: 0,
+  },
+  {
+    name: "Marie",
+    status: "Active",
+    totalOrders: 6,
+    totalTickets: 1,
+    activeTickets: 1,
+  },
+  {
+    name: "Aarav Mehta",
+    status: "Active",
+    totalOrders: 10,
+    totalTickets: 2,
+    activeTickets: 1,
+  },
+  {
+    name: "Rohit Sharma",
+    status: "Active",
+    totalOrders: 9,
+    totalTickets: 1,
+    activeTickets: 0,
+  },
+  {
+    name: "Nina Patel",
+    status: "Active",
+    totalOrders: 7,
+    totalTickets: 1,
+    activeTickets: 1,
+  },
+  {
+    name: "Vikram Nair",
+    status: "Active",
+    totalOrders: 15,
+    totalTickets: 1,
+    activeTickets: 0,
+  },
+  {
+    name: "Ananya Verma",
+    status: "Active",
+    totalOrders: 11,
+    totalTickets: 1,
+    activeTickets: 0,
+  },
+  {
+    name: "Esha Bansal",
+    status: "Active",
+    totalOrders: 9,
+    totalTickets: 1,
+    activeTickets: 1,
+  },
+];
+
+// 🔸 Settings Configuration
 export const settings = {
-  autoRefundLimit: 150,
+  autoRefundLimit: 200,
   workingHours: "09:00 - 18:00",
-  teamAccess: true,
-  fraudChecks: true,
-  csatSurveys: true,
+  autoAssignTickets: true,
 };

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "../../components/common/Supervisor_header";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
@@ -8,94 +8,148 @@ import {
   Activity,
   TrendingUp,
   CheckCircle2,
-  AlertTriangle,
   ArrowRight,
-  Users,
 } from "lucide-react";
-import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  Label,
+} from "recharts";
 
-// ✅ Importing shared dummy data
 import {
   supervisor,
   dashboardStats,
   ticketChartData,
-  alerts as dummyAlerts,
-  teamPerformance,
+  agents,
 } from "./data/supervisordummydata";
 
 const ICONS = { BarChart3, Activity, TrendingUp, CheckCircle2 };
-const COLORS = ["#4ade80", "#60a5fa", "#fbbf24"];
+const COLORS = ["#3b82f6", "#facc15", "#22c55e", "#9ca3af"];
 
 export const SupervisorDashboard = () => {
-  const [alerts, setAlerts] = useState(dummyAlerts);
-  const [selectedAlert, setSelectedAlert] = useState(null);
-  const [modalType, setModalType] = useState(null); // 'review' | 'resolve'
+  const [timeRange, setTimeRange] = useState("Last 24 Hours");
+  const [chartData, setChartData] = useState([]);
 
-  // 🔹 Open modal
-  const handleReview = (alert) => {
-    setSelectedAlert(alert);
-    setModalType("review");
+  const updateChartData = (range) => {
+    switch (range) {
+      case "Last 24 Hours":
+        return [
+          { name: "Open", value: 40 },
+          { name: "Assigned", value: 90 },
+          { name: "Resolved", value: 50 },
+          { name: "Closed", value: 20 },
+        ];
+      case "Last 7 Days":
+        return ticketChartData;
+      case "Last 15 Days":
+        return [
+          { name: "Open", value: 50 },
+          { name: "Assigned", value: 150 },
+          { name: "Resolved", value: 100 },
+          { name: "Closed", value: 50 },
+        ];
+      case "Last 30 Days":
+        return [
+          { name: "Open", value: 150 },
+          { name: "Assigned", value: 380 },
+          { name: "Resolved", value: 180 },
+          { name: "Closed", value: 140 },
+        ];
+      default:
+        return ticketChartData;
+    }
   };
 
-  const handleResolvePrompt = (alert) => {
-    setSelectedAlert(alert);
-    setModalType("resolve");
+  useEffect(() => {
+    setChartData(updateChartData("Last 24 Hours"));
+  }, []);
+
+  const handleTimeRangeChange = (value) => {
+    setTimeRange(value);
+    setChartData(updateChartData(value));
   };
 
-  // 🔹 Confirm resolve
-  const handleConfirmResolve = () => {
-    setAlerts((prev) => prev.filter((a) => a.id !== selectedAlert.id));
-    setModalType(null);
-    setSelectedAlert(null);
-  };
+  const totalTickets = chartData.reduce((sum, item) => sum + item.value, 0);
 
-  // 🔹 Close modal
-  const closeModal = () => {
-    setModalType(null);
-    setSelectedAlert(null);
-  };
+  const cardGradients = [
+    "bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200",
+    "bg-gradient-to-br from-teal-50 to-teal-100 border-teal-200",
+    "bg-gradient-to-br from-green-50 to-green-100 border-green-200",
+    "bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200",
+  ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 relative overflow-hidden">
+      {/* ✨ Animated Background — same as Customer Dashboard */}
+      <div className="absolute inset-0 opacity-8 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-violet-400/25 via-fuchsia-400/20 to-rose-400/25 animate-pulse"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-blue-300/20 to-indigo-300/20 rounded-full blur-2xl animate-pulse"></div>
+      </div>
+
       <Header />
 
-      <main className="container mx-auto px-4 py-8 space-y-8">
-        {/* Welcome Section */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between animate-slide-in-up">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-              Welcome back, {supervisor.name}!
-            </h1>
-            <p className="text-muted-foreground">
-              Here’s your team’s performance and system health overview.
-            </p>
+      <main className="container mx-auto px-4 py-8 space-y-8 relative z-10">
+        {/* ---------- Welcome Section ---------- */}
+        <div className="relative bg-gradient-to-r from-indigo-50 via-purple-50/40 to-pink-50/60 border border-gray-200 shadow-lg backdrop-blur-sm p-6 rounded-xl overflow-hidden">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 bg-clip-text text-transparent drop-shadow-sm">
+                Welcome back, {supervisor.name}!
+              </h1>
+              <p className="text-gray-600 text-base mt-2 font-medium">
+                Here’s your team’s performance and ticket insights at a glance.
+              </p>
+            </div>
+            <div className="hidden md:block absolute right-10 top-2 opacity-10 text-[10rem] font-bold select-none">
+              📊
+            </div>
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        {/* ---------- Stats Cards ---------- */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {dashboardStats.map((stat, index) => {
             const Icon = ICONS[stat.icon];
             return (
               <Card
                 key={index}
-                className="hover:shadow-lg transition cursor-pointer group animate-slide-in-up"
-                style={{ animationDelay: `${index * 0.1}s` }}
+                className={`${cardGradients[index]} shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border rounded-xl`}
               >
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">
+                      <p className="text-sm font-medium text-gray-700">
                         {stat.title}
                       </p>
-                      <p className="text-3xl font-bold text-foreground">
+                      <p
+                        className={`text-3xl font-bold mt-1 ${
+                          [
+                            "text-blue-700",
+                            "text-teal-700",
+                            "text-green-700",
+                            "text-amber-700",
+                          ][index]
+                        }`}
+                      >
                         {stat.value}
                       </p>
                     </div>
                     <div
-                      className={`h-12 w-12 rounded-lg ${stat.bgColor} flex items-center justify-center group-hover:scale-110 transition`}
+                      className={`h-12 w-12 rounded-xl bg-white/90 flex items-center justify-center shadow-md`}
                     >
-                      <Icon className={`h-6 w-6 ${stat.color}`} />
+                      <Icon
+                        className={`h-6 w-6 ${
+                          [
+                            "text-blue-600",
+                            "text-teal-600",
+                            "text-green-600",
+                            "text-amber-600",
+                          ][index]
+                        }`}
+                      />
                     </div>
                   </div>
                 </CardContent>
@@ -104,190 +158,150 @@ export const SupervisorDashboard = () => {
           })}
         </div>
 
-        {/* Team Performance & Chart */}
+        {/* ---------- Team Performance & Ticket Chart ---------- */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Team Performance */}
-          <Card className="animate-slide-in-up">
+          {/* ---------- Team Performance ---------- */}
+          <Card className="bg-white/90 border-0 shadow-lg rounded-xl hover:shadow-xl transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-xl">Team Performance</CardTitle>
+              <CardTitle className="text-lg font-semibold text-gray-800">
+                Team Performance
+              </CardTitle>
               <Link to="/supervisor/team_management">
-                <Button variant="ghost" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-indigo-400 text-indigo-700 font-medium hover:text-white hover:bg-gradient-to-r hover:from-indigo-600 hover:to-blue-700 shadow-sm hover:shadow-md transition-all duration-300"
+                >
                   View Team <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {teamPerformance.map((member) => (
+
+            <CardContent className="pb-4">
+              <div className="space-y-3">
+                {agents.map((member) => (
                   <div
                     key={member.name}
-                    className="flex items-center justify-between p-4 rounded-lg border hover:bg-secondary transition"
+                    className="flex items-center justify-between p-4 rounded-lg border bg-gradient-to-r from-gray-50 to-white hover:from-blue-50 hover:to-indigo-50 transition-all"
                   >
                     <div className="flex items-center space-x-3 flex-1">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center font-semibold text-primary">
+                      <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center font-semibold text-indigo-700 shadow-sm">
                         {member.name.charAt(0)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground truncate">
+                        <p className="font-medium text-gray-800 truncate">
                           {member.name}
                         </p>
-                        <p className="text-sm text-muted-foreground">
-                          Solved: {member.solved} | Avg: {member.avg} | CSAT:{" "}
-                          {member.csat}
+                        <p className="text-sm text-gray-500">
+                          Solved: {member.solved} | Avg Time: {member.avgTime}
                         </p>
                       </div>
                     </div>
+                    <span
+                      className={`text-sm font-medium ${
+                        member.status === "Online"
+                          ? "text-green-600"
+                          : member.status === "Busy"
+                          ? "text-orange-600"
+                          : "text-gray-500"
+                      }`}
+                    >
+                      {member.status}
+                    </span>
                   </div>
                 ))}
               </div>
             </CardContent>
           </Card>
 
-          {/* Ticket Chart */}
-          <Card className="animate-slide-in-up">
-            <CardHeader>
-              <CardTitle className="text-xl">Ticket Volume (7 days)</CardTitle>
+          {/* ---------- Ticket Volume ---------- */}
+          <Card className="bg-white/90 border-0 shadow-lg rounded-xl hover:shadow-xl transition-all duration-300">
+            <CardHeader className="flex flex-row items-center justify-between pb-0">
+              <CardTitle className="text-lg font-semibold text-gray-800">
+                Ticket Volume
+              </CardTitle>
+              <select
+                value={timeRange}
+                onChange={(e) => handleTimeRangeChange(e.target.value)}
+                className="border rounded-md p-2 text-sm bg-white shadow-sm focus:outline-none text-gray-700"
+              >
+                <option>Last 24 Hours</option>
+                <option>Last 7 Days</option>
+                <option>Last 15 Days</option>
+                <option>Last 30 Days</option>
+              </select>
             </CardHeader>
-            <CardContent>
-              <div className="h-64">
+
+            <CardContent className="pt-2 pb-0">
+              <div className="relative w-full h-[400px] flex items-center justify-center -mb-2">
                 <ResponsiveContainer>
-                  <PieChart>
+                  <PieChart margin={{ top: 0, bottom: 0 }}>
                     <Pie
-                      data={ticketChartData}
+                      data={chartData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
+                      innerRadius={90}
+                      outerRadius={130}
+                      paddingAngle={5}
                       dataKey="value"
+                      labelLine={false}
                       label={({ name, value }) => `${name}: ${value}`}
                     >
-                      {ticketChartData.map((entry, index) => (
+                      {chartData.map((entry, index) => (
                         <Cell
                           key={`cell-${index}`}
                           fill={COLORS[index % COLORS.length]}
+                          stroke="#fff"
+                          strokeWidth={2}
                         />
                       ))}
+                      <Label
+                        value={`Total\n${totalTickets}`}
+                        position="center"
+                        style={{
+                          fontSize: "18px",
+                          fontWeight: "600",
+                          fill: "#1e3b2eff",
+                          textAnchor: "middle",
+                          whiteSpace: "pre-line",
+                        }}
+                      />
                     </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#24d7a7ff",
+                        color: "#f8fafc",
+                        borderRadius: "10px",
+                        border: "1px solid #475569",
+                      }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center -mt-2 pb-3">
+                {chartData.map((item, index) => (
+                  <div
+                    key={item.name}
+                    className="flex flex-col items-center justify-center bg-white border rounded-lg py-2 hover:shadow-md transition"
+                  >
+                    <div
+                      className="w-3 h-3 rounded-full mb-1"
+                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                    ></div>
+                    <p className="text-xs font-medium text-gray-600">
+                      {item.name}
+                    </p>
+                    <p className="text-base font-bold text-gray-900">
+                      {item.value}
+                    </p>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
         </div>
-
-        {/* Alerts Section */}
-        <Card className="animate-slide-in-up">
-          <CardHeader>
-            <CardTitle className="text-xl">Urgent Alerts</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {alerts.length > 0 ? (
-                alerts.map((alert) => (
-                  <div
-                    key={alert.id}
-                    className={`flex items-center justify-between p-4 rounded-lg ${
-                      alert.type === "critical"
-                        ? "bg-destructive/10 text-destructive"
-                        : "bg-warning/10 text-warning"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle className="h-5 w-5" />
-                      <span>{alert.message}</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="hover:bg-primary hover:text-primary-foreground transition"
-                        onClick={() => handleReview(alert)}
-                      >
-                        Review
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="hover:bg-destructive hover:text-destructive-foreground transition"
-                        onClick={() => handleResolvePrompt(alert)}
-                      >
-                        Resolve
-                      </Button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-muted-foreground text-center py-4">
-                  🎉 All alerts have been reviewed or resolved.
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* ---------- MODALS ---------- */}
-        {modalType && selectedAlert && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-            <div className="bg-white rounded-2xl shadow-lg p-6 w-[90%] md:w-[400px] animate-fade-in text-center">
-              {modalType === "review" && (
-                <>
-                  <h2 className="text-xl font-semibold mb-4">Alert Details</h2>
-                  <p className="text-gray-600 mb-2">
-                    <strong>Type:</strong> {selectedAlert.type.toUpperCase()}
-                  </p>
-                  <p className="text-gray-700 mb-6">{selectedAlert.message}</p>
-                  <div className="flex justify-center gap-4">
-                    <Button
-                      variant="outline"
-                      onClick={closeModal}
-                      className="bg-gray-100 hover:bg-gray-200"
-                    >
-                      Close
-                    </Button>
-                    <Button
-                      className="bg-green-500 hover:bg-green-600 text-white"
-                      onClick={() => {
-                        closeModal();
-                        handleConfirmResolve();
-                      }}
-                    >
-                      Mark Resolved
-                    </Button>
-                  </div>
-                </>
-              )}
-
-              {modalType === "resolve" && (
-                <>
-                  <h2 className="text-xl font-semibold mb-4">
-                    Resolve Alert #{selectedAlert.id}?
-                  </h2>
-                  <p className="text-gray-600 mb-6">
-                    Are you sure you want to resolve this alert?
-                  </p>
-                  <div className="flex justify-center gap-4">
-                    <Button
-                      variant="outline"
-                      onClick={closeModal}
-                      className="bg-gray-100 hover:bg-gray-200"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      className="bg-green-500 hover:bg-green-600 text-white"
-                      onClick={handleConfirmResolve}
-                    >
-                      Confirm
-                    </Button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );
 };
-
-
