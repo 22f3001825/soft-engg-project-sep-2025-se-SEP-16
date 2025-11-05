@@ -13,11 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from '../ui/sheet';
+import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
 
 export const Header = () => {
   const { user, logout } = useAuth();
@@ -31,10 +27,12 @@ export const Header = () => {
     navigate('/login');
   };
 
+  // 🔹 Navbar Links
   const navLinks = [
     { name: 'Dashboard', path: '/supervisor/dashboard' },
     { name: 'Team Management', path: '/supervisor/team_management' },
-    { name: 'Escalations', path: '/supervisor/escalations' },
+    { name: 'Ticket Management', path: '/supervisor/ticket_management' },
+    { name: 'Customer Overview', path: '/supervisor/supervisor_customers' },
   ];
 
   return (
@@ -43,13 +41,13 @@ export const Header = () => {
         <div className="flex h-16 items-center justify-between">
           
           {/* Logo */}
-          <Link to="/customer/dashboard" className="flex items-center space-x-2">
+          <Link to="/supervisor/dashboard" className="flex items-center space-x-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent">
               <span className="text-xl font-bold text-primary-foreground">I</span>
             </div>
             <div className="flex flex-col">
               <span className="text-lg font-bold leading-none text-foreground">Intellica</span>
-              <span className="text-xs text-muted-foreground">Supervisor Dashboard</span>
+              <span className="text-xs text-muted-foreground">Supervisor Portal</span>
             </div>
           </Link>
 
@@ -69,17 +67,7 @@ export const Header = () => {
           {/* Right Section */}
           <div className="flex items-center space-x-4">
 
-            {/* Settings Button with Icon and Label */}
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/supervisor/settings')}
-              className="flex items-center space-x-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md"
-            >
-              <Settings className="h-5 w-5" />
-              <span className="hidden sm:inline text-sm font-medium">Settings</span>
-            </Button>
-
-            {/* Profile Menu */}
+            {/* 🔹 Profile Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center space-x-2 px-2">
@@ -92,6 +80,7 @@ export const Header = () => {
                   <span className="hidden md:block text-sm font-medium">{user?.name}</span>
                 </Button>
               </DropdownMenuTrigger>
+
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>
                   <div className="flex flex-col space-y-1">
@@ -100,12 +89,30 @@ export const Header = () => {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+
+                {/* ✅ Now navigates to profile page */}
+                <DropdownMenuItem
+                  onClick={() => navigate('/supervisor/profile')}
+                  className="cursor-pointer"
+                >
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile</span>
                 </DropdownMenuItem>
+
+                {/* Settings */}
+                <DropdownMenuItem
+                  onClick={() => navigate('/supervisor/settings')}
+                  className="cursor-pointer"
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="text-destructive cursor-pointer"
+                >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Logout</span>
                 </DropdownMenuItem>
@@ -131,7 +138,21 @@ export const Header = () => {
                       {link.name}
                     </Link>
                   ))}
-                  {/* Settings in Mobile Menu */}
+
+                  {/* ✅ Profile (Mobile) */}
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      navigate('/supervisor/profile');
+                      setMobileMenuOpen(false);
+                    }}
+                    className="flex items-center space-x-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md"
+                  >
+                    <User className="h-4 w-4" />
+                    <span>Profile</span>
+                  </Button>
+
+                  {/* Settings (Mobile) */}
                   <Button
                     variant="ghost"
                     onClick={() => {
@@ -152,5 +173,4 @@ export const Header = () => {
     </header>
   );
 };
-
 

@@ -24,8 +24,11 @@ import { AgentDashboard } from './pages/agent/AgentDashboard';
 
 import { SupervisorDashboard } from './pages/supervisor/SupervisorDashboard';
 import { TeamManagement } from './pages/supervisor/TeamManagement';
-import { Escalations } from './pages/supervisor/Escalations';
+import { TicketManagement } from './pages/supervisor/TicketManagement';
+import { SupervisorCustomers } from './pages/supervisor/SupervisorCustomers';
+import { SupervisorProfile } from './pages/supervisor/SupervisorProfile';
 import { Settings } from './pages/supervisor/Settings';
+
 
 import { VendorDashboard } from './pages/vendor/VendorDashboard';
 import AnalyticsDashboard from './pages/vendor/AnalyticsDashboard';
@@ -148,10 +151,26 @@ function App() {
               }
             />
             <Route
-              path="/supervisor/escalations"
+              path="/supervisor/ticket_management"
               element={
                 <ProtectedRoute allowedRoles={['supervisor']}>
-                  <Escalations />
+                  <TicketManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/supervisor/supervisor_customers"
+              element={
+                <ProtectedRoute allowedRoles={['supervisor']}>
+                  <SupervisorCustomers />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/supervisor/profile"
+              element={
+                <ProtectedRoute allowedRoles={['supervisor']}>
+                  <SupervisorProfile />
                 </ProtectedRoute>
               }
             />
