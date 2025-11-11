@@ -5,8 +5,7 @@
 
 ### Prerequisites
 
-- Python 3.8+
-- PostgreSQL database
+- Python 3.8+ (SQLite is included with Python)
 
 ### Setup
 
@@ -30,25 +29,13 @@
    pip install -r requirements.txt
    ```
 
-4. **Set up environment variables**
+4. **Initialize database**
    ```bash
-   cp .env.example .env
-   # Edit .env with your database credentials and other settings
-   ```
-
-5. **Set up database**
-   ```bash
-   # Create PostgreSQL database (adjust command based on your PostgreSQL setup)
-   createdb intellica
-
-   # Or using psql:
-   psql -U postgres -c "CREATE DATABASE intellica;"
-
-   # Initialize database tables
+   # Create database tables automatically
    python -c "from app.database import engine; from app.models.base import Base; Base.metadata.create_all(bind=engine)"
    ```
 
-6. **Run the application**
+5. **Run the application**
    ```bash
    uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
    ```

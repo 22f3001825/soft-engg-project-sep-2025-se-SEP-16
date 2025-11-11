@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, UUID, DECIMAL, Float
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, Float
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import enum
@@ -13,11 +13,11 @@ class ComplaintStatus(str, enum.Enum):
 class Product(Base):
     __tablename__ = "products"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=func.gen_random_uuid())
+    id = Column(String, primary_key=True, default=str(func.gen_random_uuid()))
     vendor_id = Column(Integer, ForeignKey("vendors.user_id"))
     name = Column(String(200))
     category = Column(String(120))
-    price = Column(DECIMAL(10,2))
+    price = Column(Float)
     description = Column(Text)
     total_complaints = Column(Integer, default=0)
     return_rate = Column(Float)
@@ -29,7 +29,7 @@ class ProductComplaint(Base):
     __tablename__ = "product_complaints"
 
     id = Column(Integer, primary_key=True)
-    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id"))
+    product_id = Column(String, ForeignKey("products.id"))
     customer_id = Column(Integer, ForeignKey("customers.user_id"))
     issue = Column(Text)
     severity = Column(String(50))

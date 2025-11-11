@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, UUID, Boolean
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, Boolean
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import enum
@@ -20,7 +20,7 @@ class TicketPriority(str, enum.Enum):
 class Ticket(Base):
     __tablename__ = "tickets"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(String, primary_key=True, default=str(func.gen_random_uuid()))
     customer_id = Column(Integer, ForeignKey("customers.user_id"))
     agent_id = Column(Integer, ForeignKey("agents.user_id"))
     subject = Column(String(255))
@@ -36,8 +36,8 @@ class Ticket(Base):
 class Message(Base):
     __tablename__ = "messages"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    ticket_id = Column(Integer, ForeignKey("tickets.id"), nullable=False)
+    id = Column(String, primary_key=True, default=str(func.gen_random_uuid()))
+    ticket_id = Column(String, ForeignKey("tickets.id"), nullable=False)
     sender_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     sender_name = Column(String(120))
     content = Column(Text)
@@ -50,8 +50,8 @@ class Message(Base):
 class Attachment(Base):
     __tablename__ = "attachments"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    message_id = Column(Integer, ForeignKey("messages.id"), nullable=False)
+    id = Column(String, primary_key=True, default=str(func.gen_random_uuid()))
+    message_id = Column(String, ForeignKey("messages.id"), nullable=False)
     file_name = Column(String(255))
     file_size = Column(Integer)
     file_type = Column(String(50))

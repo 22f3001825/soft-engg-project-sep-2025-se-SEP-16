@@ -22,8 +22,7 @@ class OrderItem(OrderItemBase):
         from_attributes = True
 
 class OrderBase(BaseModel):
-    order_number: str
-    total_amount: Decimal
+    total: Decimal
 
 class OrderCreate(OrderBase):
     items: List[OrderItemCreate]
@@ -34,7 +33,7 @@ class OrderUpdate(BaseModel):
 class OrderInDBBase(OrderBase):
     id: UUID
     status: OrderStatus
-    customer_id: UUID
+    customer_id: int
     created_at: datetime
     updated_at: Optional[datetime]
 

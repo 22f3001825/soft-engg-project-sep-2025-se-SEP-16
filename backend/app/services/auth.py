@@ -7,11 +7,13 @@ from fastapi import HTTPException, status
 from datetime import timedelta
 from jose import JWTError, jwt
 
-def authenticate_user(db: Session, email: str, password: str):
+def authenticate_user(db: Session, email: str, password: str, role: str = None):
     user = db.query(User).filter(User.email == email).first()
     if not user:
         return False
     if not verify_password(password, user.password):
+        return False
+    if role and user.role.value != role.upper():
         return False
     return user
 
@@ -47,6 +49,6 @@ def get_current_user(db: Session, token: str):
 def create_access_token_for_user(user: User):
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.email}, expires_delta=access_token_expires
+        subject=user.email, expires_delta=access_token_expires
     )
     return access_token

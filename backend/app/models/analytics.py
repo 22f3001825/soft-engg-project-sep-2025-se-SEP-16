@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, UUID, DECIMAL, Float, JSON, Boolean
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, Float, JSON, Boolean
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import enum
@@ -38,7 +38,7 @@ class SupervisorMetrics(Base):
 class ProductMetrics(Base):
     __tablename__ = "product_metrics"
 
-    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id"), primary_key=True)
+    product_id = Column(String, ForeignKey("products.id"), primary_key=True)
     sales_count = Column(Integer)
     complaint_rate = Column(Float)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
