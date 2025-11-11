@@ -38,9 +38,9 @@ export const LoginPage = () => {
     setError('');
     setIsLoading(true);
 
-    setTimeout(() => {
-      const result = login(loginData.email, loginData.password, loginData.role);
-      
+    try {
+      const result = await login(loginData.email, loginData.password, loginData.role);
+
       if (result.success) {
         toast.success('Login successful!');
         // Redirect based on role
@@ -53,41 +53,47 @@ export const LoginPage = () => {
         setError(result.message);
         toast.error(result.message);
       }
+    } catch (error) {
+      setError('Network error. Please try again.');
+      toast.error('Network error. Please try again.');
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   };
 
   const handleSignup = async (e) => {
     e.preventDefault();
     setError('');
-    
+
     if (signupData.password !== signupData.confirmPassword) {
       setError('Passwords do not match');
       toast.error('Passwords do not match');
       return;
     }
-    
+
     setIsLoading(true);
 
-    setTimeout(() => {
-      const result = signup(
+    try {
+      const result = await signup(
         signupData.email,
         signupData.name,
         signupData.password,
         signupData.role
       );
-      
+
       if (result.success) {
-        toast.success('Account created successfully!');
-        // Redirect based on role
-        if (signupData.role === 'customer') {
-          navigate('/customer/dashboard');
-        } else {
-          navigate(`/${signupData.role}/dashboard`);
-        }
+        toast.success('Account created successfully! Please login with your credentials.');
+        // Stay on login page after registration
+      } else {
+        setError(result.message);
+        toast.error(result.message);
       }
+    } catch (error) {
+      setError('Network error. Please try again.');
+      toast.error('Network error. Please try again.');
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   };
 
   return (

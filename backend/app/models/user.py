@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum, Float, Text, ARRAY, JSON, UUID, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum, Float, Text, JSON, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import enum
@@ -54,7 +54,7 @@ class Supervisor(Base):
 
     user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
     team_size = Column(Integer)
-    managed_departments = Column(ARRAY(String))
+    managed_departments = Column(String)
     escalation_level = Column(Integer)
 
     user = relationship("User", back_populates="supervisor_profile")
@@ -65,7 +65,7 @@ class Vendor(Base):
     user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
     company_name = Column(String(150))
     business_license = Column(String(150))
-    product_categories = Column(ARRAY(String))
+    product_categories = Column(String)
     total_products = Column(Integer, default=0)
 
     user = relationship("User", back_populates="vendor_profile")

@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { users } from '../data/dummyData';
 
 const AuthContext = createContext();
 
@@ -18,49 +17,96 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Check if user is logged in (from localStorage)
     const savedUser = localStorage.getItem('intellica_user');
-    if (savedUser) {
+    const token = localStorage.getItem('intellica_token');
+    if (savedUser && token) {
       setUser(JSON.parse(savedUser));
     }
     setLoading(false);
   }, []);
 
-  const login = (email, password, role) => {
-    // Check credentials against dummy data
-    const userKey = Object.keys(users).find(key => 
-      users[key].email === email && 
-      users[key].password === password &&
-      users[key].role === role
-    );
+  const login = async (email, password, role) => {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          username: email,
+          password: password,
+          role: role
+        })
+      });
 
-    if (userKey) {
-      const userData = users[userKey];
-      setUser(userData);
-      localStorage.setItem('intellica_user', JSON.stringify(userData));
-      return { success: true, user: userData };
+      const data = await response.json();
+
+      if (response.ok) {
+        const userData = {
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.full_name,
+          full_name: data.user.full_name,
+          role: data.user.role.toLowerCase(),
+          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.user.full_name}`
+        };
+
+        setUser(userData);
+        localStorage.setItem('intellica_user', JSON.stringify(userData));
+        localStorage.setItem('intellica_token', data.access_token);
+        return { success: true, user: userData };
+      } else {
+        return { success: false, message: data.detail || 'Login failed' };
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      return { success: false, message: 'Network error. Please try again.' };
     }
-    
-    return { success: false, message: 'Invalid credentials' };
   };
 
-  const signup = (email, name, password, role) => {
-    // jab backend use karenge then this would create a new user,
-    // abhi milestone3 ke liye we'll just use the dummy data
-    const newUser = {
-      email,
-      name,
-      password,
-      role,
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`
-    };
-    
-    setUser(newUser);
-    localStorage.setItem('intellica_user', JSON.stringify(newUser));
-    return { success: true, user: newUser };
+  const signup = async (email, name, password, role) => {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          full_name: name,
+          password: password,
+          role: role.toUpperCase()
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        const userData = {
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.full_name,
+          full_name: data.user.full_name,
+          role: data.user.role.toLowerCase(),
+          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.user.full_name}`
+        };
+
+        setUser(userData);
+        localStorage.setItem('intellica_user', JSON.stringify(userData));
+        localStorage.setItem('intellica_token', data.access_token);
+        return { success: true, user: userData };
+      } else {
+        return { success: false, message: data.detail || 'Registration failed' };
+      }
+    } catch (error) {
+      console.error('Signup error:', error);
+      return { success: false, message: 'Network error. Please try again.' };
+    }
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem('intellica_user');
+    localStorage.removeItem('intellica_token');
   };
 
   const value = {

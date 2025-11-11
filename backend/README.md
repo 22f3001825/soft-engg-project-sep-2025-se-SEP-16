@@ -5,8 +5,7 @@
 
 ### Prerequisites
 
-- Python 3.8+
-- PostgreSQL database
+- Python 3.8+ (SQLite is included with Python)
 
 ### Setup
 
@@ -30,21 +29,15 @@
    pip install -r requirements.txt
    ```
 
-4. **Set up environment variables**
+4. **Set up environment variables** (optional)
    ```bash
    cp .env.example .env
-   # Edit .env with your database credentials and other settings
+   # Edit .env if you need to customize settings (database path defaults to ./app/instance/intellica.db)
    ```
 
-5. **Set up database**
+5. **Initialize database**
    ```bash
-   # Create PostgreSQL database (adjust command based on your PostgreSQL setup)
-   createdb intellica
-
-   # Or using psql:
-   psql -U postgres -c "CREATE DATABASE intellica;"
-
-   # Initialize database tables
+   # Create database tables automatically
    python -c "from app.database import engine; from app.models.base import Base; Base.metadata.create_all(bind=engine)"
    ```
 

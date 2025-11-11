@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum, DECIMAL, UUID
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import enum
@@ -15,10 +15,10 @@ class OrderStatus(str, enum.Enum):
 class Order(Base):
     __tablename__ = "orders"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=func.gen_random_uuid())
+    id = Column(String, primary_key=True, default=str(func.gen_random_uuid()))
     customer_id = Column(Integer, ForeignKey("customers.user_id"))
     status = Column(Enum(OrderStatus), nullable=False)
-    total = Column(DECIMAL(10,2))
+    total = Column(Float)
     created_at = Column(DateTime, server_default=func.now())
     tracking_number = Column(String(100))
     estimated_delivery = Column(DateTime)
@@ -29,13 +29,13 @@ class Order(Base):
 class OrderItem(Base):
     __tablename__ = "order_items"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=func.gen_random_uuid())
-    order_id = Column(UUID(as_uuid=True), ForeignKey("orders.id"), nullable=False)
-    product_id = Column(UUID(as_uuid=True))
+    id = Column(String, primary_key=True, default=str(func.gen_random_uuid()))
+    order_id = Column(String, ForeignKey("orders.id"), nullable=False)
+    product_id = Column(String)
     product_name = Column(String(150))
     quantity = Column(Integer)
-    price = Column(DECIMAL(10,2))
-    subtotal = Column(DECIMAL(10,2))
+    price = Column(Float)
+    subtotal = Column(Float)
 
     order = relationship("Order", back_populates="items")
 
