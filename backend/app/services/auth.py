@@ -22,11 +22,14 @@ def create_user(db: Session, user: UserCreate):
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     hashed_password = get_password_hash(user.password)
+    # Generate default avatar URL
+    avatar_url = f"https://api.dicebear.com/7.x/avataaars/svg?seed={user.full_name.replace(' ', '')}"
     db_user = User(
         email=user.email,
         password=hashed_password,
         full_name=user.full_name,
-        role=user.role
+        role=user.role,
+        avatar=avatar_url
     )
     db.add(db_user)
     db.commit()
