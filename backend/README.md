@@ -29,19 +29,13 @@
    pip install -r requirements.txt
    ```
 
-4. **Set up environment variables** (optional)
-   ```bash
-   cp .env.example .env
-   # Edit .env if you need to customize settings (database path defaults to ./app/instance/intellica.db)
-   ```
-
-5. **Initialize database**
+4. **Initialize database**
    ```bash
    # Create database tables automatically
    python -c "from app.database import engine; from app.models.base import Base; Base.metadata.create_all(bind=engine)"
    ```
 
-6. **Run the application**
+5. **Run the application**
    ```bash
    uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
    ```
