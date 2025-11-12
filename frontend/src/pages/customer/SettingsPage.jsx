@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Header } from '../../components/common/Header';
 import { ChatBot } from '../../components/common/ChatBot';
@@ -8,32 +8,52 @@ import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Switch } from '../../components/ui/switch';
 import { Save, Settings as SettingsIcon, Bell, Palette, Globe } from 'lucide-react';
+import { toast } from 'sonner';
+import apiService from '../../services/api';
 
 export const SettingsPage = () => {
   const { user } = useAuth();
   const [settings, setSettings] = useState({
+    notifications: {
+      email: true,
+      order_updates: true,
+      refund_updates: true,
+      support_replies: true
+    },
     general: {
       theme: 'light',
-      timezone: 'UTC-5',
+      timezone: 'UTC+0',
       currency: 'USD'
-    },
-    notifications: {
-      orderUpdates: true,
-      refundUpdates: true,
-      supportReplies: true,
-      chatbotAlerts: true
     }
   });
+  const [loading, setLoading] = useState(true);
 
-  const handleSave = () => {
-    // Save settings logic here
-    console.log('Settings saved:', settings);
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const data = await apiService.getSettings();
+      setSettings(data);
+    } catch (error) {
+      console.error('Failed to fetch settings:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDownloadData = () => {
-    // Download data logic here
-    alert('Data download functionality would be implemented here');
+  const handleSave = async () => {
+    try {
+      await apiService.updateSettings(settings);
+      toast.success('Settings saved successfully!');
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      toast.error('Failed to save settings');
+    }
   };
+
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 relative overflow-hidden">
@@ -60,10 +80,18 @@ export const SettingsPage = () => {
       <main className="container mx-auto px-6 py-8 space-y-6">
         <div className="mb-8 flex items-center justify-between">
           <div className="animate-fade-in-up">
-            <Button onClick={handleSave} size="lg" className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300 group/btn">
+            <Button 
+              onClick={handleSave} 
+              size="lg" 
+              disabled={loading}
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300 group/btn"
+            >
               <Save className="h-5 w-5 mr-2 group-hover/btn:scale-110 transition-transform duration-300" />
-              Save Settings
+              {loading ? 'Loading...' : 'Save Settings'}
             </Button>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            Changes are saved automatically when you toggle settings
           </div>
         </div>
 
@@ -85,7 +113,7 @@ export const SettingsPage = () => {
                     Theme
                   </Label>
                   <Select
-                    value={settings.general.theme}
+                    value={settings.general?.theme || 'light'}
                     onValueChange={(value) =>
                       setSettings({
                         ...settings,
@@ -110,7 +138,7 @@ export const SettingsPage = () => {
                     Timezone
                   </Label>
                   <Select
-                    value={settings.general.timezone}
+                    value={settings.general?.timezone || 'UTC+0'}
                     onValueChange={(value) =>
                       setSettings({
                         ...settings,
@@ -137,7 +165,7 @@ export const SettingsPage = () => {
                     Currency
                   </Label>
                   <Select
-                    value={settings.general.currency}
+                    value={settings.general?.currency || 'USD'}
                     onValueChange={(value) =>
                       setSettings({
                         ...settings,
@@ -173,16 +201,16 @@ export const SettingsPage = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50/50 to-cyan-50/50 rounded-lg border border-blue-100">
                   <div>
-                    <Label htmlFor="order-updates" className="font-medium text-gray-900">Order Updates</Label>
-                    <p className="text-sm text-muted-foreground">Get notified about order status changes</p>
+                    <Label htmlFor="email" className="font-medium text-gray-900">Email Notifications</Label>
+                    <p className="text-sm text-muted-foreground">Receive updates via email</p>
                   </div>
                   <Switch
-                    id="order-updates"
-                    checked={settings.notifications.orderUpdates}
+                    id="email"
+                    checked={settings.notifications?.email || false}
                     onCheckedChange={(checked) =>
                       setSettings({
                         ...settings,
-                        notifications: {...settings.notifications, orderUpdates: checked}
+                        notifications: {...settings.notifications, email: checked}
                       })
                     }
                     className="data-[state=checked]:bg-blue-600"
@@ -191,23 +219,39 @@ export const SettingsPage = () => {
 
                 <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50/50 to-emerald-50/50 rounded-lg border border-green-100">
                   <div>
-                    <Label htmlFor="refund-updates" className="font-medium text-gray-900">Refund Updates</Label>
-                    <p className="text-sm text-muted-foreground">Get notified about refund status</p>
+                    <Label htmlFor="order-updates" className="font-medium text-gray-900">Order Updates</Label>
+                    <p className="text-sm text-muted-foreground">Get notified about order status changes</p>
                   </div>
                   <Switch
-                    id="refund-updates"
-                    checked={settings.notifications.refundUpdates}
+                    id="order-updates"
+                    checked={settings.notifications?.order_updates || false}
                     onCheckedChange={(checked) =>
                       setSettings({
                         ...settings,
-                        notifications: {...settings.notifications, refundUpdates: checked}
+                        notifications: {...settings.notifications, order_updates: checked}
                       })
                     }
                     className="data-[state=checked]:bg-green-600"
                   />
                 </div>
 
-
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50/50 to-pink-50/50 rounded-lg border border-purple-100">
+                  <div>
+                    <Label htmlFor="refund-updates" className="font-medium text-gray-900">Refund Updates</Label>
+                    <p className="text-sm text-muted-foreground">Get notified about refund status</p>
+                  </div>
+                  <Switch
+                    id="refund-updates"
+                    checked={settings.notifications?.refund_updates || false}
+                    onCheckedChange={(checked) =>
+                      setSettings({
+                        ...settings,
+                        notifications: {...settings.notifications, refund_updates: checked}
+                      })
+                    }
+                    className="data-[state=checked]:bg-purple-600"
+                  />
+                </div>
 
                 <div className="flex items-center justify-between p-4 bg-gradient-to-r from-amber-50/50 to-orange-50/50 rounded-lg border border-amber-100">
                   <div>
@@ -216,32 +260,14 @@ export const SettingsPage = () => {
                   </div>
                   <Switch
                     id="support-replies"
-                    checked={settings.notifications.supportReplies}
+                    checked={settings.notifications?.support_replies || false}
                     onCheckedChange={(checked) =>
                       setSettings({
                         ...settings,
-                        notifications: {...settings.notifications, supportReplies: checked}
+                        notifications: {...settings.notifications, support_replies: checked}
                       })
                     }
                     className="data-[state=checked]:bg-amber-600"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-indigo-50/50 to-blue-50/50 rounded-lg border border-indigo-100">
-                  <div>
-                    <Label htmlFor="chatbot-alerts" className="font-medium text-gray-900">Chatbot Alerts</Label>
-                    <p className="text-sm text-muted-foreground">Receive alerts from AI assistant</p>
-                  </div>
-                  <Switch
-                    id="chatbot-alerts"
-                    checked={settings.notifications.chatbotAlerts}
-                    onCheckedChange={(checked) =>
-                      setSettings({
-                        ...settings,
-                        notifications: {...settings.notifications, chatbotAlerts: checked}
-                      })
-                    }
-                    className="data-[state=checked]:bg-indigo-600"
                   />
                 </div>
               </div>

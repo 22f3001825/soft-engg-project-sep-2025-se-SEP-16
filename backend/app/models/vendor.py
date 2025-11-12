@@ -12,4 +12,4 @@ class Vendor(Base):
     total_products = Column(Integer, default=0)
 
     # Relationship
-    user = relationship("User", back_populates="vendor")
+    user = relationship("User", back_populates="vendor_profile")

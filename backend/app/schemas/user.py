@@ -40,6 +40,14 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     email: Optional[str] = None
 
+class UserResponse(BaseModel):
+    email: EmailStr
+    full_name: str
+    role: str
+
+    class Config:
+        from_attributes = True
+
 # Profile schemas
 class CustomerProfileBase(BaseModel):
     phone: Optional[str] = None

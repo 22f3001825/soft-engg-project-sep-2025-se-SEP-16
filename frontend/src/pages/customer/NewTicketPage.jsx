@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '../../components/common/Header';
 import { ChatBot } from '../../components/common/ChatBot';
@@ -9,8 +9,8 @@ import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { ArrowLeft, Upload, FileText, MessageSquare, Send, X } from 'lucide-react';
-import { orders } from '../../data/dummyData';
 import { toast } from 'sonner';
+import apiService from '../../services/api';
 
 export const NewTicketPage = () => {
   const navigate = useNavigate();
@@ -20,18 +20,42 @@ export const NewTicketPage = () => {
     description: '',
   });
   const [attachments, setAttachments] = useState([]);
+  const [ordersData, setOrdersData] = useState([]);
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const fetchOrders = async () => {
+    try {
+      const data = await apiService.getOrders();
+      setOrdersData(data);
+    } catch (error) {
+      console.error('Failed to fetch orders:', error);
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Simulate ticket creation
-    const newTicketId = `TKT-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
+    try {
+      const ticketData = {
+        subject: formData.subject,
+        description: formData.description,
+        order_id: formData.orderId || null,
+        priority: 'MEDIUM'
+      };
 
-    toast.success(`Ticket ${newTicketId} created successfully!`);
-
-    setTimeout(() => {
-      navigate('/customer/tickets');
-    }, 1500);
+      const response = await apiService.createTicket(ticketData);
+      toast.success(`Ticket created successfully!`);
+      
+      setTimeout(() => {
+        navigate('/customer/tickets');
+      }, 1500);
+    } catch (error) {
+      console.error('Failed to create ticket:', error);
+      toast.error('Failed to create ticket. Please try again.');
+    }
   };
 
   const handleFileUpload = (e) => {
@@ -108,9 +132,9 @@ export const NewTicketPage = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No related order</SelectItem>
-                    {orders.map((order) => (
+                    {ordersData.map((order) => (
                       <SelectItem key={order.id} value={order.id}>
-                        {order.id} - {order.items[0]} ({order.status})
+                        {order.id} - {order.items?.[0]?.product_name || order.items?.[0] || 'Order'} ({order.status})
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -27,45 +27,5 @@ class User(Base):
     supervisor_profile = relationship("Supervisor", back_populates="user", uselist=False)
     vendor_profile = relationship("Vendor", back_populates="user", uselist=False)
 
-class Customer(Base):
-    __tablename__ = "customers"
-
-    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
-    preferences = Column(JSON)
-    total_orders = Column(Integer, default=0)
-    total_tickets = Column(Integer, default=0)
-    member_since = Column(DateTime, server_default=func.now())
-
-    user = relationship("User", back_populates="customer_profile")
-
-class Agent(Base):
-    __tablename__ = "agents"
-
-    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
-    employee_id = Column(String(50), unique=True)
-    department = Column(String(100))
-    response_time = Column(Float)
-    tickets_resolved = Column(Integer, default=0)
-
-    user = relationship("User", back_populates="agent_profile")
-
-class Supervisor(Base):
-    __tablename__ = "supervisors"
-
-    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
-    team_size = Column(Integer)
-    managed_departments = Column(String)
-    escalation_level = Column(Integer)
-
-    user = relationship("User", back_populates="supervisor_profile")
-
-class Vendor(Base):
-    __tablename__ = "vendors"
-
-    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
-    company_name = Column(String(150))
-    business_license = Column(String(150))
-    product_categories = Column(String)
-    total_products = Column(Integer, default=0)
-
-    user = relationship("User", back_populates="vendor_profile")
+# Role-specific models are defined in separate files
+# This avoids duplicate table definitions

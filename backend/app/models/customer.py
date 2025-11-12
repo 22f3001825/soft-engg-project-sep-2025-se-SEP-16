@@ -12,4 +12,4 @@ class Customer(Base):
     member_since = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationship
-    user = relationship("User", back_populates="customer")
+    user = relationship("User", back_populates="customer_profile")

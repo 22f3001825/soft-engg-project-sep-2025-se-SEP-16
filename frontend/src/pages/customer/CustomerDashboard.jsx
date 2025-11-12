@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Header } from '../../components/common/Header';
@@ -42,13 +42,42 @@ import {
   Legend
 } from 'recharts';
 import { dashboardStats, orders, tickets } from '../../data/dummyData';
+import apiService from '../../services/api';
 
 export const CustomerDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const recentOrders = orders.slice(0, 3);
-  const recentTickets = tickets.slice(0, 3);
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const data = await apiService.getDashboard();
+        setDashboardData(data);
+      } catch (error) {
+        console.error('Failed to fetch dashboard:', error);
+        // Fallback to dummy data
+        setDashboardData({
+          stats: dashboardStats,
+          recent_orders: orders.slice(0, 3),
+          recent_tickets: tickets.slice(0, 3)
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboard();
+  }, []);
+
+  if (loading) {
+    return <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 flex items-center justify-center">
+      <div className="text-lg">Loading dashboard...</div>
+    </div>;
+  }
+
+  const recentOrders = dashboardData?.recent_orders || [];
+  const recentTickets = dashboardData?.recent_tickets || [];
 
   // FAQ data
   const faqData = [
@@ -78,22 +107,20 @@ export const CustomerDashboard = () => {
     }
   ];
 
-  // Chart data
-  const orderActivity = [
-    { month: "Jan", orders: 5 },
-    { month: "Feb", orders: 8 },
-    { month: "Mar", orders: 12 },
-    { month: "Apr", orders: 15 },
-    { month: "May", orders: 18 },
-    { month: "Jun", orders: 22 },
+  // Chart data from API or fallback
+  const orderActivity = dashboardData?.charts?.monthly_orders || [
+    { month: "Jan", orders: 0, spending: 0 },
+    { month: "Feb", orders: 0, spending: 0 },
+    { month: "Mar", orders: 0, spending: 0 },
+    { month: "Apr", orders: 0, spending: 0 },
+    { month: "May", orders: 0, spending: 0 },
+    { month: "Jun", orders: 0, spending: 0 },
   ];
 
-  const spendData = [
-    { name: "Electronics", value: 35 },
-    { name: "Clothing", value: 25 },
-    { name: "Home & Garden", value: 20 },
-    { name: "Books", value: 10 },
-    { name: "Others", value: 10 },
+  const ticketStatusData = dashboardData?.charts?.ticket_status || [
+    { status: "Open", count: 0 },
+    { status: "In Progress", count: 0 },
+    { status: "Resolved", count: 0 },
   ];
 
   const COLORS = ['#6366f1', '#14b8a6', '#f43f5e', '#8b5cf6', '#f59e0b'];
@@ -101,28 +128,28 @@ export const CustomerDashboard = () => {
   const stats = [
     {
       title: 'Open Tickets',
-      value: dashboardStats.openTickets,
+      value: dashboardData?.stats?.open_tickets || 0,
       icon: Ticket,
       color: 'text-blue-600',
       bgColor: 'bg-gradient-to-br from-blue-500 to-blue-600',
     },
     {
       title: 'Active Orders',
-      value: dashboardStats.activeOrders,
+      value: dashboardData?.stats?.active_orders || 0,
       icon: Package,
       color: 'text-green-600',
       bgColor: 'bg-gradient-to-br from-green-500 to-green-600',
     },
     {
       title: 'Pending Refunds',
-      value: dashboardStats.pendingRefunds,
+      value: dashboardData?.stats?.pending_refunds || 0,
       icon: DollarSign,
       color: 'text-purple-600',
       bgColor: 'bg-gradient-to-br from-purple-500 to-purple-600',
     },
     {
       title: 'Resolved Tickets',
-      value: dashboardStats.resolvedTickets,
+      value: dashboardData?.stats?.resolved_tickets || 0,
       icon: CheckCircle2,
       color: 'text-orange-600',
       bgColor: 'bg-gradient-to-br from-orange-500 to-orange-600',
@@ -247,35 +274,33 @@ export const CustomerDashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Spending Distribution */}
+          {/* Ticket Status Distribution */}
           <Card className="group relative overflow-hidden bg-gradient-to-br from-violet-50 to-fuchsia-50 border-2 border-violet-200 shadow-xl hover:shadow-2xl hover:shadow-violet-500/20 transition-all duration-300 hover:-translate-y-1 hover:scale-105">
             <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-fuchsia-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
             <CardHeader className="relative pb-4">
               <CardTitle className="text-lg font-semibold text-gray-900 flex items-center justify-between">
-                <span className="bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">Spending Distribution</span>
+                <span className="bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">Ticket Status</span>
                 <MoreVertical className="h-4 w-4 text-gray-400 group-hover:text-violet-500 transition-colors duration-300" />
               </CardTitle>
-              <p className="text-sm text-gray-600">Product category breakdown</p>
+              <p className="text-sm text-gray-600">Support ticket breakdown</p>
             </CardHeader>
             <CardContent className="relative">
               <ResponsiveContainer width="100%" height={300}>
-                <RechartsPieChart>
-                  <Pie
-                    data={spendData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={85}
-                    fill="#8884d8"
-                    dataKey="value"
-                    stroke="#ffffff"
-                    strokeWidth={3}
-                  >
-                    {spendData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
+                <BarChart data={ticketStatusData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis
+                    dataKey="status"
+                    stroke="#64748b"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    stroke="#64748b"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: 'white',
@@ -285,11 +310,18 @@ export const CustomerDashboard = () => {
                       backdropFilter: 'blur(10px)',
                     }}
                   />
-                  <Legend
-                    wrapperStyle={{ paddingTop: '20px' }}
-                    iconType="circle"
+                  <Bar
+                    dataKey="count"
+                    fill="url(#gradientBar)"
+                    radius={[4, 4, 0, 0]}
                   />
-                </RechartsPieChart>
+                  <defs>
+                    <linearGradient id="gradientBar" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#8b5cf6" />
+                      <stop offset="100%" stopColor="#ec4899" />
+                    </linearGradient>
+                  </defs>
+                </BarChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>

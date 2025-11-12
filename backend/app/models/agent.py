@@ -12,4 +12,4 @@ class Agent(Base):
     tickets_resolved = Column(Integer, default=0)
 
     # Relationship
-    user = relationship("User", back_populates="agent")
+    user = relationship("User", back_populates="agent_profile")

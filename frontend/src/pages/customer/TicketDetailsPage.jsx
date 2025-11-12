@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '../../components/common/Header';
 import { ChatBot } from '../../components/common/ChatBot';
@@ -9,18 +9,47 @@ import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import { ArrowLeft, Send, Paperclip, Calendar, Package, MessageSquare, Clock, User } from 'lucide-react';
-import { tickets } from '../../data/dummyData';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
+import apiService from '../../services/api';
 
 export const TicketDetailsPage = () => {
   const { ticketId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [newMessage, setNewMessage] = useState('');
-  const [ticketData, setTicketData] = useState(
-    tickets.find(t => t.id === ticketId) || null
-  );
+  const [ticketData, setTicketData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchTicketDetails();
+  }, [ticketId]);
+
+  const fetchTicketDetails = async () => {
+    try {
+      const data = await apiService.getTicketDetails(ticketId);
+      setTicketData(data);
+    } catch (error) {
+      console.error('Failed to fetch ticket details:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 py-8">
+          <Card>
+            <CardContent className="py-16 text-center">
+              <h3 className="text-lg font-semibold mb-2">Loading...</h3>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
 
   if (!ticketData) {
     return (
@@ -38,24 +67,18 @@ export const TicketDetailsPage = () => {
     );
   }
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
 
-    const message = {
-      id: ticketData.messages.length + 1,
-      sender: 'customer',
-      senderName: user?.name || 'You',
-      message: newMessage,
-      timestamp: new Date().toISOString(),
-      attachments: []
-    };
-
-    setTicketData({
-      ...ticketData,
-      messages: [...ticketData.messages, message]
-    });
-    setNewMessage('');
-    toast.success('Message sent successfully');
+    try {
+      await apiService.addTicketMessage(ticketId, newMessage);
+      setNewMessage('');
+      toast.success('Message sent successfully');
+      fetchTicketDetails();
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      toast.error('Failed to send message');
+    }
   };
 
   const getStatusColor = (status) => {
@@ -137,19 +160,19 @@ export const TicketDetailsPage = () => {
                         <Avatar className="h-10 w-10 flex-shrink-0">
                           <AvatarImage src={message.sender === 'customer' ? user?.avatar : undefined} />
                           <AvatarFallback className={message.sender === 'agent' ? 'bg-gradient-to-br from-blue-500 to-cyan-500 text-white' : ''}>
-                            {message.senderName.charAt(0)}
+                            {message.sender_name?.charAt(0) || 'A'}
                           </AvatarFallback>
                         </Avatar>
                       )}
                       <div className={`flex-1 space-y-2 max-w-[70%] ${message.sender === 'customer' ? 'flex flex-col items-end' : ''}`}>
                         <div className={`flex items-center gap-2 ${message.sender === 'customer' ? 'flex-row-reverse' : ''}`}>
-                          <span className="font-semibold text-foreground">{message.senderName}</span>
+                          <span className="font-semibold text-foreground">{message.sender_name}</span>
                           <span className="text-xs text-muted-foreground">
                             {new Date(message.timestamp).toLocaleString()}
                           </span>
                         </div>
                         <div className={`rounded-2xl p-4 shadow-sm ${message.sender === 'customer' ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : 'bg-gradient-to-r from-gray-50 to-slate-100 text-gray-900'}`}>
-                          <p className="leading-relaxed">{message.message}</p>
+                          <p className="leading-relaxed">{message.content}</p>
                         </div>
                       </div>
                       {message.sender === 'customer' && (
@@ -179,10 +202,36 @@ export const TicketDetailsPage = () => {
                       className="resize-none border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     />
                     <div className="flex items-center justify-between">
-                      <Button variant="outline" size="sm" className="hover:bg-blue-50 hover:border-blue-300">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="hover:bg-blue-50 hover:border-blue-300"
+                        onClick={() => document.getElementById('file-input').click()}
+                      >
                         <Paperclip className="mr-2 h-4 w-4" />
                         Attach File
                       </Button>
+                      <input
+                        id="file-input"
+                        type="file"
+                        multiple
+                        accept=".png,.jpg,.jpeg,.pdf,.doc,.docx"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const files = Array.from(e.target.files);
+                          if (files.length > 0) {
+                            try {
+                              toast.loading('Uploading files...');
+                              await apiService.uploadAttachment(ticketId, files);
+                              toast.success(`${files.length} file(s) uploaded successfully`);
+                              fetchTicketDetails(); // Refresh to show new message
+                            } catch (error) {
+                              console.error('Upload failed:', error);
+                              toast.error('Failed to upload files');
+                            }
+                          }
+                        }}
+                      />
                       <Button onClick={handleSendMessage} disabled={!newMessage.trim()} className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white shadow-lg hover:shadow-xl transition-all duration-300">
                         <Send className="mr-2 h-4 w-4" />
                         Send Message

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import apiService from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { Header } from '../../components/common/Header';
 import { ChatBot } from '../../components/common/ChatBot';
@@ -6,93 +7,40 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { Switch } from '../../components/ui/switch';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
-import { Badge } from '../../components/ui/badge';
-import { Camera, MapPin, Plus, Trash2, Edit, Save, User, Mail, Calendar, Award } from 'lucide-react';
+import { User, Mail, Calendar, Award, Settings as SettingsIcon, HelpCircle, Shield } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export const ProfilePage = () => {
   const { user } = useAuth();
-  const [isEditing, setIsEditing] = useState(false);
+  const navigate = useNavigate();
   const [profileData, setProfileData] = useState({
-    name: user?.name || 'Ali Jawad',
-    email: user?.email || 'customer@intellica.com',
-    dob: '1990-01-15',
-    gender: 'male',
-    customerId: 'CUST-2024-001',
-    joinDate: '2024-01-01',
-    totalOrders: 12,
-    addresses: [
-      {
-        id: 1,
-        type: 'Home',
-        street: '123 Main Street',
-        city: 'New York',
-        state: 'NY',
-        zipCode: '10001',
-        country: 'USA',
-        isDefault: true
-      },
-      {
-        id: 2,
-        type: 'Work',
-        street: '456 Business Ave',
-        city: 'New York',
-        state: 'NY',
-        zipCode: '10002',
-        country: 'USA',
-        isDefault: false
-      }
-    ],
-    preferences: {
-      email: true,
-      whatsapp: false
+    name: user?.name || '',
+    email: user?.email || ''
+  });
+  const [customerData, setCustomerData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      const data = await apiService.getProfile();
+      setCustomerData(data);
+      setProfileData({
+        name: user?.name || data.full_name || '',
+        email: data.email || user?.email || ''
+      });
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+    } finally {
+      setLoading(false);
     }
-  });
-
-  const [editingAddress, setEditingAddress] = useState(null);
-  const [newAddress, setNewAddress] = useState({
-    type: '',
-    street: '',
-    city: '',
-    state: '',
-    zipCode: '',
-    country: 'USA',
-    isDefault: false
-  });
-
-  const handleSave = () => {
-    // Save logic here
-    setIsEditing(false);
-    setEditingAddress(null);
   };
 
-  const handleAddressSave = (addressId) => {
-    // Save address logic
-    setEditingAddress(null);
-  };
 
-  const handleAddAddress = () => {
-    // Add new address logic
-    setNewAddress({
-      type: '',
-      street: '',
-      city: '',
-      state: '',
-      zipCode: '',
-      country: 'USA',
-      isDefault: false
-    });
-  };
-
-  const handleDeleteAddress = (addressId) => {
-    // Delete address logic
-  };
-
-  const handleSetDefaultAddress = (addressId) => {
-    // Set default address logic
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 relative overflow-hidden">
@@ -109,9 +57,9 @@ export const ProfilePage = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="text-center animate-fade-in-up">
             <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-900 via-slate-800 to-gray-700 bg-clip-text text-transparent animate-gradient-x">
-              Profile Settings
+              My Profile
             </h1>
-            <p className="text-gray-600 mt-1 text-base animate-fade-in-up animation-delay-200">Manage your personal information and preferences</p>
+            <p className="text-gray-600 mt-1 text-base animate-fade-in-up animation-delay-200">View your account information and activity</p>
           </div>
         </div>
       </div>
@@ -131,16 +79,10 @@ export const ProfilePage = () => {
                         {user?.name?.charAt(0) || 'U'}
                       </AvatarFallback>
                     </Avatar>
-                    <Button
-                      size="sm"
-                      className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-300 group/btn"
-                      variant="secondary"
-                    >
-                      <Camera className="h-4 w-4 group-hover/btn:scale-110 transition-transform duration-300" />
-                    </Button>
+
                   </div>
                   <div className="text-center">
-                    <h3 className="font-semibold text-lg bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">{profileData.name}</h3>
+                    <h3 className="font-semibold text-lg bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">{user?.name || profileData.name}</h3>
                     <p className="text-sm text-muted-foreground flex items-center justify-center gap-1">
                       <Mail className="h-3 w-3" />
                       {profileData.email}
@@ -149,11 +91,15 @@ export const ProfilePage = () => {
                   <div className="w-full space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Customer ID</span>
-                      <span className="font-medium">{profileData.customerId}</span>
+                      <span className="font-medium">{customerData?.id || 'N/A'}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Total Orders</span>
-                      <span className="font-medium">{profileData.totalOrders}</span>
+                      <span className="font-medium">{customerData?.total_orders || 0}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Member Since</span>
+                      <span className="font-medium">{customerData?.member_since ? new Date(customerData.member_since).toLocaleDateString() : 'N/A'}</span>
                     </div>
                   </div>
                 </div>
@@ -163,147 +109,9 @@ export const ProfilePage = () => {
 
           {/* Profile Information */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Personal Information */}
-            <Card className="group relative overflow-hidden bg-white hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 shadow-lg hover:-translate-y-1 animate-fade-in-up">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <CardHeader className="relative">
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <User className="h-5 w-5 text-blue-600" />
-                    Personal Information
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsEditing(!isEditing)}
-                    className="border-gray-300 hover:border-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/20 group/btn"
-                  >
-                    <Edit className="h-4 w-4 mr-2 group-hover/btn:scale-110 transition-transform duration-300" />
-                    {isEditing ? 'Cancel' : 'Edit'}
-                  </Button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input
-                      id="name"
-                      value={profileData.name}
-                      onChange={(e) => setProfileData({...profileData, name: e.target.value})}
-                      disabled={!isEditing}
-                      className="focus:ring-2 focus:ring-blue-500/20"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      value={profileData.email}
-                      disabled
-                      className="bg-muted"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="dob">Date of Birth</Label>
-                    <Input
-                      id="dob"
-                      type="date"
-                      value={profileData.dob}
-                      onChange={(e) => setProfileData({...profileData, dob: e.target.value})}
-                      disabled={!isEditing}
-                      className="focus:ring-2 focus:ring-blue-500/20"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="gender">Gender</Label>
-                    <Select
-                      value={profileData.gender}
-                      onValueChange={(value) => setProfileData({...profileData, gender: value})}
-                      disabled={!isEditing}
-                    >
-                      <SelectTrigger className="focus:ring-2 focus:ring-blue-500/20">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="male">Male</SelectItem>
-                        <SelectItem value="female">Female</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                {isEditing && (
-                  <Button onClick={handleSave} className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300 group/btn">
-                    <Save className="h-4 w-4 mr-2 group-hover/btn:scale-110 transition-transform duration-300" />
-                    Save Changes
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
 
-            {/* Address Information */}
-            <Card className="group relative overflow-hidden bg-white hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 shadow-lg hover:-translate-y-1 animate-fade-in-up animation-delay-200">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <CardHeader className="relative">
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5 text-green-600" />
-                    Address Information
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleAddAddress}
-                    className="border-gray-300 hover:border-green-400 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/20 group/btn"
-                  >
-                    <Plus className="h-4 w-4 mr-2 group-hover/btn:scale-110 transition-transform duration-300" />
-                    Add Address
-                  </Button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative space-y-4">
-                {profileData.addresses.map((address, index) => (
-                  <div key={address.id} className="border border-gray-200 rounded-lg p-4 space-y-3 hover:border-blue-300 transition-colors duration-300 animate-fade-in-up" style={{ animationDelay: `${index * 0.1}s` }}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Badge variant={address.isDefault ? "default" : "secondary"} className="bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-sm">
-                          {address.type}
-                        </Badge>
-                        {address.isDefault && (
-                          <Badge variant="outline" className="border-green-300 text-green-700 bg-green-50">
-                            Default
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditingAddress(address.id)}
-                          className="hover:bg-blue-50 hover:text-blue-700 transition-all duration-300 group/btn"
-                        >
-                          <Edit className="h-4 w-4 group-hover/btn:scale-110 transition-transform duration-300" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteAddress(address.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-300 group/btn"
-                        >
-                          <Trash2 className="h-4 w-4 group-hover/btn:scale-110 transition-transform duration-300" />
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      <p className="font-medium text-gray-900">{address.street}</p>
-                      <p>{address.city}, {address.state} {address.zipCode}</p>
-                      <p>{address.country}</p>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+
+
 
             {/* Account Details */}
             <Card className="group relative overflow-hidden bg-gradient-to-br from-white to-gray-50/50 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 border-0 shadow-lg hover:-translate-y-1 animate-fade-in-up animation-delay-400">
@@ -315,72 +123,64 @@ export const ProfilePage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="relative space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg border border-blue-100">
                     <User className="h-6 w-6 text-blue-600 mx-auto mb-2" />
                     <Label className="text-xs text-muted-foreground">Customer ID</Label>
-                    <p className="text-sm font-bold text-blue-700">{profileData.customerId}</p>
+                    <p className="text-sm font-bold text-blue-700">{customerData?.id || 'N/A'}</p>
                   </div>
                   <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-100">
                     <Calendar className="h-6 w-6 text-green-600 mx-auto mb-2" />
-                    <Label className="text-xs text-muted-foreground">Join Date</Label>
-                    <p className="text-sm font-bold text-green-700">{profileData.joinDate}</p>
+                    <Label className="text-xs text-muted-foreground">Member Since</Label>
+                    <p className="text-sm font-bold text-green-700">{customerData?.member_since ? new Date(customerData.member_since).toLocaleDateString() : 'N/A'}</p>
                   </div>
                   <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border border-purple-100">
                     <Award className="h-6 w-6 text-purple-600 mx-auto mb-2" />
                     <Label className="text-xs text-muted-foreground">Total Orders</Label>
-                    <p className="text-sm font-bold text-purple-700">{profileData.totalOrders}</p>
+                    <p className="text-sm font-bold text-purple-700">{customerData?.total_orders || 0}</p>
+                  </div>
+                  <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg border border-orange-100">
+                    <Award className="h-6 w-6 text-orange-600 mx-auto mb-2" />
+                    <Label className="text-xs text-muted-foreground">Total Tickets</Label>
+                    <p className="text-sm font-bold text-orange-700">{customerData?.total_tickets || 0}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Communication Preferences */}
+            {/* Quick Actions */}
             <Card className="group relative overflow-hidden bg-gradient-to-br from-white to-gray-50/50 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 border-0 shadow-lg hover:-translate-y-1 animate-fade-in-up animation-delay-600">
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <CardHeader className="relative">
                 <CardTitle className="flex items-center gap-2">
-                  <Mail className="h-5 w-5 text-indigo-600" />
-                  Communication Preferences
+                  <SettingsIcon className="h-5 w-5 text-indigo-600" />
+                  Quick Actions
                 </CardTitle>
               </CardHeader>
               <CardContent className="relative space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50/50 to-cyan-50/50 rounded-lg border border-blue-100">
-                    <div>
-                      <Label htmlFor="email-pref" className="font-medium text-gray-900">Email Notifications</Label>
-                      <p className="text-sm text-muted-foreground">Receive updates via email</p>
+                <div className="grid grid-cols-1 gap-3">
+                  <Button
+                    onClick={() => navigate('/customer/settings')}
+                    variant="outline"
+                    className="justify-start h-12 border-blue-200 hover:border-blue-400 hover:bg-blue-50"
+                  >
+                    <SettingsIcon className="h-4 w-4 mr-3" />
+                    <div className="text-left">
+                      <div className="font-medium">Notification Settings</div>
+                      <div className="text-xs text-muted-foreground">Manage email and notification preferences</div>
                     </div>
-                    <Switch
-                      id="email-pref"
-                      checked={profileData.preferences.email}
-                      onCheckedChange={(checked) =>
-                        setProfileData({
-                          ...profileData,
-                          preferences: {...profileData.preferences, email: checked}
-                        })
-                      }
-                      className="data-[state=checked]:bg-blue-600"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50/50 to-emerald-50/50 rounded-lg border border-green-100">
-                    <div>
-                      <Label htmlFor="whatsapp-pref" className="font-medium text-gray-900">WhatsApp Notifications</Label>
-                      <p className="text-sm text-muted-foreground">Receive updates via WhatsApp</p>
+                  </Button>
+                  <Button
+                    onClick={() => navigate('/customer/tickets/new')}
+                    variant="outline"
+                    className="justify-start h-12 border-green-200 hover:border-green-400 hover:bg-green-50"
+                  >
+                    <HelpCircle className="h-4 w-4 mr-3" />
+                    <div className="text-left">
+                      <div className="font-medium">Contact Support</div>
+                      <div className="text-xs text-muted-foreground">Get help with your account or orders</div>
                     </div>
-                    <Switch
-                      id="whatsapp-pref"
-                      checked={profileData.preferences.whatsapp}
-                      onCheckedChange={(checked) =>
-                        setProfileData({
-                          ...profileData,
-                          preferences: {...profileData.preferences, whatsapp: checked}
-                        })
-                      }
-                      className="data-[state=checked]:bg-green-600"
-                    />
-                  </div>
-
+                  </Button>
                 </div>
               </CardContent>
             </Card>

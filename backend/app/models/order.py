@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enu
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import enum
+import uuid
 from app.models.base import Base
 
 class OrderStatus(str, enum.Enum):
@@ -15,7 +16,7 @@ class OrderStatus(str, enum.Enum):
 class Order(Base):
     __tablename__ = "orders"
 
-    id = Column(String, primary_key=True, default=str(func.gen_random_uuid()))
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     customer_id = Column(Integer, ForeignKey("customers.user_id"))
     status = Column(Enum(OrderStatus), nullable=False)
     total = Column(Float)
@@ -29,7 +30,7 @@ class Order(Base):
 class OrderItem(Base):
     __tablename__ = "order_items"
 
-    id = Column(String, primary_key=True, default=str(func.gen_random_uuid()))
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     order_id = Column(String, ForeignKey("orders.id"), nullable=False)
     product_id = Column(String)
     product_name = Column(String(150))

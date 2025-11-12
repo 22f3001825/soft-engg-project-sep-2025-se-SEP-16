@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '../../components/common/Header';
 import { ChatBot } from '../../components/common/ChatBot';
@@ -9,18 +9,33 @@ import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Package, Search, MapPin, RotateCcw, Filter } from 'lucide-react';
 import { orders } from '../../data/dummyData';
+import apiService from '../../services/api';
 
 export const OrdersPage = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [ordersData, setOrdersData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.items.some(item => item.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  useEffect(() => {
+    fetchOrders();
+  }, [statusFilter, searchQuery]);
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const data = await apiService.getOrders(statusFilter, searchQuery);
+      setOrdersData(data);
+    } catch (error) {
+      console.error('Failed to fetch orders:', error);
+      setOrdersData(orders); // Fallback to dummy data
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredOrders = ordersData;
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -145,10 +160,12 @@ export const OrdersPage = () => {
                     <div>
                       <p className="text-sm font-semibold text-gray-800 mb-2">Items Ordered:</p>
                       <ul className="space-y-1.5">
-                        {order.items.map((item, idx) => (
+                        {(order.items || []).map((item, idx) => (
                           <li key={idx} className="text-sm text-gray-700 flex items-center gap-2">
                             <div className="h-1.5 w-1.5 rounded-full bg-blue-500 flex-shrink-0" />
-                            <span className="font-medium">{item}</span>
+                            <span className="font-medium">
+                              {typeof item === 'string' ? item : `${item.product_name} (${item.quantity}x)`}
+                            </span>
                           </li>
                         ))}
                       </ul>
@@ -173,7 +190,7 @@ export const OrdersPage = () => {
                         <MapPin className="mr-2 h-4 w-4" />
                         Track Order
                       </Button>
-                      {order.status === 'delivered' ? (
+                      {order.status === 'delivered' || order.status === 'DELIVERED' ? (
                         <Button
                           onClick={() => navigate(`/customer/orders/return?orderId=${order.id}`)}
                           variant="default"

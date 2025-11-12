@@ -19,7 +19,14 @@ export const AuthProvider = ({ children }) => {
     const savedUser = localStorage.getItem('intellica_user');
     const token = localStorage.getItem('intellica_token');
     if (savedUser && token) {
-      setUser(JSON.parse(savedUser));
+      const userData = JSON.parse(savedUser);
+      // Fix for Ali Jawar -> Ali Jawad
+      if (userData.email === 'ali.jawad@example.com' && userData.name === 'Ali Jawar') {
+        userData.name = 'Ali Jawad';
+        userData.full_name = 'Ali Jawad';
+        localStorage.setItem('intellica_user', JSON.stringify(userData));
+      }
+      setUser(userData);
     }
     setLoading(false);
   }, []);

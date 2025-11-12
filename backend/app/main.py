@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import auth
+from app.api import auth, customer
 
 app = FastAPI(
     title="AI Support System",
@@ -17,8 +17,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include auth router
+# Include routers
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+app.include_router(customer.router, prefix="/api/v1", tags=["Customer"])
 
 @app.get("/")
 async def root():

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Header } from '../../components/common/Header';
 import { ChatBot } from '../../components/common/ChatBot';
@@ -9,18 +9,33 @@ import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Ticket, Plus, Search, Filter, ArrowRight, Eye, MessageSquare, Calendar, User } from 'lucide-react';
 import { tickets } from '../../data/dummyData';
+import apiService from '../../services/api';
 
 export const TicketsPage = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [ticketsData, setTicketsData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredTickets = tickets.filter(ticket => {
-    const matchesSearch = ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          ticket.id.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = filterStatus === 'all' || ticket.status === filterStatus;
-    return matchesSearch && matchesFilter;
-  });
+  useEffect(() => {
+    fetchTickets();
+  }, [filterStatus, searchQuery]);
+
+  const fetchTickets = async () => {
+    try {
+      setLoading(true);
+      const data = await apiService.getTickets(filterStatus, searchQuery);
+      setTicketsData(data);
+    } catch (error) {
+      console.error('Failed to fetch tickets:', error);
+      setTicketsData(tickets); // Fallback to dummy data
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredTickets = ticketsData;
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -143,15 +158,15 @@ export const TicketsPage = () => {
                       <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4" />
-                          <span>Order: {ticket.orderId}</span>
+                          <span>Order: {ticket.order_id || ticket.orderId || 'N/A'}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4" />
-                          <span>Created: {new Date(ticket.createdAt).toLocaleDateString()}</span>
+                          <span>Created: {new Date(ticket.created_at || ticket.createdAt || Date.now()).toLocaleDateString()}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <MessageSquare className="h-4 w-4" />
-                          <span>{ticket.messages.length} messages</span>
+                          <span>{ticket.message_count || 0} messages</span>
                         </div>
                       </div>
                     </div>

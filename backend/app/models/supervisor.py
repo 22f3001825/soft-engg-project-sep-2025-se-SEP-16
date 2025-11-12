@@ -11,4 +11,4 @@ class Supervisor(Base):
     escalation_level = Column(Integer, nullable=True)
 
     # Relationship
-    user = relationship("User", back_populates="supervisor")
+    user = relationship("User", back_populates="supervisor_profile")

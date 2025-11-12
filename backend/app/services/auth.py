@@ -3,9 +3,13 @@ from app.models.user import User
 from app.schemas.user import UserCreate
 from app.core.security import get_password_hash, verify_password, create_access_token
 from app.core.config import settings
-from fastapi import HTTPException, status
+from app.database import get_db
+from fastapi import HTTPException, status, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from datetime import timedelta
 from jose import JWTError, jwt
+
+security = HTTPBearer()
 
 def authenticate_user(db: Session, email: str, password: str, role: str = None):
     user = db.query(User).filter(User.email == email).first()
@@ -36,14 +40,19 @@ def create_user(db: Session, user: UserCreate):
     db.refresh(db_user)
     return db_user
 
-def get_current_user(db: Session, token: str):
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+) -> User:
+    """Get current authenticated user from JWT token"""
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        payload = jwt.decode(credentials.credentials, settings.SECRET_KEY, algorithms=["HS256"])
         email: str = payload.get("sub")
         if email is None:
             raise HTTPException(status_code=401, detail="Invalid authentication credentials")
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+    
     user = db.query(User).filter(User.email == email).first()
     if user is None:
         raise HTTPException(status_code=401, detail="User not found")

@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import enum
+import uuid
 from app.models.base import Base
 
 class ComplaintStatus(str, enum.Enum):
@@ -13,7 +14,7 @@ class ComplaintStatus(str, enum.Enum):
 class Product(Base):
     __tablename__ = "products"
 
-    id = Column(String, primary_key=True, default=str(func.gen_random_uuid()))
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     vendor_id = Column(Integer, ForeignKey("vendors.user_id"))
     name = Column(String(200))
     category = Column(String(120))
