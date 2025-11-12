@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__))))
 def verify_database():
     """Verify the contents of the seeded database"""
     
-    db_path = "intellica_seeded.db"
+    db_path = "app/instance/intellica.db"
     
     if not os.path.exists(db_path):
         print(f"Database file {db_path} not found!")

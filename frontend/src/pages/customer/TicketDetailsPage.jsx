@@ -89,6 +89,8 @@ export const TicketDetailsPage = () => {
         return 'bg-warning text-warning-foreground';
       case 'resolved':
         return 'bg-success text-success-foreground';
+      case 'closed':
+        return 'bg-muted text-muted-foreground';
       default:
         return 'bg-muted text-muted-foreground';
     }
@@ -155,27 +157,27 @@ export const TicketDetailsPage = () => {
                 <div className="space-y-6">
                   {/* Messages */}
                   {ticketData.messages.map((message, index) => (
-                    <div key={message.id} className={`flex gap-4 animate-slide-in-up ${message.sender === 'customer' ? 'justify-end' : 'justify-start'}`}>
-                      {message.sender !== 'customer' && (
+                    <div key={message.id} className={`flex gap-4 animate-slide-in-up ${message.sender_type === 'customer' ? 'justify-end' : 'justify-start'}`}>
+                      {message.sender_type !== 'customer' && (
                         <Avatar className="h-10 w-10 flex-shrink-0">
-                          <AvatarImage src={message.sender === 'customer' ? user?.avatar : undefined} />
-                          <AvatarFallback className={message.sender === 'agent' ? 'bg-gradient-to-br from-blue-500 to-cyan-500 text-white' : ''}>
+                          <AvatarImage src={undefined} />
+                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white">
                             {message.sender_name?.charAt(0) || 'A'}
                           </AvatarFallback>
                         </Avatar>
                       )}
-                      <div className={`flex-1 space-y-2 max-w-[70%] ${message.sender === 'customer' ? 'flex flex-col items-end' : ''}`}>
-                        <div className={`flex items-center gap-2 ${message.sender === 'customer' ? 'flex-row-reverse' : ''}`}>
+                      <div className={`flex-1 space-y-2 max-w-[70%] ${message.sender_type === 'customer' ? 'flex flex-col items-end' : ''}`}>
+                        <div className={`flex items-center gap-2 ${message.sender_type === 'customer' ? 'flex-row-reverse' : ''}`}>
                           <span className="font-semibold text-foreground">{message.sender_name}</span>
                           <span className="text-xs text-muted-foreground">
                             {new Date(message.timestamp).toLocaleString()}
                           </span>
                         </div>
-                        <div className={`rounded-2xl p-4 shadow-sm ${message.sender === 'customer' ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : 'bg-gradient-to-r from-gray-50 to-slate-100 text-gray-900'}`}>
+                        <div className={`rounded-2xl p-4 shadow-sm ${message.sender_type === 'customer' ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : 'bg-gradient-to-r from-gray-50 to-slate-100 text-gray-900'}`}>
                           <p className="leading-relaxed">{message.content}</p>
                         </div>
                       </div>
-                      {message.sender === 'customer' && (
+                      {message.sender_type === 'customer' && (
                         <Avatar className="h-10 w-10 flex-shrink-0">
                           <AvatarImage src={user?.avatar} />
                           <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-500 text-white">
@@ -259,17 +261,19 @@ export const TicketDetailsPage = () => {
                   <div>
                     <p className="text-sm font-medium text-gray-900">Created</p>
                     <p className="text-sm text-gray-600">
-                      {new Date(ticketData.createdAt).toLocaleString()}
+                      {new Date(ticketData.created_at).toLocaleString()}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50">
-                  <Package className="h-5 w-5 text-purple-600 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Related Order</p>
-                    <p className="text-sm text-gray-600">{ticketData.orderId}</p>
+                {ticketData.related_order_id && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50">
+                    <Package className="h-5 w-5 text-purple-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Related Order</p>
+                      <p className="text-sm text-gray-600">{ticketData.related_order_id}</p>
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="flex items-start gap-3 p-3 rounded-lg bg-gradient-to-r from-gray-50 to-slate-50">
                   <Clock className="h-5 w-5 text-gray-600 mt-0.5" />
                   <div>

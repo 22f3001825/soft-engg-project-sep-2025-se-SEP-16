@@ -45,6 +45,8 @@ export const TicketsPage = () => {
         return 'bg-amber-100 text-amber-800 border border-amber-200';
       case 'resolved':
         return 'bg-green-100 text-green-800 border border-green-200';
+      case 'closed':
+        return 'bg-gray-100 text-gray-800 border border-gray-200';
       default:
         return 'bg-gray-100 text-gray-800 border border-gray-200';
     }
@@ -109,6 +111,7 @@ export const TicketsPage = () => {
                   <SelectItem value="open">Open</SelectItem>
                   <SelectItem value="in-progress">In Progress</SelectItem>
                   <SelectItem value="resolved">Resolved</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -158,7 +161,7 @@ export const TicketsPage = () => {
                       <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4" />
-                          <span>Order: {ticket.order_id || ticket.orderId || 'N/A'}</span>
+                          <span>Order: {ticket.related_order_id || 'N/A'}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4" />

@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bell, User, LogOut, Settings, Menu, X, Sparkles } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { notifications } from '../../data/dummyData';
+import apiService from '../../services/api';
 import { Button } from '../ui/button';
 import {
   DropdownMenu,
@@ -24,8 +24,42 @@ export const Header = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
   
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  useEffect(() => {
+    if (user?.role === 'customer') {
+      fetchNotifications();
+    }
+  }, [user]);
+
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      const data = await apiService.getNotifications();
+      setNotifications(data);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+      setNotifications([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleNotificationClick = async (notification) => {
+    if (!notification.read) {
+      try {
+        await apiService.markNotificationRead(notification.id);
+        setNotifications(prev => 
+          prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
+        );
+      } catch (error) {
+        console.error('Failed to mark notification as read:', error);
+      }
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -211,7 +245,12 @@ export const Header = () => {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <div className="max-h-[400px] overflow-y-auto">
-                  {notifications.length === 0 ? (
+                  {loading ? (
+                    <div className="px-4 py-8 text-center text-sky-600">
+                      <div className="animate-spin h-6 w-6 border-2 border-sky-500 border-t-transparent rounded-full mx-auto mb-2" />
+                      <p className="text-sm">Loading notifications...</p>
+                    </div>
+                  ) : notifications.length === 0 ? (
                     <div className="px-4 py-8 text-center text-sky-600">
                       <Bell className="h-12 w-12 mx-auto mb-2 opacity-20" />
                       <p className="text-sm">No notifications yet</p>
@@ -220,6 +259,7 @@ export const Header = () => {
                     notifications.map((notification) => (
                       <div
                         key={notification.id}
+                        onClick={() => handleNotificationClick(notification)}
                         className={`px-3 py-3 hover:bg-sky-50/50 cursor-pointer transition-all duration-200 border-l-2 ${
                           !notification.read ? 'bg-sky-50/30 border-sky-500' : 'border-transparent'
                         }`}

@@ -8,8 +8,7 @@ import shutil
 from sqlalchemy import func, extract
 
 from app.database import get_db
-from app.models.user import User
-from app.models.customer import Customer
+from app.models.user import User, Customer
 from app.models.order import Order, OrderItem, OrderStatus, TrackingInfo
 from app.models.ticket import Ticket, Message, TicketStatus, TicketPriority
 from app.models.product import Product, ProductComplaint, ComplaintStatus
@@ -120,7 +119,9 @@ def get_orders(
     query = db.query(Order).filter(Order.customer_id == current_user.id)
     
     if status and status != "all":
-        query = query.filter(Order.status == status)
+        # Handle case-insensitive status filtering
+        status_upper = status.upper()
+        query = query.filter(Order.status == status_upper)
     
     if search:
         query = query.filter(Order.id.contains(search))
@@ -292,7 +293,9 @@ def get_tickets(
     query = db.query(Ticket).filter(Ticket.customer_id == current_user.id)
     
     if status and status != "all":
-        query = query.filter(Ticket.status == status)
+        # Handle case-insensitive status filtering
+        status_upper = status.upper()
+        query = query.filter(Ticket.status == status_upper)
     
     if search:
         query = query.filter(
@@ -311,6 +314,7 @@ def get_tickets(
             "priority": ticket.priority,
             "created_at": ticket.created_at,
             "updated_at": ticket.updated_at,
+            "related_order_id": ticket.related_order_id,
             "message_count": message_count
         })
     
@@ -369,7 +373,7 @@ def get_ticket_details(
     
     messages = db.query(Message).filter(
         Message.ticket_id == ticket.id
-    ).order_by(Message.timestamp).all()
+    ).order_by(Message.created_at).all()
     
     return {
         "id": ticket.id,
@@ -378,13 +382,15 @@ def get_ticket_details(
         "priority": ticket.priority,
         "created_at": ticket.created_at,
         "updated_at": ticket.updated_at,
+        "related_order_id": ticket.related_order_id,
         "messages": [{
             "id": msg.id,
             "sender_id": msg.sender_id,
             "sender_name": msg.sender_name,
             "content": msg.content,
-            "timestamp": msg.timestamp,
-            "is_internal": msg.is_internal
+            "timestamp": msg.created_at,
+            "is_internal": msg.is_internal,
+            "sender_type": "customer" if msg.sender_id == current_user.id else "agent"
         } for msg in messages]
     }
 
@@ -598,7 +604,7 @@ def get_notifications(
     query = db.query(Notification).filter(Notification.user_id == current_user.id)
     
     if unread_only:
-        query = query.filter(Notification.is_read == False)
+        query = query.filter(Notification.read == False)
     
     notifications = query.order_by(Notification.timestamp.desc()).limit(50).all()
     
@@ -607,7 +613,7 @@ def get_notifications(
         "title": notif.title,
         "message": notif.message,
         "type": notif.type,
-        "read": notif.is_read,
+        "read": notif.read,
         "timestamp": notif.timestamp
     } for notif in notifications]
 
@@ -626,7 +632,7 @@ def mark_notification_read(
     if not notification:
         raise HTTPException(status_code=404, detail="Notification not found")
     
-    notification.is_read = True
+    notification.read = True
     db.commit()
     
     return {"message": "Notification marked as read"}

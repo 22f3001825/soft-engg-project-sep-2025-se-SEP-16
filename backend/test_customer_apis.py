@@ -11,13 +11,14 @@ def test_customer_apis():
     """Test customer APIs with seeded data"""
     
     login_data = {
-        "email": "ali.jawad@example.com",
-        "password": "customer123"
+        "username": "ali.jawad@gmail.com",
+        "password": "customer123",
+        "role": "CUSTOMER"
     }
     
     print("Testing Customer Authentication...")
     try:
-        response = requests.post(f"{BASE_URL}/auth/login", json=login_data)
+        response = requests.post(f"{BASE_URL}/auth/login", data=login_data)
         if response.status_code == 200:
             token = response.json()["access_token"]
             headers = {"Authorization": f"Bearer {token}"}

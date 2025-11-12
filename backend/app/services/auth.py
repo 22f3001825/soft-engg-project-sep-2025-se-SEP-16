@@ -22,6 +22,8 @@ def authenticate_user(db: Session, email: str, password: str, role: str = None):
     return user
 
 def create_user(db: Session, user: UserCreate):
+    from app.models.user import Customer, Agent, Supervisor, Vendor, UserRole
+    
     db_user = db.query(User).filter(User.email == user.email).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -38,6 +40,22 @@ def create_user(db: Session, user: UserCreate):
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
+    
+    # Create role-specific profile
+    if user.role == UserRole.CUSTOMER:
+        profile = Customer(user_id=db_user.id)
+        db.add(profile)
+    elif user.role == UserRole.AGENT:
+        profile = Agent(user_id=db_user.id)
+        db.add(profile)
+    elif user.role == UserRole.SUPERVISOR:
+        profile = Supervisor(user_id=db_user.id)
+        db.add(profile)
+    elif user.role == UserRole.VENDOR:
+        profile = Vendor(user_id=db_user.id)
+        db.add(profile)
+    
+    db.commit()
     return db_user
 
 def get_current_user(

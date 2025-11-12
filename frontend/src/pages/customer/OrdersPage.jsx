@@ -38,15 +38,22 @@ export const OrdersPage = () => {
   const filteredOrders = ordersData;
 
   const getStatusColor = (status) => {
-    switch (status) {
+    const statusLower = status?.toLowerCase();
+    switch (statusLower) {
       case 'delivered':
-        return 'bg-success text-success-foreground';
-      case 'in-transit':
-        return 'bg-info text-info-foreground';
+        return 'bg-green-100 text-green-800';
+      case 'shipped':
+        return 'bg-blue-100 text-blue-800';
       case 'processing':
-        return 'bg-warning text-warning-foreground';
+        return 'bg-yellow-100 text-yellow-800';
+      case 'pending':
+        return 'bg-gray-100 text-gray-800';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800';
+      case 'returned':
+        return 'bg-purple-100 text-purple-800';
       default:
-        return 'bg-muted text-muted-foreground';
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -112,9 +119,12 @@ export const OrdersPage = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Orders</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="processing">Processing</SelectItem>
-                    <SelectItem value="in-transit">In Transit</SelectItem>
+                    <SelectItem value="shipped">Shipped</SelectItem>
                     <SelectItem value="delivered">Delivered</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="returned">Returned</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -143,7 +153,7 @@ export const OrdersPage = () => {
                     <div className="flex-1">
                       <h3 className="text-lg font-bold text-gray-900 mb-1">{order.id}</h3>
                       <p className="text-sm text-gray-600 font-medium">
-                        {new Date(order.date).toLocaleDateString('en-US', {
+                        {new Date(order.created_at).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric'
@@ -151,7 +161,7 @@ export const OrdersPage = () => {
                       </p>
                     </div>
                     <Badge className={`${getStatusColor(order.status)} font-semibold px-3 py-1 text-xs uppercase tracking-wide`}>
-                      {order.status.replace('-', ' ')}
+                      {order.status?.replace('_', ' ').replace('-', ' ')}
                     </Badge>
                   </div>
 
