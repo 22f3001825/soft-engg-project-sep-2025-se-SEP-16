@@ -7,28 +7,35 @@ import { ArrowUpRight } from 'lucide-react';
 
 export const TicketsTable = ({ tickets = [], onOpen }) => {
   const getStatusColor = (status) => {
-    switch (status) {
+    const statusLower = status?.toLowerCase();
+    switch (statusLower) {
       case 'open':
-        return 'bg-info text-info-foreground';
+        return 'bg-blue-100 text-blue-800';
+      case 'in_progress':
       case 'in-progress':
-        return 'bg-warning text-warning-foreground';
+        return 'bg-yellow-100 text-yellow-800';
       case 'resolved':
-        return 'bg-success text-success-foreground';
+        return 'bg-green-100 text-green-800';
+      case 'closed':
+        return 'bg-gray-100 text-gray-800';
       default:
-        return 'bg-muted text-muted-foreground';
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getPriorityColor = (priority) => {
-    switch (priority) {
+    const priorityLower = priority?.toLowerCase();
+    switch (priorityLower) {
+      case 'critical':
+        return 'bg-red-100 text-red-800';
       case 'high':
-        return 'bg-destructive text-destructive-foreground';
+        return 'bg-orange-100 text-orange-800';
       case 'medium':
-        return 'bg-warning text-warning-foreground';
+        return 'bg-yellow-100 text-yellow-800';
       case 'low':
-        return 'bg-muted text-muted-foreground';
+        return 'bg-green-100 text-green-800';
       default:
-        return 'bg-muted text-muted-foreground';
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -53,17 +60,17 @@ export const TicketsTable = ({ tickets = [], onOpen }) => {
             {tickets.map(t => (
               <TableRow key={t.id} className="hover:bg-accent/30 transition-colors cursor-pointer">
                 <TableCell className="font-medium">{t.id}</TableCell>
-                <TableCell>{t.messages[0]?.senderName || 'Customer'}</TableCell>
+                <TableCell>{t.customer_name || 'Customer'}</TableCell>
                 <TableCell className="max-w-md truncate">{t.subject}</TableCell>
                 <TableCell>
-                  <Badge className={getStatusColor(t.status)}>{t.status}</Badge>
+                  <Badge className={getStatusColor(t.status)}>{t.status?.replace('_', ' ')}</Badge>
                 </TableCell>
                 <TableCell>
                   <Badge className={getPriorityColor(t.priority)}>{t.priority}</Badge>
                 </TableCell>
-                <TableCell>{new Date(t.createdAt).toLocaleString()}</TableCell>
+                <TableCell>{new Date(t.created_at).toLocaleString()}</TableCell>
                 <TableCell className="max-w-xs truncate text-sm text-muted-foreground">
-                  Customer sees issue related to order {t.orderId || 'N/A'}
+                  Customer sees issue related to order {t.related_order_id || 'N/A'}
                 </TableCell>
                 <TableCell className="text-right">
                   <Button size="sm" variant="outline" onClick={() => onOpen?.(t)} className="hover:bg-primary hover:text-primary-foreground transition-colors">

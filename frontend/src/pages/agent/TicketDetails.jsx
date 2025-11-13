@@ -4,8 +4,7 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Separator } from '../../components/ui/separator';
 import { Input } from '../../components/ui/input';
-import { tickets as seedTickets, orders } from '../../data/dummyData';
-import { storage, withDelay } from './utils';
+import agentApi from '../../services/agentApi';
 import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
 import { ArrowLeft, MessageSquare, Package, Info, CheckCircle2, XCircle, Ticket, Clock, User, Sparkles, Zap } from 'lucide-react';
@@ -21,14 +20,23 @@ export const TicketDetails = ({ ticketId, onBack, onNavigate }) => {
       setTicket(null);
       return;
     }
-    const all = storage.get('agent.tickets', seedTickets);
-    const t = all.find(x => x.id === currentTicketId) || null;
-    withDelay(t).then(setTicket);
+    fetchTicketDetails();
   }, [currentTicketId]);
+
+  const fetchTicketDetails = async () => {
+    try {
+      const data = await agentApi.getTicketDetails(currentTicketId);
+      setTicket(data);
+    } catch (error) {
+      console.error('Failed to fetch ticket details:', error);
+      setTicket(null);
+      toast.error('Failed to load ticket details');
+    }
+  };
 
   
 
-  const order = ticket ? orders.find(o => o.id === ticket.orderId) : null;
+  const order = ticket?.related_order || null;
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -167,7 +175,7 @@ export const TicketDetails = ({ ticketId, onBack, onNavigate }) => {
                   Original Issue Description
                 </h4>
                 <div className="rounded-lg border-2 border-primary/20 p-4 text-sm bg-gradient-to-br from-muted/50 to-muted/30 shadow-inner">
-                  {ticket.messages[0]?.message || 'No description available'}
+                  {ticket.messages?.[0]?.content || 'No description available'}
                 </div>
               </div>
               
@@ -210,7 +218,7 @@ export const TicketDetails = ({ ticketId, onBack, onNavigate }) => {
                     </div>
                     <div className="rounded-lg border-2 border-accent/10 p-4 bg-gradient-to-br from-card to-accent/5 shadow-sm hover:shadow-md transition-shadow">
                       <div className="text-xs text-muted-foreground mb-1">Items</div>
-                      <div className="font-semibold">{order.items[0]}</div>
+                      <div className="font-semibold">{order.items?.[0]?.product_name || order.items?.[0] || 'N/A'}</div>
                     </div>
                     <div className="rounded-lg border-2 border-success/10 p-4 bg-gradient-to-br from-card to-success/5 shadow-sm hover:shadow-md transition-shadow">
                       <div className="text-xs text-muted-foreground mb-1">Amount</div>
@@ -221,7 +229,7 @@ export const TicketDetails = ({ ticketId, onBack, onNavigate }) => {
                         <Clock className="h-3 w-3" />
                         Created
                       </div>
-                      <div className="font-semibold">{order.date}</div>
+                      <div className="font-semibold">{new Date(order.created_at).toLocaleDateString()}</div>
                     </div>
                   </div>
                 </div>
@@ -239,7 +247,7 @@ export const TicketDetails = ({ ticketId, onBack, onNavigate }) => {
               </CardHeader>
               <CardContent className="space-y-4 pt-6">
                 <div className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 rounded-lg border-2 border-purple-500/20 p-4 text-sm leading-relaxed shadow-inner">
-                  Customer report indicates issue related to order {ticket.orderId || 'N/A'}. Recommended next steps: verify payment, confirm shipment status, and follow up with the customer.
+                  Customer report indicates issue related to order {ticket.related_order?.id || 'N/A'}. Recommended next steps: verify payment, confirm shipment status, and follow up with the customer.
                 </div>
                 <div className="flex gap-2">
                   <Button 

@@ -26,6 +26,13 @@ class ApiService {
     const response = await fetch(url, config);
     
     if (!response.ok) {
+      if (response.status === 401) {
+        // Token expired or invalid - redirect to login
+        localStorage.removeItem('intellica_token');
+        localStorage.removeItem('intellica_user');
+        window.location.href = '/login';
+        return;
+      }
       throw new Error(`API Error: ${response.status}`);
     }
     
@@ -137,6 +144,13 @@ class ApiService {
     });
     
     if (!response.ok) {
+      if (response.status === 401) {
+        // Token expired or invalid - redirect to login
+        localStorage.removeItem('intellica_token');
+        localStorage.removeItem('intellica_user');
+        window.location.href = '/login';
+        return;
+      }
       throw new Error(`Upload failed: ${response.status}`);
     }
     

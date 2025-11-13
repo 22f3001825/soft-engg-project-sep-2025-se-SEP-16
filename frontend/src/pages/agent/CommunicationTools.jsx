@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
@@ -6,43 +7,116 @@ import { ScrollArea } from '../../components/ui/scroll-area';
 import { storage } from './utils';
 import { Badge } from '../../components/ui/badge';
 import { Textarea } from '../../components/ui/textarea';
-import { Mail, MessageCircle, Send, Save, Copy, Clock, Activity, Link2, Zap, CheckCircle2 } from 'lucide-react';
+import { Mail, MessageCircle, Send, Save, Copy, Clock, Activity, Link2, Zap, CheckCircle2, User } from 'lucide-react';
 import { toast } from 'sonner';
+import agentApi from '../../services/agentApi';
 
 const KEY = 'agent.activity';
 const cannedTemplates = [
-  { label: 'Refund approved', text: 'Hello, your refund for order {{order_id}} has been approved. The amount will be processed within 3-5 business days.' },
-  { label: 'Order delay', text: 'Hello, your order is delayed but will arrive soon. Thanks for your patience.' },
-  { label: 'Request info', text: 'Could you provide more information or a screenshot so we can assist you faster?' },
-  { label: 'Replacement offer', text: 'We can offer a replacement for your order. Please reply if you accept.' },
-  { label: 'Polite closing', text: 'Let us know if there is anything else we can help you with!' },
+  { label: 'Refund approved', text: 'Hello {{customer_name}}, your refund for order {{order_id}} has been approved. The amount will be processed within 3-5 business days.', hasVariables: true },
+  { label: 'Order delay', text: 'Hello {{customer_name}}, your order {{order_id}} is delayed but will arrive soon. Thanks for your patience.', hasVariables: true },
+  { label: 'Request info', text: 'Could you provide more information or a screenshot so we can assist you faster?', hasVariables: false },
+  { label: 'Replacement offer', text: 'We can offer a replacement for your order {{order_id}}. Please reply if you accept.', hasVariables: true },
+  { label: 'Polite closing', text: 'Let us know if there is anything else we can help you with!', hasVariables: false },
 ];
 
-export const CommunicationTools = ({ ticketId }) => {
-  const [activity, setActivity] = useState(() => storage.get(KEY, []));
+export const CommunicationTools = ({ ticketId, onBack }) => {
+  const navigate = useNavigate();
   // Email
   const [email, setEmail] = useState({ to: 'jamie.rivera@example.com', subject: 'Refund Approved', body: '' });
-  // WhatsApp 
-  const [whatsapp, setWhatsapp] = useState({ to: '+1 415 555 0198', body: '' });
+  // Ticket Chat
+  const [ticketChat, setTicketChat] = useState({ messages: [], newMessage: '', loading: false });
+  const [selectedTicket, setSelectedTicket] = useState(null);
   // Compose textareas
   const emailBodyRef = useRef();
-  const waBodyRef = useRef();
+  const chatBodyRef = useRef();
+  const messagesEndRef = useRef();
 
-  const log = (entry) => {
-    const e = { id: Date.now(), ts: new Date().toISOString(), ...entry };
-    const updated = [e, ...activity].slice(0, 50);
-    setActivity(updated);
-    storage.set(KEY, updated);
+
+
+
+  const substituteVariables = (text) => {
+    if (!selectedTicket) return text;
+    
+    let substituted = text;
+    
+    // Replace {{order_id}} with related order ID
+    if (selectedTicket.related_order?.id) {
+      substituted = substituted.replace(/{{order_id}}/g, selectedTicket.related_order.id);
+    }
+    
+    // Replace {{customer_name}} with customer name
+    if (selectedTicket.customer?.name) {
+      substituted = substituted.replace(/{{customer_name}}/g, selectedTicket.customer.name);
+    }
+    
+    // Replace {{ticket_id}} with current ticket ID
+    substituted = substituted.replace(/{{ticket_id}}/g, ticketId || selectedTicket.id);
+    
+    return substituted;
   };
-
 
   const insertEmailCanned = text => {
-    setEmail(e => ({ ...e, body: e.body ? e.body + '\n' + text : text }));
+    const processedText = substituteVariables(text);
+    setEmail(e => ({ ...e, body: e.body ? e.body + '\n' + processedText : processedText }));
     setTimeout(() => emailBodyRef.current && emailBodyRef.current.focus(), 50);
   };
-  const insertWACanned = text => {
-    setWhatsapp(w => ({ ...w, body: w.body ? w.body + '\n' + text : text }));
-    setTimeout(() => waBodyRef.current && waBodyRef.current.focus(), 50);
+  const insertChatCanned = text => {
+    const processedText = substituteVariables(text);
+    setTicketChat(c => ({ ...c, newMessage: c.newMessage ? c.newMessage + '\n' + processedText : processedText }));
+    setTimeout(() => chatBodyRef.current && chatBodyRef.current.focus(), 50);
+  };
+
+  useEffect(() => {
+    // Scroll to top when component mounts
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  useEffect(() => {
+    if (ticketId) {
+      fetchTicketDetails(ticketId);
+    }
+  }, [ticketId]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [ticketChat.messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const fetchTicketDetails = async (id) => {
+    try {
+      setTicketChat(prev => ({ ...prev, loading: true }));
+      const ticket = await agentApi.getTicketDetails(id);
+      setSelectedTicket(ticket);
+      setTicketChat(prev => ({ ...prev, messages: ticket.messages || [], loading: false }));
+    } catch (error) {
+      console.error('Failed to fetch ticket details:', error);
+      setTicketChat(prev => ({ ...prev, loading: false }));
+      toast.error('Failed to load ticket chat');
+    }
+  };
+
+  const sendChatMessage = async () => {
+    if (!ticketChat.newMessage.trim() || !ticketId) return;
+
+    try {
+      await agentApi.addTicketMessage(ticketId, {
+        content: ticketChat.newMessage,
+        is_internal: false
+      });
+      
+      // Refresh messages
+      await fetchTicketDetails(ticketId);
+      setTicketChat(prev => ({ ...prev, newMessage: '' }));
+      
+      toast.success('Message sent to customer!');
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      toast.error('Failed to send message');
+    }
   };
 
   return (
@@ -56,7 +130,7 @@ export const CommunicationTools = ({ ticketId }) => {
             </div>
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight">Communication Tools</h1>
-              <p className="text-xs text-muted-foreground">Email & WhatsApp integration</p>
+              <p className="text-xs text-muted-foreground">Email & Ticket Chat integration</p>
             </div>
           </div>
           {ticketId && (
@@ -66,6 +140,11 @@ export const CommunicationTools = ({ ticketId }) => {
             </Badge>
           )}
           <div className="flex-1"></div>
+          {onBack && (
+            <Button variant="outline" onClick={onBack} className="ml-auto hover:bg-primary/10 hover:border-primary/50 hover:text-primary">
+              Back to Dashboard
+            </Button>
+          )}
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -96,9 +175,10 @@ export const CommunicationTools = ({ ticketId }) => {
                       key={t.label} 
                       variant="secondary" 
                       onClick={() => insertEmailCanned(t.text)}
-                      className="bg-primary/10 hover:bg-primary/20 text-primary border-primary/20 hover:border-primary/40"
+                      className={`${t.hasVariables ? 'bg-accent/20 hover:bg-accent/30 text-accent border-accent/30' : 'bg-primary/10 hover:bg-primary/20 text-primary border-primary/20'} hover:border-primary/40`}
+                      title={t.hasVariables ? 'Contains variables that will be auto-filled' : 'Static template'}
                     >
-                      <Zap className="h-3 w-3 mr-1" />
+                      {t.hasVariables ? <Link2 className="h-3 w-3 mr-1" /> : <Zap className="h-3 w-3 mr-1" />}
                       {t.label}
                     </Button>
                   ))}
@@ -119,7 +199,6 @@ export const CommunicationTools = ({ ticketId }) => {
               </Button>
               <Button 
                 onClick={() => { 
-                  log({ type: 'email', to: email.to, subject: email.subject, body: email.body }); 
                   setEmail({ ...email, body: '' });
                   toast.success('Email sent successfully!');
                 }}
@@ -131,115 +210,110 @@ export const CommunicationTools = ({ ticketId }) => {
             </div>
           </CardContent>
         </Card>
-        {/* WHATSAPP CARD */}
+        {/* TICKET CHAT CARD */}
         <Card className="shadow-lg border-2 border-success/20 bg-gradient-to-br from-background to-success/5 hover:shadow-xl transition-shadow">
           <CardHeader className="bg-gradient-to-r from-success/10 to-success/5 border-b">
             <CardTitle className="flex items-center gap-2 text-success">
               <MessageCircle className="h-5 w-5" />
-              WhatsApp Integration
+              Ticket Chat
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="grid grid-cols-5 items-center gap-2 mb-2">
-              <label className="col-span-1 font-semibold text-sm text-muted-foreground">To</label>
-              <Input className="col-span-4" value={whatsapp.to} onChange={e => setWhatsapp(w => ({ ...w, to: e.target.value }))} />
-            </div>
-            <div className="grid grid-cols-5 items-center gap-2 mb-2">
-              <label className="col-span-1 font-semibold text-sm text-muted-foreground">Message</label>
-              <div className="col-span-4 flex flex-col gap-2">
-                <div className="flex gap-2 flex-wrap mb-1">
-                  {cannedTemplates.map(t => (
-                    <Button 
-                      size="xs" 
-                      key={t.label} 
-                      variant="secondary" 
-                      onClick={() => insertWACanned(t.text)}
-                      className="bg-success/10 hover:bg-success/20 text-success border-success/20 hover:border-success/40"
-                    >
-                      <Zap className="h-3 w-3 mr-1" />
-                      {t.label}
-                    </Button>
-                  ))}
-                </div>
-                <Textarea
-                  ref={waBodyRef}
-                  rows={5}
-                  className="resize-none"
-                  value={whatsapp.body}
-                  onChange={e => setWhatsapp(w => ({ ...w, body: e.target.value }))}
-                  placeholder="Type or insert a canned response..."
-                />
+            {!ticketId ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <MessageCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Select a ticket to start chatting with the customer</p>
               </div>
-            </div>
-            <div className="flex gap-2 justify-end mt-2">
-              <Button variant="outline" onClick={() => setWhatsapp({ ...whatsapp, body: '' })} className="hover:bg-destructive/10 hover:border-destructive/50 hover:text-destructive">
-                Clear
-              </Button>
-              <Button 
-                onClick={() => { 
-                  log({ type: 'whatsapp', to: whatsapp.to, body: whatsapp.body }); 
-                  setWhatsapp({ ...whatsapp, body: '' });
-                  toast.success('WhatsApp message sent!');
-                }}
-                className="bg-gradient-to-r from-success to-success/90 hover:from-success/90 hover:to-success text-white shadow-md"
-              >
-                <MessageCircle className="h-4 w-4 mr-2" />
-                Send WhatsApp
-              </Button>
-            </div>
+            ) : (
+              <>
+                {selectedTicket && (
+                  <div className="bg-primary/10 rounded-lg p-3 border border-primary/20">
+                    <div className="flex items-center gap-2 mb-1">
+                      <User className="h-4 w-4 text-primary" />
+                      <span className="font-semibold text-primary">{selectedTicket.customer?.name}</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{selectedTicket.subject}</p>
+                  </div>
+                )}
+                
+                <div className="border rounded-lg h-64 flex flex-col">
+                  <ScrollArea className="flex-1 p-3">
+                    {ticketChat.loading ? (
+                      <div className="text-center py-4 text-muted-foreground">
+                        <Clock className="h-6 w-6 mx-auto mb-2 animate-spin" />
+                        <p className="text-sm">Loading messages...</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {ticketChat.messages.map((msg) => (
+                          <div key={msg.id} className={`flex ${msg.sender_type === 'agent' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[80%] rounded-lg p-3 ${
+                              msg.sender_type === 'agent'
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-secondary text-secondary-foreground'
+                            }`}>
+                              <p className="text-sm">{msg.content}</p>
+                              <p className="text-xs mt-1 opacity-70">
+                                {new Date(msg.created_at).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                        <div ref={messagesEndRef} />
+                      </div>
+                    )}
+                  </ScrollArea>
+                </div>
+                
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2 flex-wrap">
+                    {cannedTemplates.map(t => (
+                      <Button 
+                        size="xs" 
+                        key={t.label} 
+                        variant="secondary" 
+                        onClick={() => insertChatCanned(t.text)}
+                        className={`${t.hasVariables ? 'bg-accent/20 hover:bg-accent/30 text-accent border-accent/30' : 'bg-success/10 hover:bg-success/20 text-success border-success/20'} hover:border-success/40`}
+                        title={t.hasVariables ? 'Contains variables that will be auto-filled' : 'Static template'}
+                      >
+                        {t.hasVariables ? <Link2 className="h-3 w-3 mr-1" /> : <Zap className="h-3 w-3 mr-1" />}
+                        {t.label}
+                      </Button>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <Textarea
+                      ref={chatBodyRef}
+                      rows={2}
+                      className="resize-none flex-1"
+                      value={ticketChat.newMessage}
+                      onChange={e => setTicketChat(prev => ({ ...prev, newMessage: e.target.value }))}
+                      placeholder="Type your message to the customer..."
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          sendChatMessage();
+                        }
+                      }}
+                    />
+                    <Button 
+                      onClick={sendChatMessage}
+                      disabled={!ticketChat.newMessage.trim()}
+                      className="bg-gradient-to-r from-success to-success/90 hover:from-success/90 hover:to-success text-white shadow-md"
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
-      {/* RECENT ACTIVITY CARD */}
-      <Card className="shadow-lg border-2 border-accent/10 bg-gradient-to-br from-background to-accent/5">
-        <CardHeader className="bg-gradient-to-r from-accent/10 to-transparent border-b">
-          <CardTitle className="flex items-center gap-2 text-accent">
-            <Activity className="h-5 w-5" />
-            Recent Activity
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <ScrollArea className="h-48 md:h-60">
-            <div className="space-y-3 pr-2">
-              {activity.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No activity yet.</p>
-                </div>
-              ) : (
-                activity.map(a => (
-                  <div key={a.id} className="rounded-lg border-2 border-primary/10 p-4 text-sm bg-gradient-to-r from-card to-primary/5 hover:from-primary/5 hover:to-accent/5 hover:border-primary/30 transition-all shadow-sm">
-                    <div className="flex items-center gap-2 font-medium capitalize mb-2">
-                      {a.type === 'email' ? (
-                        <Mail className="h-4 w-4 text-primary" />
-                      ) : (
-                        <MessageCircle className="h-4 w-4 text-success" />
-                      )}
-                      <span className="text-primary">{a.type}</span>
-                      <span className="text-muted-foreground">to</span>
-                      <span className="font-semibold">{a.to}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                      <Clock className="h-3 w-3" />
-                      {new Date(a.ts).toLocaleString()}
-                    </div>
-                    {a.subject ? (
-                      <div className="text-xs mb-1 p-2 bg-primary/10 rounded border border-primary/20">
-                        <b>Subject:</b> {a.subject}
-                      </div>
-                    ) : null}
-                    {a.body ? (
-                      <div className="whitespace-pre-line text-xs text-card-foreground p-2 bg-muted/50 rounded border mt-2">
-                        {a.body}
-                      </div>
-                    ) : null}
-                  </div>
-                ))
-              )}
-            </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
+
     </div>
   );
 };
