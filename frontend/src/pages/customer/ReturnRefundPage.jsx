@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Header } from '../../components/common/Header';
 import { ChatBot } from '../../components/common/ChatBot';
@@ -9,8 +9,8 @@ import { Textarea } from '../../components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '../../components/ui/radio-group';
 import { Checkbox } from '../../components/ui/checkbox';
 import { ArrowLeft, ArrowRight, Check, Upload, DollarSign } from 'lucide-react';
-import { orders } from '../../data/dummyData';
 import { toast } from 'sonner';
+import apiService from '../../services/api';
 
 export const ReturnRefundPage = () => {
   const navigate = useNavigate();
@@ -25,9 +25,26 @@ export const ReturnRefundPage = () => {
     description: '',
     refundMethod: 'original'
   });
+  const [ordersData, setOrdersData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const deliveredOrders = orders.filter(o => o.status === 'delivered');
-  const selectedOrder = orders.find(o => o.id === formData.orderId);
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const fetchOrders = async () => {
+    try {
+      const data = await apiService.getOrders();
+      setOrdersData(data);
+    } catch (error) {
+      console.error('Failed to fetch orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deliveredOrders = ordersData.filter(o => o.status === 'delivered' || o.status === 'DELIVERED');
+  const selectedOrder = ordersData.find(o => o.id === formData.orderId);
 
   const refundReasons = [
     'Product is defective or damaged',
@@ -55,13 +72,25 @@ export const ReturnRefundPage = () => {
     setStep(step + 1);
   };
 
-  const handleSubmit = () => {
-    const ticketId = `TKT-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
-    toast.success(`Refund request submitted successfully! Ticket ${ticketId} created.`);
-    
-    setTimeout(() => {
-      navigate('/customer/dashboard');
-    }, 2000);
+  const handleSubmit = async () => {
+    try {
+      const returnData = {
+        order_id: formData.orderId,
+        items: formData.selectedItems,
+        reason: formData.reason,
+        description: formData.description
+      };
+      
+      const response = await apiService.requestReturn(returnData);
+      toast.success(`Refund request submitted successfully! Ticket ${response.ticket_id} created.`);
+      
+      setTimeout(() => {
+        navigate('/customer/dashboard');
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to submit return request:', error);
+      toast.error('Failed to submit return request. Please try again.');
+    }
   };
 
   const calculateRefund = () => {
@@ -102,7 +131,13 @@ export const ReturnRefundPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 relative overflow-hidden">
+      {/* Animated Background Pattern */}
+      <div className="absolute inset-0 opacity-8 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-violet-400/25 via-fuchsia-400/20 to-rose-400/25 animate-pulse"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-blue-300/20 to-indigo-300/20 rounded-full blur-2xl animate-pulse"></div>
+      </div>
+
       <Header />
       
       <main className="container mx-auto px-4 py-8 max-w-4xl">
@@ -115,7 +150,7 @@ export const ReturnRefundPage = () => {
           Back to Orders
         </Button>
 
-        <Card>
+        <Card className="bg-white/95 backdrop-blur-sm border-2 border-white/20 shadow-xl">
           <CardHeader>
             <CardTitle className="text-2xl text-center">Return & Refund Request</CardTitle>
           </CardHeader>
@@ -136,13 +171,15 @@ export const ReturnRefundPage = () => {
                             <div>
                               <p className="font-semibold">{order.id}</p>
                               <p className="text-sm text-muted-foreground">
-                                {order.items.join(', ')}
+                                {(order.items || []).map(item => 
+                                  typeof item === 'string' ? item : item.product_name
+                                ).join(', ')}
                               </p>
                             </div>
                             <div className="text-right">
                               <p className="font-semibold">${order.total}</p>
                               <p className="text-sm text-muted-foreground">
-                                {new Date(order.date).toLocaleDateString()}
+                                {new Date(order.created_at).toLocaleDateString()}
                               </p>
                             </div>
                           </div>
@@ -159,33 +196,40 @@ export const ReturnRefundPage = () => {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Select items to return</h3>
                 <div className="space-y-3">
-                  {selectedOrder.items.map((item, idx) => (
-                    <div key={idx} className="flex items-center space-x-3 p-4 border rounded-lg">
-                      <Checkbox
-                        id={`item-${idx}`}
-                        checked={formData.selectedItems.includes(item)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setFormData({
-                              ...formData,
-                              selectedItems: [...formData.selectedItems, item]
-                            });
-                          } else {
-                            setFormData({
-                              ...formData,
-                              selectedItems: formData.selectedItems.filter(i => i !== item)
-                            });
-                          }
-                        }}
-                      />
-                      <Label htmlFor={`item-${idx}`} className="flex-1 cursor-pointer">
-                        <p className="font-medium">{item}</p>
-                        <p className="text-sm text-muted-foreground">
-                          ${(selectedOrder.total / selectedOrder.items.length).toFixed(2)}
-                        </p>
-                      </Label>
-                    </div>
-                  ))}
+                  {(selectedOrder.items || []).map((item, idx) => {
+                    const itemName = typeof item === 'string' ? item : item.product_name;
+                    const itemPrice = typeof item === 'string' 
+                      ? (selectedOrder.total / selectedOrder.items.length).toFixed(2)
+                      : item.price;
+                    
+                    return (
+                      <div key={idx} className="flex items-center space-x-3 p-4 border rounded-lg">
+                        <Checkbox
+                          id={`item-${idx}`}
+                          checked={formData.selectedItems.includes(itemName)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setFormData({
+                                ...formData,
+                                selectedItems: [...formData.selectedItems, itemName]
+                              });
+                            } else {
+                              setFormData({
+                                ...formData,
+                                selectedItems: formData.selectedItems.filter(i => i !== itemName)
+                              });
+                            }
+                          }}
+                        />
+                        <Label htmlFor={`item-${idx}`} className="flex-1 cursor-pointer">
+                          <p className="font-medium">{itemName}</p>
+                          <p className="text-sm text-muted-foreground">
+                            ${itemPrice}
+                          </p>
+                        </Label>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -236,7 +280,7 @@ export const ReturnRefundPage = () => {
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold">Review your refund request</h3>
                 
-                <Card className="bg-secondary/50">
+                <Card className="bg-white/95 backdrop-blur-sm border-2 border-white/20 shadow-xl">
                   <CardContent className="pt-6 space-y-4">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Order ID:</span>

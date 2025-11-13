@@ -15,11 +15,27 @@ import { NewTicketPage } from './pages/customer/NewTicketPage';
 import { OrdersPage } from './pages/customer/OrdersPage';
 import { OrderTrackingPage } from './pages/customer/OrderTrackingPage';
 import { ReturnRefundPage } from './pages/customer/ReturnRefundPage';
+import { ProfilePage as CustomerProfilePage } from './pages/customer/ProfilePage';
+import { SettingsPage as CustomerSettingsPage } from './pages/customer/SettingsPage';
 
 // Other Portals
 import { AgentDashboard } from './pages/agent/AgentDashboard';
+
+
 import { SupervisorDashboard } from './pages/supervisor/SupervisorDashboard';
+import { TeamManagement } from './pages/supervisor/TeamManagement';
+import { TicketManagement } from './pages/supervisor/TicketManagement';
+import { SupervisorCustomers } from './pages/supervisor/SupervisorCustomers';
+import { SupervisorProfile } from './pages/supervisor/SupervisorProfile';
+import { Settings } from './pages/supervisor/Settings';
+
+
 import { VendorDashboard } from './pages/vendor/VendorDashboard';
+import AnalyticsDashboard from './pages/vendor/AnalyticsDashboard';
+import { ProductComplaintsPage } from './pages/vendor/ProductComplaintsPage';
+import { ProductDetailsPage } from './pages/vendor/ProductDetailsPage';
+import { ProfilePage as VendorProfilePage } from './pages/vendor/ProfilePage';
+import { SettingsPage as VendorSettingsPage } from './pages/vendor/SettingsPage';
 
 import './App.css';
 
@@ -31,10 +47,10 @@ function App() {
           <Routes>
             {/* Default redirect */}
             <Route path="/" element={<Navigate to="/login" replace />} />
-            
+
             {/* Auth Routes */}
             <Route path="/login" element={<LoginPage />} />
-            
+
             {/* Customer Portal Routes */}
             <Route
               path="/customer/dashboard"
@@ -92,7 +108,23 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            
+            <Route
+              path="/customer/profile"
+              element={
+                <ProtectedRoute allowedRoles={['customer']}>
+                  <CustomerProfilePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/customer/settings"
+              element={
+                <ProtectedRoute allowedRoles={['customer']}>
+                  <CustomerSettingsPage />
+                </ProtectedRoute>
+              }
+            />
+
             {/* Other Portal Routes */}
             <Route
               path="/agent/dashboard"
@@ -111,6 +143,46 @@ function App() {
               }
             />
             <Route
+              path="/supervisor/team_management"
+              element={
+                <ProtectedRoute allowedRoles={['supervisor']}>
+                  <TeamManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/supervisor/ticket_management"
+              element={
+                <ProtectedRoute allowedRoles={['supervisor']}>
+                  <TicketManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/supervisor/supervisor_customers"
+              element={
+                <ProtectedRoute allowedRoles={['supervisor']}>
+                  <SupervisorCustomers />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/supervisor/profile"
+              element={
+                <ProtectedRoute allowedRoles={['supervisor']}>
+                  <SupervisorProfile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/supervisor/settings"
+              element={
+                <ProtectedRoute allowedRoles={['supervisor']}>
+                  <Settings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/vendor/dashboard"
               element={
                 <ProtectedRoute allowedRoles={['vendor']}>
@@ -118,11 +190,51 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            
+            <Route
+              path="/vendor/analytics"
+              element={
+                <ProtectedRoute allowedRoles={['vendor']}>
+                  <VendorDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vendor/complaints"
+              element={
+                <ProtectedRoute allowedRoles={['vendor']}>
+                  <ProductComplaintsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vendor/products/:productId"
+              element={
+                <ProtectedRoute allowedRoles={['vendor']}>
+                  <ProductDetailsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vendor/profile"
+              element={
+                <ProtectedRoute allowedRoles={['vendor']}>
+                  <VendorProfilePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vendor/settings"
+              element={
+                <ProtectedRoute allowedRoles={['vendor']}>
+                  <VendorSettingsPage />
+                </ProtectedRoute>
+              }
+            />
+
             {/* 404 - Catch all */}
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
-          
+
           <Toaster position="top-right" richColors />
         </div>
       </BrowserRouter>

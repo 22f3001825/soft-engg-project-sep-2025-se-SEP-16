@@ -1,137 +1,409 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import { Badge } from '../../components/ui/badge';
-import { ShieldCheck, ArrowLeft, User, LogOut, Package, ShoppingCart, TrendingUp, Store } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../../components/ui/accordion';
+import { Header } from '../../components/common/Header';
+import vendorApi from '../../services/vendorApi';
+import { TrendingUp, AlertTriangle, Package, BarChart3, ArrowRight, Star, Users, ShoppingCart, Eye, Clock, User, PieChart, Download, HelpCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Cell, Pie } from 'recharts';
 
-export const VendorDashboard = () => {
-  const navigate = useNavigate();
-  const { user, logout } = useAuth();
+const VendorDashboard = React.memo(() => {
+  const [dateRange, setDateRange] = useState('30');
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [aiInsights, setAiInsights] = useState({
+    recentPattern: "40% of complaints tied to Supplier Y delays—recommend stock buffer.",
+    vendorBenchmark: "Your return rate (4.2%) beats industry avg (6.1%)—great job!",
+    actionableInsights: [
+      "Review supplier contracts for better delivery terms",
+      "Implement quality checks for audio components",
+      "Monitor battery supplier performance closely"
+    ]
+  });
+  const [suggestedFaqs, setSuggestedFaqs] = useState([]);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const stats = dashboardData || {
+    totalComplaints: 0,
+    overallReturnRate: 0,
+    topIssueCategory: "Loading...",
+    totalProducts: 0
   };
+  const recentComplaints = dashboardData?.recentComplaints || [];
 
-  const stats = [
-    { title: 'Total Products', value: '156', icon: Package, color: 'text-blue-600' },
-    { title: 'Orders This Month', value: '89', icon: ShoppingCart, color: 'text-green-600' },
-    { title: 'Revenue Growth', value: '+12%', icon: TrendingUp, color: 'text-purple-600' },
+  // Load dashboard data
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        const data = await vendorApi.getDashboard();
+        setDashboardData(data);
+      } catch (error) {
+        console.error('Failed to load dashboard:', error);
+        // Set fallback data on error
+        setDashboardData({
+          totalComplaints: 8,
+          overallReturnRate: 4.2,
+          topIssueCategory: "Audio Issues",
+          totalProducts: 10,
+          recentComplaints: []
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadDashboard();
+  }, []);
+
+  // Auto-refresh insights on page load
+  useEffect(() => {
+    const refreshInsights = () => {
+      const patterns = [
+        "40% of complaints tied to Supplier Y delays—recommend stock buffer.",
+        "35% of issues related to battery performance—consider supplier audit.",
+        "28% of connectivity problems stem from firmware updates—schedule testing."
+      ];
+      const benchmarks = [
+        "Your return rate (4.2%) beats industry avg (6.1%)—great job!",
+        "Your resolution time (2.3 days) is below industry avg (3.8 days)—excellent!",
+        "Your customer satisfaction (4.7/5) exceeds industry avg (4.2/5)—outstanding!"
+      ];
+      const insights = [
+        ["Review supplier contracts for better delivery terms", "Implement quality checks for audio components", "Monitor battery supplier performance closely"],
+        ["Audit battery suppliers for quality standards", "Enhance firmware testing protocols", "Improve customer communication during updates"],
+        ["Strengthen connectivity testing procedures", "Partner with firmware specialists", "Develop proactive update notifications"]
+      ];
+
+      const randomIndex = Math.floor(Math.random() * patterns.length);
+      setAiInsights({
+        recentPattern: patterns[randomIndex],
+        vendorBenchmark: benchmarks[randomIndex],
+        actionableInsights: insights[randomIndex]
+      });
+    };
+
+    refreshInsights();
+  }, [dashboardData]);
+
+  // Keyword matching for FAQ suggestions
+  useEffect(() => {
+    const keywords = recentComplaints.flatMap(complaint =>
+      complaint.issue.toLowerCase().split(' ')
+    );
+
+    const faqDatabase = [
+      { question: "How to reduce delivery issues?", keywords: ["delay", "delivery", "supplier", "shipping"] },
+      { question: "Fraud detection best practices", keywords: ["fraud", "scam", "fake", "counterfeit"] },
+      { question: "Quality control procedures", keywords: ["quality", "defect", "faulty", "broken"] },
+      { question: "Battery performance optimization", keywords: ["battery", "power", "charging", "drain"] },
+      { question: "Audio component troubleshooting", keywords: ["audio", "sound", "speaker", "noise"] },
+      { question: "Connectivity issue resolution", keywords: ["connectivity", "wifi", "bluetooth", "network"] }
+    ];
+
+    const matchedFaqs = faqDatabase.filter(faq =>
+      faq.keywords.some(keyword => keywords.includes(keyword))
+    ).slice(0, 3);
+
+    setSuggestedFaqs(matchedFaqs);
+  }, [recentComplaints]);
+
+  const [analyticsData, setAnalyticsData] = useState(null);
+
+  // Load analytics data for charts
+  useEffect(() => {
+    const loadAnalytics = async () => {
+      try {
+        const data = await vendorApi.getAnalytics('180');
+        setAnalyticsData(data);
+      } catch (error) {
+        console.error('Failed to load analytics:', error);
+      }
+    };
+    if (dashboardData) {
+      loadAnalytics();
+    }
+  }, [dashboardData]);
+
+  // Use real analytics data or fallback
+  const complaintsTrendData = analyticsData?.complaintsTrend || [
+    { month: 'Dec', complaints: stats.totalComplaints || 0 }
   ];
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-primary/5 p-4">
-      {/* Header */}
-      <div className="flex items-center justify-between p-6">
-        <Button
-          onClick={() => navigate('/login')}
-          variant="outline"
-          size="sm"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Login
-        </Button>
+  const issueCategoriesData = analyticsData?.issueCategories?.map(cat => ({
+    name: cat.category,
+    value: cat.count,
+    color: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'][analyticsData.issueCategories.indexOf(cat)] || '#6B7280'
+  })) || [];
 
-        <div className="flex items-center gap-3">
-          <Badge variant="secondary" className="capitalize">
-            {user?.role}
-          </Badge>
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={user?.avatar} alt={user?.name} />
-            <AvatarFallback>
-              <User className="h-4 w-4" />
-            </AvatarFallback>
-          </Avatar>
-          <span className="text-sm font-medium">{user?.name}</span>
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            size="sm"
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Logout
-          </Button>
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
         </div>
       </div>
+    );
+  }
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Welcome Section */}
-        <div className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-success to-accent shadow-lg">
-              <ShieldCheck className="h-8 w-8 text-white" />
-            </div>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 relative overflow-hidden">
+      {/* Animated Background Pattern */}
+      <div className="absolute inset-0 opacity-8 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-violet-400/25 via-fuchsia-400/20 to-rose-400/25 animate-pulse"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-blue-300/20 to-indigo-300/20 rounded-full blur-2xl animate-pulse"></div>
+      </div>
+
+      <Header />
+
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+              Vendor Dashboard
+            </h1>
+            <p className="text-gray-600 text-lg">Monitor product performance and customer satisfaction</p>
           </div>
-          <h1 className="text-3xl font-bold mb-2">Vendor Portal</h1>
-          <p className="text-muted-foreground">Manage your product listings and orders</p>
+          <div className="flex gap-3">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 shadow-lg hover:shadow-xl transition-all duration-300">
+                  <Star className="h-4 w-4 mr-2" />
+                  AI Copilot
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                    AI Vendor Copilot
+                  </DialogTitle>
+                  <DialogDescription>
+                    Smart insights and recommendations for your vendor operations
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5 text-blue-500" />
+                        Recent Pattern Analysis
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-gray-700">{aiInsights.recentPattern}</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <BarChart3 className="h-5 w-5 text-green-500" />
+                        Vendor Benchmark
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-gray-700">{aiInsights.vendorBenchmark}</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <ArrowRight className="h-5 w-5 text-orange-500" />
+                        Actionable Insights
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-2">
+                        {aiInsights.actionableInsights.map((insight, index) => (
+                          <li key={index} className="flex items-start gap-2">
+                            <ArrowRight className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                            <span className="text-gray-700">{insight}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Link to="/vendor/complaints">
+              <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300">
+                <Package className="h-4 w-4 mr-2" />
+                Product Complaints
+              </Button>
+            </Link>
+          </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {stats.map((stat, index) => (
-            <Card key={index} className="shadow-lg">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-              </CardContent>
-            </Card>
-          ))}
+        {/* Enhanced Overview Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 border-blue-400 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-white">Total Complaints</CardTitle>
+              <AlertTriangle className="h-5 w-5 text-white" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-white mb-1">{stats.totalComplaints}</div>
+              <p className="text-xs text-blue-100">All time</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-orange-500 to-orange-600 border-orange-400 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-white">Return Rate</CardTitle>
+              <TrendingUp className="h-5 w-5 text-white" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-white mb-1">{stats.overallReturnRate}%</div>
+              <p className="text-xs text-orange-100">Overall performance</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-green-500 to-green-600 border-green-400 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-white">Top Issue</CardTitle>
+              <BarChart3 className="h-5 w-5 text-white" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm font-bold text-white mb-1">{stats.topIssueCategory}</div>
+              <p className="text-xs text-green-100">Most reported issue</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 border-purple-400 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-white">Products</CardTitle>
+              <Package className="h-5 w-5 text-white" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-white mb-1">{stats.totalProducts}</div>
+              <p className="text-xs text-purple-100">Total products</p>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Main Content Area */}
-        <Card className="shadow-xl">
-          <CardHeader>
-            <CardTitle>Vendor Dashboard</CardTitle>
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-blue-500" />
+                Complaints Trend
+              </CardTitle>
+              <CardDescription>Monthly complaint volume over time</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={complaintsTrendData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="complaints" stroke="#3B82F6" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <PieChart className="h-5 w-5 text-green-500" />
+                Issue Categories
+              </CardTitle>
+              <CardDescription>Distribution of complaint types</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <RechartsPieChart>
+                  <Pie
+                    data={issueCategoriesData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percentage }) => `${name} ${percentage}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {issueCategoriesData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </RechartsPieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Enhanced Recent Complaints Table */}
+        <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+          <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg">
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle className="text-xl text-gray-800 flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-red-500" />
+                  Recent Complaints ({recentComplaints.length})
+                </CardTitle>
+                <CardDescription className="text-gray-600">
+                  {recentComplaints.length === 0 ? 'No complaints - great job!' : 
+                   recentComplaints.length <= 2 ? 'Low complaint volume' :
+                   recentComplaints.length <= 5 ? 'Moderate activity' : 'High activity - review needed'}
+                </CardDescription>
+              </div>
+              {recentComplaints.length > 0 && (
+                <Link to="/vendor/complaints">
+                  <Button size="sm" variant="outline">
+                    View All
+                  </Button>
+                </Link>
+              )}
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="bg-secondary/50 rounded-lg p-6 text-center">
-              <p className="text-foreground mb-4">
-                Welcome to the Vendor Portal, {user?.name}!
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Manage your product catalog, track orders, and monitor your business performance.
-                Start building your vendor features here.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <h3 className="font-semibold">Product Management</h3>
-                <div className="space-y-2">
-                  <Button variant="outline" className="w-full justify-start">
-                    <Package className="mr-2 h-4 w-4" />
-                    Product Catalog
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    <ShoppingCart className="mr-2 h-4 w-4" />
-                    Order Management
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    <Store className="mr-2 h-4 w-4" />
-                    Inventory Control
-                  </Button>
-                </div>
+          <CardContent className="p-6">
+            {recentComplaints.length > 0 ? (
+              <div className="space-y-4">
+                {recentComplaints.map((complaint, index) => (
+                  <div key={complaint.id} className="p-4 border rounded-lg bg-white hover:bg-gray-50 transition-colors">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-medium text-gray-900">{complaint.productName}</h4>
+                          <Badge className={`${
+                            complaint.severity === 'high' ? 'bg-red-100 text-red-700 border-red-200' :
+                            complaint.severity === 'medium' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                            'bg-green-100 text-green-700 border-green-200'
+                          }`}>
+                            {complaint.severity}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2">{complaint.issue}</p>
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <span>Status: <span className="capitalize font-medium">{complaint.status}</span></span>
+                          <span>Date: {new Date(complaint.reportedDate).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-
-              <div className="space-y-2">
-                <h3 className="font-semibold">Business Insights</h3>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <p>• Top-selling products updated</p>
-                  <p>• New orders received</p>
-                  <p>• Customer reviews pending</p>
+            ) : (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Package className="h-8 w-8 text-green-600" />
                 </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No Recent Complaints</h3>
+                <p className="text-gray-500">Your products are performing well! Keep up the great work.</p>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>
     </div>
   );
-};
+});
+
+export { VendorDashboard };

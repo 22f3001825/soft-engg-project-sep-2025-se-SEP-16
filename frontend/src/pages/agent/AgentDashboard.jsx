@@ -1,137 +1,147 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { MessageSquare, Users, BarChart3, AlertCircle, LayoutDashboard } from 'lucide-react';
+import { AgentLayout } from './AgentLayout';
+import { StatsCards } from './components/StatsCards';
+import { TicketsTable } from './components/TicketsTable';
+import { AllTicketsView } from './components/AllTicketsView';
+import { TicketDetails } from './TicketDetails';
+import { ResponseTemplates } from './ResponseTemplates';
+import { CommunicationTools } from './CommunicationTools';
+import { CustomerProfile } from './CustomerProfile';
+import { Settings } from './Settings';
+import agentApi from '../../services/agentApi';
 import { useAuth } from '../../context/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
-import { Badge } from '../../components/ui/badge';
-import { ShieldCheck, ArrowLeft, User, LogOut, MessageSquare, Users, BarChart3 } from 'lucide-react';
 
 export const AgentDashboard = () => {
-  const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const [active, setActive] = useState('dashboard');
+  const [tickets, setTickets] = useState([]);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [selectedTicket, setSelectedTicket] = useState(undefined);
+  const [commTicketId, setCommTicketId] = useState(undefined);
+  const [loading, setLoading] = useState(true);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  useEffect(() => {
+    fetchDashboardData();
+    fetchTickets();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      const data = await agentApi.getDashboard();
+      setDashboardData(data);
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error);
+    }
   };
 
-  const stats = [
-    { title: 'Open Tickets', value: '12', icon: MessageSquare, color: 'text-blue-600' },
-    { title: 'Active Customers', value: '45', icon: Users, color: 'text-green-600' },
-    { title: 'Resolution Rate', value: '94%', icon: BarChart3, color: 'text-purple-600' },
-  ];
+  const fetchTickets = async () => {
+    try {
+      setLoading(true);
+      const data = await agentApi.getTickets(null, null, true); // Get only assigned tickets for dashboard
+      setTickets(data.slice(0, 5)); // Show only 5 recent tickets on dashboard
+    } catch (error) {
+      console.error('Failed to fetch tickets:', error);
+      setTickets([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  const stats = dashboardData ? [
+    { title: 'All Tickets', value: dashboardData.stats.available_tickets, icon: MessageSquare, tone: 'text-blue-600' },
+    { title: 'Assigned to me', value: dashboardData.stats.assigned_to_me, icon: Users, tone: 'text-emerald-600' },
+    { title: 'High Priority', value: dashboardData.stats.high_priority, icon: BarChart3, tone: 'text-violet-600' },
+    { title: 'Overdue', value: dashboardData.stats.overdue, icon: AlertCircle, tone: 'text-red-600' }
+  ] : [];
+
+  
+
+  
+  const handleNavigate = (to, params) => {
+    let nextTab = typeof to === 'string' ? to : (to.tab || 'dashboard');
+    setActive(nextTab);
+    if (nextTab !== 'ticket') setSelectedTicket(undefined);
+    if (nextTab === 'comm' && params && params.ticketId) {
+      setCommTicketId(params.ticketId);
+    } else if (nextTab === 'comm' && to.ticketId) {
+      setCommTicketId(to.ticketId);
+    } else if (nextTab === 'comm') {
+      setCommTicketId(undefined);
+    }
+  };
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-primary/5 p-4">
-      {/* Header */}
-      <div className="flex items-center justify-between p-6">
-        <Button
-          onClick={() => navigate('/login')}
-          variant="outline"
-          size="sm"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Login
-        </Button>
-
-        <div className="flex items-center gap-3">
-          <Badge variant="secondary" className="capitalize">
-            {user?.role}
-          </Badge>
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={user?.avatar} alt={user?.name} />
-            <AvatarFallback>
-              <User className="h-4 w-4" />
-            </AvatarFallback>
-          </Avatar>
-          <span className="text-sm font-medium">{user?.name}</span>
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            size="sm"
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Logout
-          </Button>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Welcome Section */}
-        <div className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-accent to-primary shadow-lg">
-              <ShieldCheck className="h-8 w-8 text-white" />
+    <AgentLayout active={active} onNavigate={handleNavigate}>
+      {active === 'dashboard' && (
+        <div className="space-y-8 animate-slide-in-up">
+          {/* Header */}
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary via-primary/90 to-accent p-1 shadow-lg">
+            <div className="rounded-lg bg-background/95 backdrop-blur px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-md">
+                  <LayoutDashboard className="h-5 w-5 text-primary-foreground" />
+                </div>
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold text-foreground">Welcome {user?.name || 'Agent'}!</h1>
+                  <p className="text-sm text-muted-foreground mt-1">Manage and track support tickets efficiently</p>
+                </div>
+              </div>
+              
             </div>
           </div>
-          <h1 className="text-3xl font-bold mb-2">Agent Portal</h1>
-          <p className="text-muted-foreground">Manage customer support tickets and inquiries</p>
-        </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {stats.map((stat, index) => (
-            <Card key={index} className="shadow-lg">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+          
 
-        {/* Main Content Area */}
-        <Card className="shadow-xl">
-          <CardHeader>
-            <CardTitle>Agent Dashboard</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="bg-secondary/50 rounded-lg p-6 text-center">
-              <p className="text-foreground mb-4">
-                Welcome to the Agent Portal, {user?.name}!
-              </p>
-              <p className="text-sm text-muted-foreground">
-                This is where you'll manage customer tickets, respond to inquiries, and track your performance metrics.
-                Start building your agent features here.
-              </p>
+          <StatsCards items={stats} />
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-foreground">My Recent Tickets</h2>
+              <Button 
+                variant="outline" 
+                onClick={() => setActive('tickets')}
+                className="hover:bg-primary/10 hover:border-primary/50 hover:text-primary"
+              >
+                View All Tickets
+              </Button>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <h3 className="font-semibold">Quick Actions</h3>
-                <div className="space-y-2">
-                  <Button variant="outline" className="w-full justify-start">
-                    <MessageSquare className="mr-2 h-4 w-4" />
-                    View Open Tickets
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    <Users className="mr-2 h-4 w-4" />
-                    Customer Directory
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    <BarChart3 className="mr-2 h-4 w-4" />
-                    Performance Reports
-                  </Button>
+            <TicketsTable tickets={tickets} onOpen={t => { setSelectedTicket(t); setActive('ticket'); }} />
+          </div>
+        </div>
+      )}
+      {active === 'ticket' && (
+        <TicketDetails
+          ticketId={selectedTicket ? selectedTicket.id : undefined}
+          onBack={() => setActive('dashboard')}
+          onNavigate={handleNavigate}
+        />
+      )}
+      {active === 'tickets' && (
+        <div className="space-y-6 animate-slide-in-up">
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary via-primary/90 to-accent p-1 shadow-lg">
+            <div className="rounded-lg bg-background/95 backdrop-blur px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-md">
+                  <MessageSquare className="h-5 w-5 text-primary-foreground" />
+                </div>
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold text-foreground">All Tickets</h1>
+                  <p className="text-sm text-muted-foreground mt-1">Manage all support tickets</p>
                 </div>
               </div>
-
-              <div className="space-y-2">
-                <h3 className="font-semibold">Recent Activity</h3>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <p>• No recent activity</p>
-                  <p>• Start by checking open tickets</p>
-                  <p>• Review customer feedback</p>
-                </div>
-              </div>
+              <Button variant="outline" onClick={() => setActive('dashboard')} className="hover:bg-primary/10 hover:border-primary/50 hover:text-primary">
+                Back to Dashboard
+              </Button>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+          </div>
+          <AllTicketsView onOpen={t => { setSelectedTicket(t); setActive('ticket'); }} />
+        </div>
+      )}
+      {active === 'templates' && <ResponseTemplates />}
+      {active === 'comm' && <CommunicationTools ticketId={commTicketId} />}
+      {active === 'customer' && <CustomerProfile onBack={() => setActive('dashboard')} />}
+      {active === 'settings' && <Settings />}
+    </AgentLayout>
   );
 };
