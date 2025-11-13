@@ -3,29 +3,56 @@ import { useNavigate } from "react-router-dom";
 import { Header } from "../../components/common/Supervisor_header";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
-import {
-  escalations as dummyEscalations,
-  agents as dummyAgents,
-} from "./data/supervisordummydata";
+import supervisorApi from "../../services/supervisorApi";
+import { toast } from "sonner";
 
 export const TicketManagement = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState("Open");
-  const [tickets, setTickets] = useState(dummyEscalations);
-  const [agents] = useState(dummyAgents.map((a) => a.name));
+  const [tickets, setTickets] = useState([]);
+  const [agents, setAgents] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(null); // 'details' | 'reassign' | 'resolve'
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [selectedAgent, setSelectedAgent] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [dropdownOpen, setDropdownOpen] = useState(null);
 
   // Toast
   const [toast, setToast] = useState(null);
+  useEffect(() => {
+    fetchTickets();
+    fetchAgents();
+  }, []);
+
   useEffect(() => {
     if (toast) {
       const timer = setTimeout(() => setToast(null), 3000);
       return () => clearTimeout(timer);
     }
   }, [toast]);
+
+  const fetchTickets = async () => {
+    try {
+      setLoading(true);
+      const data = await supervisorApi.getTickets();
+      setTickets(data);
+    } catch (error) {
+      console.error('Failed to fetch tickets:', error);
+      toast.error('Failed to load tickets');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAgents = async () => {
+    try {
+      const data = await supervisorApi.getAgents();
+      setAgents(data);
+    } catch (error) {
+      console.error('Failed to fetch agents:', error);
+    }
+  };
 
   const openModal = (type, ticket = null) => {
     setSelectedTicket(ticket);
@@ -39,35 +66,82 @@ export const TicketManagement = () => {
   };
 
   // Reassign Ticket
-  const handleReassign = () => {
+  const handleReassign = async () => {
     if (!selectedAgent) {
-      alert("Please select an agent before confirming reassign.");
+      alert("Please select an agent before confirming.");
       return;
     }
 
-    setTickets((prev) =>
-      prev.map((t) =>
-        t.id === selectedTicket.id ? { ...t, agent: selectedAgent } : t
-      )
-    );
+    try {
+      const agent = agents.find(a => a.id === parseInt(selectedAgent));
+      
+      if (agent) {
+        await supervisorApi.reassignTicket(selectedTicket.id, agent.id);
+        
+        setTickets((prev) =>
+          prev.map((t) =>
+            t.id === selectedTicket.id ? { ...t, agent_name: agent.name, agent_id: agent.id } : t
+          )
+        );
 
-    setToast({
-      type: "success",
-      message: `Ticket #${selectedTicket.id} reassigned to ${selectedAgent}`,
-    });
+        const action = selectedTicket.agent_name && selectedTicket.agent_name !== "Unassigned" ? "reassigned" : "assigned";
+        setToast({
+          type: "success",
+          message: `Ticket #${selectedTicket.id} ${action} to ${agent.name}`,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to assign/reassign ticket:', error);
+      setToast({
+        type: "error",
+        message: "Failed to assign ticket",
+      });
+    }
 
     closeModal();
   };
 
   // Resolve Ticket
-  const handleResolve = () => {
-    setTickets((prev) => prev.filter((t) => t.id !== selectedTicket.id));
+  const handleResolve = async () => {
+    try {
+      await supervisorApi.resolveTicket(selectedTicket.id);
+      setTickets((prev) =>
+        prev.map((t) =>
+          t.id === selectedTicket.id ? { ...t, status: "RESOLVED" } : t
+        )
+      );
+      setToast({
+        type: "success",
+        message: `Ticket #${selectedTicket.id} resolved successfully`,
+      });
+    } catch (error) {
+      setToast({
+        type: "error",
+        message: "Failed to resolve ticket",
+      });
+    }
+    closeModal();
+  };
 
-    setToast({
-      type: "success",
-      message: `Ticket #${selectedTicket.id} resolved successfully`,
-    });
-
+  // Close Ticket
+  const handleClose = async () => {
+    try {
+      await supervisorApi.closeTicket(selectedTicket.id);
+      setTickets((prev) =>
+        prev.map((t) =>
+          t.id === selectedTicket.id ? { ...t, status: "CLOSED" } : t
+        )
+      );
+      setToast({
+        type: "success",
+        message: `Ticket #${selectedTicket.id} closed successfully`,
+      });
+    } catch (error) {
+      setToast({
+        type: "error",
+        message: "Failed to close ticket",
+      });
+    }
     closeModal();
   };
 
@@ -75,14 +149,14 @@ export const TicketManagement = () => {
     if (searchQuery.trim() === "") return true;
     const query = searchQuery.toLowerCase();
     return (
-      t.customer.toLowerCase().includes(query) ||
+      t.customer_name?.toLowerCase().includes(query) ||
       t.id.toString().includes(query)
     );
   });
 
   const getFilteredAgentsForDropdown = () => {
     if (!selectedTicket) return agents;
-    return agents.filter((a) => a !== selectedTicket.agent);
+    return agents.filter((a) => a.name !== selectedTicket.agent_name);
   };
 
   return (
@@ -119,51 +193,28 @@ export const TicketManagement = () => {
           </div>
         </div>
 
-        {/* ---------- Search + Filters ---------- */}
+        {/* ---------- Search + Actions ---------- */}
         <Card className="bg-white/80 backdrop-blur-md border border-gray-100 shadow-md rounded-xl hover:shadow-lg transition-all duration-300">
-          <CardContent className="flex flex-wrap justify-between items-center gap-4 p-6">
-            <div className="flex items-center gap-3 flex-wrap">
-              <input
-                type="text"
-                placeholder="Search by customer or ticket ID..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="border rounded-lg p-2 w-72 bg-white shadow-sm focus:ring-2 focus:ring-indigo-400"
-              />
-              <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md">
-                Search
-              </Button>
-
+          <CardContent className="p-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="flex items-center gap-3 flex-1">
+                <input
+                  type="text"
+                  placeholder="Search by customer or ticket ID..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="border rounded-lg p-3 flex-1 max-w-md bg-white shadow-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all"
+                />
+                <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md px-6">
+                  Search
+                </Button>
+              </div>
+              
               <Button
-                className="bg-gradient-to-r from-gray-100 via-white to-gray-200 text-gray-800 font-semibold border border-gray-300 shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all duration-300"
+                className="bg-gradient-to-r from-gray-100 via-white to-gray-200 text-gray-800 font-semibold border border-gray-300 shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all duration-300 whitespace-nowrap"
                 onClick={() => navigate("/supervisor/supervisor_customers")}
               >
                 View All Customers
-              </Button>
-            </div>
-
-            <div className="flex gap-3">
-              <Button
-                variant={filter === "Open" ? "default" : "outline"}
-                className={`rounded-full px-6 ${
-                  filter === "Open"
-                    ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-md"
-                    : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100"
-                }`}
-                onClick={() => setFilter("Open")}
-              >
-                Open
-              </Button>
-              <Button
-                variant={filter === "24h" ? "default" : "outline"}
-                className={`rounded-full px-6 ${
-                  filter === "24h"
-                    ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-md"
-                    : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100"
-                }`}
-                onClick={() => setFilter("24h")}
-              >
-                24h
               </Button>
             </div>
           </CardContent>
@@ -196,40 +247,54 @@ export const TicketManagement = () => {
                         className="border-b last:border-0 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200"
                       >
                         <td className="p-4 font-medium text-gray-800">#{ticket.id}</td>
-                        <td className="p-4 text-gray-700">{ticket.customer}</td>
-                        <td className="p-4 text-gray-700">{ticket.reason}</td>
+                        <td className="p-4 text-gray-700">{ticket.customer_name}</td>
+                        <td className="p-4 text-gray-700">{ticket.subject}</td>
                         <td
                           className={`p-4 font-medium ${
-                            ticket.agent.includes("Supervisor")
+                            ticket.agent_name?.includes("Supervisor")
                               ? "text-orange-600"
                               : "text-gray-800"
                           }`}
                         >
-                          {ticket.agent}
+                          {ticket.agent_name || "Unassigned"}
                         </td>
                         <td className="p-4 text-center">
-                          <div className="flex justify-center gap-2 flex-wrap">
+                          <div className="relative">
                             <Button
                               size="sm"
-                              className="bg-gray-500 hover:bg-gray-600 text-white"
-                              onClick={() => openModal("details", ticket)}
+                              className="bg-indigo-500 hover:bg-indigo-600 text-white"
+                              onClick={() => setDropdownOpen(dropdownOpen === ticket.id ? null : ticket.id)}
                             >
-                              View Details
+                              Actions ▼
                             </Button>
-                            <Button
-                              size="sm"
-                              className="bg-sky-500 hover:bg-sky-600 text-white"
-                              onClick={() => openModal("reassign", ticket)}
-                            >
-                              Reassign
-                            </Button>
-                            <Button
-                              size="sm"
-                              className="bg-red-500 hover:bg-red-600 text-white"
-                              onClick={() => openModal("resolve", ticket)}
-                            >
-                              Resolve
-                            </Button>
+                            {dropdownOpen === ticket.id && (
+                              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                                <button
+                                  className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
+                                  onClick={() => { openModal("details", ticket); setDropdownOpen(null); }}
+                                >
+                                  View Details
+                                </button>
+                                <button
+                                  className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
+                                  onClick={() => { openModal("reassign", ticket); setDropdownOpen(null); }}
+                                >
+                                  {ticket.agent_name && ticket.agent_name !== "Unassigned" ? "Reassign" : "Assign"}
+                                </button>
+                                <button
+                                  className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
+                                  onClick={() => { openModal("resolve", ticket); setDropdownOpen(null); }}
+                                >
+                                  Resolve
+                                </button>
+                                <button
+                                  className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700 rounded-b-lg"
+                                  onClick={() => { openModal("close", ticket); setDropdownOpen(null); }}
+                                >
+                                  Close
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -248,17 +313,24 @@ export const TicketManagement = () => {
         {/* ---------- MODALS ---------- */}
         {showModal && selectedTicket && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in">
-            <div className="bg-gradient-to-br from-white to-blue-50 rounded-2xl shadow-2xl p-6 w-full max-w-md border border-indigo-100 backdrop-blur-md">
+            <div className="bg-gradient-to-br from-white to-blue-50 rounded-2xl shadow-2xl p-6 w-full max-w-md border border-indigo-100 backdrop-blur-md relative">
+              <button
+                onClick={closeModal}
+                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl font-bold"
+              >
+                ×
+              </button>
               {showModal === "details" && (
                 <>
                   <h2 className="text-xl font-bold text-indigo-700 mb-4 border-b pb-2">
                     Ticket Details #{selectedTicket.id}
                   </h2>
                   <div className="text-left text-gray-700 space-y-2 mb-6">
-                    <p><strong>Customer:</strong> {selectedTicket.customer}</p>
-                    <p><strong>Reason:</strong> {selectedTicket.reason}</p>
-                    <p><strong>Assigned Agent:</strong> {selectedTicket.agent}</p>
-                    <p><strong>Status:</strong> <span className="text-green-600 font-semibold">Active</span></p>
+                    <p><strong>Customer:</strong> {selectedTicket.customer_name}</p>
+                    <p><strong>Subject:</strong> {selectedTicket.subject}</p>
+                    <p><strong>Status:</strong> {selectedTicket.status}</p>
+                    <p><strong>Priority:</strong> {selectedTicket.priority}</p>
+                    <p><strong>Assigned Agent:</strong> {selectedTicket.agent_name || 'Unassigned'}</p>
                   </div>
                   <div className="flex justify-end">
                     <Button
@@ -274,17 +346,17 @@ export const TicketManagement = () => {
               {showModal === "reassign" && (
                 <>
                   <h2 className="text-xl font-bold text-indigo-700 mb-4 border-b pb-2">
-                    Reassign Ticket #{selectedTicket.id}
+                    {selectedTicket.agent_name && selectedTicket.agent_name !== "Unassigned" ? "Reassign" : "Assign"} Ticket #{selectedTicket.id}
                   </h2>
                   <select
                     className="border rounded-lg w-full p-2 mb-6 focus:ring-2 focus:ring-indigo-400"
                     value={selectedAgent}
                     onChange={(e) => setSelectedAgent(e.target.value)}
                   >
-                    <option value="">Select new agent</option>
+                    <option value="">{selectedTicket.agent_name && selectedTicket.agent_name !== "Unassigned" ? "Select new agent" : "Select agent"}</option>
                     {getFilteredAgentsForDropdown().map((agent) => (
-                      <option key={agent} value={agent}>
-                        {agent}
+                      <option key={agent.id} value={agent.id}>
+                        {agent.name}
                       </option>
                     ))}
                   </select>
@@ -307,7 +379,7 @@ export const TicketManagement = () => {
 
               {showModal === "resolve" && (
                 <>
-                  <h2 className="text-xl font-bold text-red-600 mb-4 border-b pb-2">
+                  <h2 className="text-xl font-bold text-green-600 mb-4 border-b pb-2">
                     Resolve Ticket #{selectedTicket.id}?
                   </h2>
                   <p className="text-gray-600 mb-6">
@@ -323,6 +395,31 @@ export const TicketManagement = () => {
                     <Button
                       className="bg-green-500 hover:bg-green-600 text-white"
                       onClick={handleResolve}
+                    >
+                      Confirm
+                    </Button>
+                  </div>
+                </>
+              )}
+
+              {showModal === "close" && (
+                <>
+                  <h2 className="text-xl font-bold text-red-600 mb-4 border-b pb-2">
+                    Close Ticket #{selectedTicket.id}?
+                  </h2>
+                  <p className="text-gray-600 mb-6">
+                    Are you sure you want to close this ticket permanently?
+                  </p>
+                  <div className="flex justify-end gap-3">
+                    <Button
+                      className="bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      onClick={closeModal}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      className="bg-red-500 hover:bg-red-600 text-white"
+                      onClick={handleClose}
                     >
                       Confirm
                     </Button>

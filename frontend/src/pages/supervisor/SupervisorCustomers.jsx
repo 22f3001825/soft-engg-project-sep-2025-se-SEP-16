@@ -2,10 +2,12 @@ import React, { useState, useEffect } from "react";
 import { Header } from "../../components/common/Supervisor_header";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
-import { customers as dummyCustomers } from "./data/supervisordummydata";
+import supervisorApi from "../../services/supervisorApi";
+import { toast } from "sonner";
 
 export const SupervisorCustomers = () => {
-  const [customers, setCustomers] = useState(dummyCustomers);
+  const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("All Customers");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -17,11 +19,28 @@ export const SupervisorCustomers = () => {
   const [notification, setNotification] = useState(null);
 
   useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  useEffect(() => {
     if (notification) {
       const timer = setTimeout(() => setNotification(null), 3000);
       return () => clearTimeout(timer);
     }
   }, [notification]);
+
+  const fetchCustomers = async () => {
+    try {
+      setLoading(true);
+      const data = await supervisorApi.getCustomers();
+      setCustomers(data);
+    } catch (error) {
+      console.error('Failed to fetch customers:', error);
+      toast.error('Failed to load customers');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getFilteredCustomers = () => {
     let filtered = [...customers];
@@ -52,21 +71,33 @@ export const SupervisorCustomers = () => {
     setShowBlockModal(true);
   };
 
-  const handleConfirmBlock = () => {
-    setCustomers((prev) =>
-      prev.map((c) =>
-        c.name === selectedCustomer.name
-          ? { ...c, status: isUnblockAction ? "Active" : "Blocked" }
-          : c
-      )
-    );
+  const handleConfirmBlock = async () => {
+    try {
+      // isUnblockAction is true when customer is blocked and we want to unblock them
+      const newActiveStatus = isUnblockAction; // true = unblock, false = block
+      await supervisorApi.updateCustomerStatus(selectedCustomer.id, newActiveStatus);
+      
+      setCustomers((prev) =>
+        prev.map((c) =>
+          c.id === selectedCustomer.id
+            ? { ...c, is_active: newActiveStatus, status: newActiveStatus ? "Active" : "Blocked" }
+            : c
+        )
+      );
 
-    setNotification({
-      type: isUnblockAction ? "success" : "error",
-      message: isUnblockAction
-        ? `${selectedCustomer.name} has been unblocked successfully.`
-        : `${selectedCustomer.name} has been blocked successfully.`,
-    });
+      setNotification({
+        type: isUnblockAction ? "success" : "error",
+        message: isUnblockAction
+          ? `${selectedCustomer.name} has been unblocked successfully.`
+          : `${selectedCustomer.name} has been blocked successfully.`,
+      });
+    } catch (error) {
+      console.error('Failed to update customer status:', error);
+      setNotification({
+        type: "error",
+        message: "Failed to update customer status",
+      });
+    }
 
     setShowBlockModal(false);
   };
@@ -176,9 +207,9 @@ export const SupervisorCustomers = () => {
                         >
                           {customer.status}
                         </td>
-                        <td className="p-4">{customer.totalOrders}</td>
-                        <td className="p-4">{customer.totalTickets}</td>
-                        <td className="p-4">{customer.activeTickets}</td>
+                        <td className="p-4">{customer.total_orders}</td>
+                        <td className="p-4">{customer.total_tickets}</td>
+                        <td className="p-4">{customer.active_tickets}</td>
                         <td className="p-4 flex justify-center gap-2 flex-wrap">
                           <Button
                             size="sm"
@@ -229,9 +260,9 @@ export const SupervisorCustomers = () => {
             <div className="space-y-2 text-gray-700">
               <p><strong>Name:</strong> {selectedCustomer.name}</p>
               <p><strong>Status:</strong> {selectedCustomer.status}</p>
-              <p><strong>Total Orders:</strong> {selectedCustomer.totalOrders}</p>
-              <p><strong>Total Tickets:</strong> {selectedCustomer.totalTickets}</p>
-              <p><strong>Active Tickets:</strong> {selectedCustomer.activeTickets}</p>
+              <p><strong>Total Orders:</strong> {selectedCustomer.total_orders}</p>
+              <p><strong>Total Tickets:</strong> {selectedCustomer.total_tickets}</p>
+              <p><strong>Active Tickets:</strong> {selectedCustomer.active_tickets}</p>
             </div>
             <div className="flex justify-end mt-5">
               <Button

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import vendorApi from '../../services/vendorApi';
 import { Header } from '../../components/common/Header';
 import { ChatBot } from '../../components/common/ChatBot';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -14,27 +15,73 @@ export const ProfilePage = () => {
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingContact, setIsEditingContact] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState({
-    businessName: 'TechCorp Solutions',
-    vendorId: 'VEND-2024-001',
-    registeredAddress: '123 Business Park, Industrial Area',
-    businessCategory: 'Electronics',
-    joinDate: '2024-01-01',
-    contactPerson: user?.name || 'Aman Vendor',
-    email: user?.email || 'vendor@intellica.com',
-    phone: '+1-555-0123',
+    businessName: '',
+    vendorId: '',
+    registeredAddress: '',
+    businessCategory: '',
+    joinDate: '',
+    contactPerson: '',
+    email: '',
+    phone: '',
     preferredCommunication: 'email',
     logo: null
   });
 
-  const handleSave = () => {
-    // Save logic here
-    setIsEditing(false);
+  // Load profile data
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const data = await vendorApi.getProfile();
+        setProfileData({
+          businessName: data.vendor?.company_name || '',
+          vendorId: `VEND-${data.user?.id || '001'}`,
+          registeredAddress: data.vendor?.address || '',
+          businessCategory: data.vendor?.product_categories || '',
+          joinDate: '2024-01-01',
+          contactPerson: data.user?.full_name || '',
+          email: data.user?.email || '',
+          phone: data.vendor?.contact_phone || '',
+          preferredCommunication: 'email',
+          logo: data.user?.avatar || null
+        });
+      } catch (error) {
+        console.error('Failed to load profile:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadProfile();
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      await vendorApi.updateProfile({
+        company_name: profileData.businessName,
+        address: profileData.registeredAddress,
+        product_categories: profileData.businessCategory
+      });
+      
+      // Update user context with new company name
+      const updatedUser = { ...user, company_name: profileData.businessName };
+      localStorage.setItem('intellica_user', JSON.stringify(updatedUser));
+      
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Failed to save profile:', error);
+    }
   };
 
-  const handleContactSave = () => {
-    // Save contact logic here
-    setIsEditingContact(false);
+  const handleContactSave = async () => {
+    try {
+      await vendorApi.updateProfile({
+        contact_phone: profileData.phone
+      });
+      setIsEditingContact(false);
+    } catch (error) {
+      console.error('Failed to save contact:', error);
+    }
   };
 
   const handleLogoUpload = (event) => {
@@ -44,6 +91,17 @@ export const ProfilePage = () => {
       setProfileData({...profileData, logo: URL.createObjectURL(file)});
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 relative overflow-hidden">

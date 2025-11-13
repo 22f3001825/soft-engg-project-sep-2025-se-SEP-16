@@ -1,18 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Header } from '../../components/common/Header';
-import { vendorProducts } from '../../data/dummyData';
-import { Download, ArrowLeft, Package, TrendingUp, BarChart3, AlertTriangle } from 'lucide-react';
+import vendorApi from '../../services/vendorApi';
+import { ArrowLeft, Package, TrendingUp, BarChart3, AlertTriangle } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 const ProductDetailsPage = () => {
   const navigate = useNavigate();
   const { productId } = useParams();
   const [selectedIssue, setSelectedIssue] = useState(null);
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const product = vendorProducts.find(p => p.id === productId);
+  useEffect(() => {
+    const loadProduct = async () => {
+      try {
+        const complaints = await vendorApi.getComplaints();
+        const foundProduct = complaints.find(p => p.id === productId);
+        if (foundProduct) {
+          setProduct({
+            ...foundProduct,
+            complaintsTrend: [
+              { month: 'Oct', count: Math.floor(foundProduct.totalComplaints * 0.3) },
+              { month: 'Nov', count: Math.floor(foundProduct.totalComplaints * 0.4) },
+              { month: 'Dec', count: Math.floor(foundProduct.totalComplaints * 0.3) }
+            ]
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load product:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadProduct();
+  }, [productId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading product...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!product) {
   return (
@@ -37,26 +72,7 @@ const ProductDetailsPage = () => {
     );
   }
 
-  const handleDownloadReport = () => {
-    // Mock download functionality
-    const data = {
-      product: product.name,
-      complaints: product.totalComplaints,
-      returnRate: product.returnRate,
-      topIssues: product.topIssues,
-      trend: product.complaintsTrend
-    };
 
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${product.name.replace(/\s+/g, '_')}_report.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 relative overflow-hidden">
@@ -79,77 +95,40 @@ const ProductDetailsPage = () => {
             Back to Products
           </Button>
 
-          <div className="flex justify-between items-start">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
-                <Package className="h-8 w-8 text-blue-600" />
-              </div>
-              <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-                  {product.name}
-                </h1>
-                <p className="text-gray-600 text-lg">{product.category}</p>
-              </div>
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
+              <Package className="h-8 w-8 text-blue-600" />
             </div>
-            <Button onClick={handleDownloadReport} className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-lg hover:shadow-xl transition-all duration-300 text-black">
-              <Download className="h-4 w-4 mr-2" />
-              <span className="inline">Download Report</span>
-            </Button>
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                {product.name}
+              </h1>
+              <p className="text-gray-600 text-lg">{product.category}</p>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Overview Stats */}
-          <Card className="shadow-lg border-2 border-gray-200 bg-white/90 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
-            <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-t-lg">
-              <CardTitle className="text-xl text-gray-800 flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-blue-600" />
-                Overview
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                <div className="flex justify-between items-center p-4 bg-red-50 rounded-lg border border-red-200">
-                  <span className="text-gray-700 font-medium">Total Complaints</span>
-                  <span className="font-bold text-red-700 text-xl">{product.totalComplaints}</span>
-                </div>
-                <div className="flex justify-between items-center p-4 bg-orange-50 rounded-lg border border-orange-200">
-                  <span className="text-gray-700 font-medium">Return Rate</span>
-                  <span className="font-bold text-orange-700 text-xl">{product.returnRate}%</span>
-                </div>
+        {/* Overview Stats - Full Width */}
+        <Card className="shadow-lg border-2 border-gray-200 bg-white/90 backdrop-blur-sm hover:shadow-xl transition-all duration-300 mb-8">
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-t-lg">
+            <CardTitle className="text-xl text-gray-800 flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-blue-600" />
+              Product Overview
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex justify-between items-center p-6 bg-red-50 rounded-lg border border-red-200">
+                <span className="text-gray-700 font-medium text-lg">Total Complaints</span>
+                <span className="font-bold text-red-700 text-3xl">{product.totalComplaints}</span>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Complaints Trend Chart (Simplified) */}
-          <Card className="shadow-lg border-2 border-gray-200 bg-white/90 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
-            <CardHeader className="bg-gradient-to-r from-green-50 to-blue-50 rounded-t-lg">
-              <CardTitle className="text-xl text-gray-800 flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-green-600" />
-                Complaints Trend
-              </CardTitle>
-              <CardDescription className="text-gray-600">Last 3 months</CardDescription>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                {product.complaintsTrend.map((data, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200">
-                    <span className="text-sm font-medium text-gray-700 w-12">{data.month}</span>
-                    <div className="flex items-center gap-3 flex-1">
-                      <div className="w-32 bg-gray-200 rounded-full h-3">
-                        <div
-                          className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-700 ease-out"
-                          style={{ width: `${(data.count / Math.max(...product.complaintsTrend.map(d => d.count))) * 100}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm font-bold text-gray-800 w-8">{data.count}</span>
-                    </div>
-                  </div>
-                ))}
+              <div className="flex justify-between items-center p-6 bg-orange-50 rounded-lg border border-orange-200">
+                <span className="text-gray-700 font-medium text-lg">Return Rate</span>
+                <span className="font-bold text-orange-700 text-3xl">{product.returnRate}%</span>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Issue Breakdown */}
         <Card className="shadow-lg border-2 border-gray-200 bg-white/90 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
@@ -171,7 +150,7 @@ const ProductDetailsPage = () => {
                     <span className="font-medium text-gray-800">{issue}</span>
                   </div>
                   <span className="text-sm text-gray-600 font-medium">
-                    5 reports
+                    {Math.ceil(product.totalComplaints / product.topIssues.length)} reports
                   </span>
                 </div>
               ))}

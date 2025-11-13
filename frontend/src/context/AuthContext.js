@@ -20,12 +20,6 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem('intellica_token');
     if (savedUser && token) {
       const userData = JSON.parse(savedUser);
-      // Fix for Ali Jawar -> Ali Jawad
-      if (userData.email === 'ali.jawad@example.com' && userData.name === 'Ali Jawar') {
-        userData.name = 'Ali Jawad';
-        userData.full_name = 'Ali Jawad';
-        localStorage.setItem('intellica_user', JSON.stringify(userData));
-      }
       setUser(userData);
     }
     setLoading(false);
@@ -48,13 +42,32 @@ export const AuthProvider = ({ children }) => {
       const data = await response.json();
 
       if (response.ok) {
+        // Fetch vendor profile for business name if vendor
+        let companyName = null;
+        if (data.user.role.toLowerCase() === 'vendor') {
+          try {
+            const profileResponse = await fetch('http://127.0.0.1:8000/api/vendor/profile', {
+              headers: {
+                'Authorization': `Bearer ${data.access_token}`
+              }
+            });
+            if (profileResponse.ok) {
+              const profileData = await profileResponse.json();
+              companyName = profileData.vendor?.company_name;
+            }
+          } catch (error) {
+            console.error('Failed to fetch vendor profile:', error);
+          }
+        }
+
         const userData = {
           id: data.user.id,
           email: data.user.email,
           name: data.user.full_name,
           full_name: data.user.full_name,
           role: data.user.role.toLowerCase(),
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.user.full_name}`
+          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.user.full_name}`,
+          company_name: companyName
         };
 
         setUser(userData);
@@ -115,6 +128,8 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('intellica_user');
     localStorage.removeItem('intellica_token');
   };
+
+
 
   const value = {
     user,

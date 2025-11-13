@@ -17,6 +17,8 @@ def authenticate_user(db: Session, email: str, password: str, role: str = None):
         return False
     if not verify_password(password, user.password):
         return False
+    if not user.is_active:
+        return False
     if role and user.role.value != role.upper():
         return False
     return user
@@ -74,6 +76,8 @@ def get_current_user(
     user = db.query(User).filter(User.email == email).first()
     if user is None:
         raise HTTPException(status_code=401, detail="User not found")
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Account has been deactivated")
     return user
 
 def create_access_token_for_user(user: User):

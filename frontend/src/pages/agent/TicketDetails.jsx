@@ -277,6 +277,41 @@ export const TicketDetails = ({ ticketId, onBack, onNavigate }) => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 pt-6">
+                {(ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS') && (
+                  <Button 
+                    className="w-full justify-center bg-gradient-to-r from-green-500 to-green-600 text-white font-bold text-base py-6 text-lg shadow-lg hover:from-green-600 hover:to-green-700 transition-all"
+                    onClick={async () => {
+                      try {
+                        await agentApi.resolveTicket(ticket.id);
+                        setTicket(prev => ({ ...prev, status: 'RESOLVED' }));
+                        toast.success('Ticket resolved successfully');
+                      } catch (error) {
+                        toast.error('Failed to resolve ticket');
+                      }
+                    }}
+                  >
+                    <CheckCircle2 className="h-5 w-5 mr-2" />
+                    Mark as Resolved
+                  </Button>
+                )}
+                {ticket.status === 'RESOLVED' && (
+                  <Button 
+                    variant="outline"
+                    className="w-full justify-center border-orange-300 text-orange-600 hover:bg-orange-50 font-bold text-base py-6 text-lg shadow-lg transition-all"
+                    onClick={async () => {
+                      try {
+                        await agentApi.updateTicketStatus(ticket.id, 'IN_PROGRESS');
+                        setTicket(prev => ({ ...prev, status: 'IN_PROGRESS' }));
+                        toast.success('Ticket reopened successfully');
+                      } catch (error) {
+                        toast.error('Failed to reopen ticket');
+                      }
+                    }}
+                  >
+                    <XCircle className="h-5 w-5 mr-2" />
+                    Undo Resolve
+                  </Button>
+                )}
                 <Button 
                   className="w-full justify-center bg-gradient-to-r from-primary to-accent text-white font-bold text-base py-6 text-lg shadow-lg hover:from-primary/90 hover:to-accent/90 transition-all"
                   onClick={e => {

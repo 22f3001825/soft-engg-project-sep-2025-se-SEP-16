@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import vendorApi from '../../services/vendorApi';
 import { Header } from '../../components/common/Header';
 import { ChatBot } from '../../components/common/ChatBot';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -8,37 +9,50 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Switch } from '../../components/ui/switch';
-import { Save, Download, Settings as SettingsIcon, Bell, Shield, Palette, Globe, TrendingUp, Plus } from 'lucide-react';
+import { Save, Bell } from 'lucide-react';
 
 export const SettingsPage = () => {
   const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState({
-    general: {
-      dashboardRange: '30',
-      timezone: 'UTC-5',
-      theme: 'light'
-    },
     notifications: {
       newComplaints: true,
       resolvedComplaints: true
     }
   });
 
+  // Load settings from localStorage
+  useEffect(() => {
+    const loadSettings = () => {
+      try {
+        const savedSettings = localStorage.getItem('vendor_notification_settings');
+        if (savedSettings) {
+          setSettings(JSON.parse(savedSettings));
+        }
+      } catch (error) {
+        console.error('Failed to load settings:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadSettings();
+  }, []);
+
   const handleSave = () => {
-    // Save settings logic here
-    console.log('Settings saved:', settings);
-    // Apply theme changes
-    if (settings.general.theme === 'dark') {
-      document.documentElement.classList.add('theme-dark');
-      document.documentElement.classList.remove('theme-light');
-    } else if (settings.general.theme === 'light') {
-      document.documentElement.classList.add('theme-light');
-      document.documentElement.classList.remove('theme-dark');
-    } else {
-      // System theme - could implement later
-      document.documentElement.classList.remove('theme-light', 'theme-dark');
-    }
+    localStorage.setItem('vendor_notification_settings', JSON.stringify(settings));
+    alert('Notification settings saved successfully!');
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading settings...</p>
+        </div>
+      </div>
+    );
+  }
 
 
 
@@ -74,99 +88,9 @@ export const SettingsPage = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* General Settings */}
-          <Card className="group relative overflow-hidden bg-gradient-to-br from-white to-gray-50/50 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 border-0 shadow-lg hover:-translate-y-1 animate-fade-in-up">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <CardHeader className="relative">
-              <CardTitle className="flex items-center gap-2">
-                <SettingsIcon className="h-5 w-5 text-blue-600" />
-                General Settings
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="relative space-y-6">
-              <div>
-                <Label htmlFor="dashboardRange" className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-purple-600" />
-                  Default Dashboard Range
-                </Label>
-                <Select
-                  value={settings.general.dashboardRange}
-                  onValueChange={(value) =>
-                    setSettings({
-                      ...settings,
-                      general: {...settings.general, dashboardRange: value}
-                    })
-                  }
-                >
-                  <SelectTrigger className="focus:ring-2 focus:ring-blue-500/20">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="30">Last 30 days</SelectItem>
-                    <SelectItem value="90">Last 90 days</SelectItem>
-                    <SelectItem value="180">Last 6 months</SelectItem>
-                    <SelectItem value="custom">Custom Range</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="timezone" className="flex items-center gap-2">
-                  <Globe className="h-4 w-4 text-green-600" />
-                  Timezone
-                </Label>
-                <Select
-                  value={settings.general.timezone}
-                  onValueChange={(value) =>
-                    setSettings({
-                      ...settings,
-                      general: {...settings.general, timezone: value}
-                    })
-                  }
-                >
-                  <SelectTrigger className="focus:ring-2 focus:ring-blue-500/20">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="UTC-8">Pacific Time (UTC-8)</SelectItem>
-                    <SelectItem value="UTC-5">Eastern Time (UTC-5)</SelectItem>
-                    <SelectItem value="UTC+0">GMT (UTC+0)</SelectItem>
-                    <SelectItem value="UTC+1">Central European Time (UTC+1)</SelectItem>
-                    <SelectItem value="UTC+5:30">India Time (UTC+5:30)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="theme" className="flex items-center gap-2">
-                  <Palette className="h-4 w-4 text-amber-600" />
-                  Theme
-                </Label>
-                <Select
-                  value={settings.general.theme}
-                  onValueChange={(value) =>
-                    setSettings({
-                      ...settings,
-                      general: {...settings.general, theme: value}
-                    })
-                  }
-                >
-                  <SelectTrigger className="focus:ring-2 focus:ring-blue-500/20">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="light">Light</SelectItem>
-                    <SelectItem value="dark">Dark</SelectItem>
-                    <SelectItem value="system">System</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-
+        <div className="max-w-2xl mx-auto">
           {/* Notification Settings */}
-          <Card className="group relative overflow-hidden bg-gradient-to-br from-white to-gray-50/50 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 border-0 shadow-lg hover:-translate-y-1 animate-fade-in-up animation-delay-200">
+          <Card className="group relative overflow-hidden bg-gradient-to-br from-white to-gray-50/50 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 border-0 shadow-lg hover:-translate-y-1 animate-fade-in-up">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <CardHeader className="relative">
               <CardTitle className="flex items-center gap-2">
@@ -214,8 +138,6 @@ export const SettingsPage = () => {
               </div>
             </CardContent>
           </Card>
-
-
         </div>
       </main>
     </div>

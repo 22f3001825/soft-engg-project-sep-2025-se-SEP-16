@@ -50,8 +50,8 @@ class Ticket(Base):
     id = Column(String, primary_key=True, default=str(func.gen_random_uuid()))
     
     # Ownership - Links ticket to customer and assigned agent
-    customer_id = Column(Integer, ForeignKey("customers.user_id"))  # Who created the ticket
-    agent_id = Column(Integer, ForeignKey("agents.user_id"), nullable=True)  # Who is handling it
+    customer_id = Column(Integer, ForeignKey("customers.user_id"), index=True)  # Who created the ticket
+    agent_id = Column(Integer, ForeignKey("agents.user_id"), nullable=True, index=True)  # Who is handling it
     # agent_id is nullable because tickets start unassigned
     
     # Ticket content - Required for understanding the issue
@@ -68,8 +68,8 @@ class Ticket(Base):
     # Tracks how customer contacted support
     
     # Status tracking - Required for workflow management (Feature 1)
-    status = Column(Enum(TicketStatus), nullable=False)  # Current state in lifecycle
-    priority = Column(Enum(TicketPriority), nullable=False)  # Urgency level
+    status = Column(Enum(TicketStatus), nullable=False, index=True)  # Current state in lifecycle
+    priority = Column(Enum(TicketPriority), nullable=False, index=True)  # Urgency level
     
     # Context linking - Required for order-related issues (Feature 2)
     related_order_id = Column(String, nullable=True)  # Links to Order if ticket is about an order

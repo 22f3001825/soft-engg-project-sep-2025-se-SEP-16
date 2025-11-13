@@ -1,18 +1,46 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Header } from '../../components/common/Header';
-import { vendorProducts } from '../../data/dummyData';
+import vendorApi from '../../services/vendorApi';
 import { TrendingUp, Eye, Package, AlertTriangle, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const ProductComplaintsPage = () => {
   const navigate = useNavigate();
+  const [complaintsData, setComplaintsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load complaints data
+  useEffect(() => {
+    const loadComplaints = async () => {
+      try {
+        const data = await vendorApi.getComplaints();
+        setComplaintsData(data);
+      } catch (error) {
+        console.error('Failed to load complaints:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadComplaints();
+  }, []);
 
   const handleViewDetails = (productId) => {
     navigate(`/vendor/products/${productId}`);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading complaints...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 relative overflow-hidden">
@@ -33,7 +61,7 @@ const ProductComplaintsPage = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {vendorProducts.map((product, index) => (
+          {complaintsData.map((product, index) => (
             <Card key={product.id} className="hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 border-gray-200 bg-white/90 backdrop-blur-sm">
               <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-t-lg">
                 <div className="flex items-center gap-3 mb-2">

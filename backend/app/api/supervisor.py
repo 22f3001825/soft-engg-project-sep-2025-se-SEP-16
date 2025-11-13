@@ -1,46 +1,446 @@
-# Supervisor Portal APIs
-# This file will contain all supervisor-related API endpoints
-# TODO: Implement the following supervisor portal features:
-# - Supervisor Dashboard: Overview of team performance, ticket statistics, system analytics
-# - Ticket Management: View all tickets, assign agents, override ticket status, monitor ticket flow
-# - Team Management: Manage agents, view performance metrics, assign roles and permissions
-# - Customer Management: View all customers, access customer history, manage customer relationships
-# - Analytics & Reporting: Generate reports, view KPIs, track team performance
-# - Profile Management: View and update supervisor profile information
-# - Settings: System settings, notification preferences, team configuration
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
+from sqlalchemy import func, or_
+from app.database import get_db
+from app.services.auth import get_current_user
+from app.models.user import User, Agent, Customer, Supervisor
+from app.models.ticket import Ticket, TicketStatus, Message
+from app.models.order import Order, OrderItem
+from typing import Optional
+from datetime import datetime, timedelta
+import uuid
 
-from fastapi import APIRouter
+router = APIRouter(prefix="/supervisor", tags=["supervisor"])
 
-router = APIRouter()
+@router.get("/dashboard")
+def get_supervisor_dashboard(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get supervisor dashboard statistics"""
+    
+    # Total tickets across all agents
+    total_tickets = db.query(Ticket).count()
+    
+    # Active agents count (only agents that are actually active)
+    active_agents = db.query(User).filter(
+        User.role == "AGENT",
+        User.is_active == True
+    ).count()
+    
+    # Tickets by status (using enum values)
+    open_tickets_count = db.query(Ticket).filter(Ticket.status == TicketStatus.OPEN).count()
+    in_progress_tickets_count = db.query(Ticket).filter(Ticket.status == TicketStatus.IN_PROGRESS).count() 
+    resolved_tickets_count = db.query(Ticket).filter(Ticket.status == TicketStatus.RESOLVED).count()
+    closed_tickets_count = db.query(Ticket).filter(Ticket.status == TicketStatus.CLOSED).count()
+    
+    # Tickets resolved today
+    today = datetime.now().date()
+    resolved_today = db.query(Ticket).filter(
+        Ticket.status == TicketStatus.RESOLVED,
+        func.date(Ticket.updated_at) == today
+    ).count()
+    
+    # Show in_progress as "assigned" tickets
+    assigned_tickets = in_progress_tickets_count
+    
+    # Recent tickets (last 5) - using correct relationships
+    recent_tickets = db.query(Ticket).order_by(Ticket.created_at.desc()).limit(5).all()
+    recent_tickets_data = []
+    for ticket in recent_tickets:
+        # Get customer using correct foreign key
+        customer = db.query(User).join(Customer).filter(Customer.user_id == ticket.customer_id).first()
+        agent = None
+        if ticket.agent_id:
+            # Get agent using correct foreign key
+            agent = db.query(User).join(Agent).filter(Agent.user_id == ticket.agent_id).first()
+        
+        recent_tickets_data.append({
+            "id": ticket.id,
+            "subject": ticket.subject,
+            "status": ticket.status.value,
+            "priority": ticket.priority.value,
+            "customer_name": customer.full_name if customer else "Unknown",
+            "agent_name": agent.full_name if agent else "Unassigned",
+            "created_at": ticket.created_at
+        })
+    
+    # Team performance (real data only)
+    agents_query = db.query(User).filter(
+        User.role == "AGENT",
+        User.is_active == True
+    ).limit(5).all()
+    team_performance = []
+    for agent_user in agents_query:
+        # Count real assigned tickets
+        assigned_tickets = db.query(Ticket).filter(
+            Ticket.agent_id == agent_user.id,
+            Ticket.status.in_([TicketStatus.OPEN, TicketStatus.IN_PROGRESS])
+        ).count()
+        
+        # Count real resolved tickets
+        resolved_tickets = db.query(Ticket).filter(
+            Ticket.agent_id == agent_user.id,
+            Ticket.status.in_([TicketStatus.RESOLVED, TicketStatus.CLOSED])
+        ).count()
+        
+        team_performance.append({
+            "id": agent_user.id,
+            "name": agent_user.full_name,
+            "assigned_tickets": assigned_tickets,
+            "resolved_tickets": resolved_tickets
+        })
+    
+    return {
+        "stats": {
+            "total_tickets": total_tickets,
+            "active_agents": active_agents,
+            "open_tickets": open_tickets_count,
+            "assigned_tickets": assigned_tickets,
+            "resolved_tickets": resolved_tickets_count,
+            "closed_tickets": closed_tickets_count
+        },
+        "recent_tickets": recent_tickets_data,
+        "team_performance": team_performance,
+        "chart_data": [
+            {"name": "Open", "value": open_tickets_count},
+            {"name": "In Progress", "value": in_progress_tickets_count},
+            {"name": "Resolved", "value": resolved_tickets_count},
+            {"name": "Closed", "value": closed_tickets_count}
+        ]
+    }
 
-# TODO: Implement supervisor dashboard endpoint
-# GET /supervisor/dashboard
-# - Retrieve dashboard data for the authenticated supervisor
-# - Include team statistics, ticket metrics, performance indicators
+@router.get("/tickets")
+def get_all_tickets(
+    status: Optional[str] = Query(None),
+    priority: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all tickets for supervisor oversight"""
+    
+    query = db.query(Ticket)
+    
+    # Apply filters
+    if status and status != 'all':
+        query = query.filter(Ticket.status == TicketStatus(status.upper()))
+    
+    if priority and priority != 'all':
+        query = query.filter(Ticket.priority == priority.upper())
+    
+    if search:
+        # Search in customer name or ticket subject
+        query = query.join(User, User.id == Ticket.customer_id).filter(
+            or_(
+                User.full_name.contains(search),
+                Ticket.subject.contains(search),
+                Ticket.id.contains(search)
+            )
+        )
+    
+    tickets = query.order_by(Ticket.created_at.desc()).all()
+    
+    result = []
+    for ticket in tickets:
+        # Get customer using correct foreign key relationship
+        customer = db.query(User).join(Customer).filter(Customer.user_id == ticket.customer_id).first()
+        agent = None
+        if ticket.agent_id:
+            # Get agent using correct foreign key relationship
+            agent = db.query(User).join(Agent).filter(Agent.user_id == ticket.agent_id).first()
+        
+        result.append({
+            "id": ticket.id,
+            "subject": ticket.subject,
+            "status": ticket.status.value,
+            "priority": ticket.priority.value,
+            "created_at": ticket.created_at,
+            "updated_at": ticket.updated_at,
+            "customer_name": customer.full_name if customer else "Unknown",
+            "customer_email": customer.email if customer else "",
+            "agent_name": agent.full_name if agent else "Unassigned",
+            "agent_id": ticket.agent_id
+        })
+    
+    return result
 
-# TODO: Implement supervisor tickets endpoints
-# GET /supervisor/tickets - Get all tickets across the system
-# PUT /supervisor/tickets/{ticket_id} - Update ticket (assign agent, change priority, status)
+@router.get("/agents")
+def get_all_agents(
+    search: Optional[str] = Query(None),
+    status_filter: Optional[str] = Query(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all agents for team management"""
+    
+    query = db.query(User).join(Agent).filter(User.role == "AGENT")
+    
+    if search:
+        query = query.filter(
+            or_(
+                User.full_name.contains(search),
+                User.email.contains(search)
+            )
+        )
+    
+    agents = query.all()
+    
+    result = []
+    for agent_user in agents:
+        agent_profile = db.query(Agent).filter(Agent.user_id == agent_user.id).first()
+        
+        # Get agent's current tickets using correct foreign key
+        assigned_tickets = db.query(Ticket).filter(
+            Ticket.agent_id == agent_user.id,
+            Ticket.status.in_([TicketStatus.IN_PROGRESS, TicketStatus.OPEN])
+        ).all()
+        
+        # Filter by status if requested
+        agent_status = agent_profile.status if agent_profile else "OFFLINE"
+        if status_filter and status_filter.lower() != agent_status.lower():
+            continue
+        
+        # Calculate real resolved tickets
+        resolved_tickets = db.query(Ticket).filter(
+            Ticket.agent_id == agent_user.id,
+            Ticket.status.in_([TicketStatus.RESOLVED, TicketStatus.CLOSED])
+        ).count()
+        
+        result.append({
+            "id": agent_user.id,
+            "name": agent_user.full_name,
+            "email": agent_user.email,
+            "is_active": agent_user.is_active,
+            "assigned_tickets": len(assigned_tickets),
+            "resolved_tickets": resolved_tickets,
+            "department": agent_profile.department if agent_profile else "Support",
+            "current_tickets": [t.id for t in assigned_tickets]
+        })
+    
+    return result
 
-# TODO: Implement team management endpoints
-# GET /supervisor/team - Get all team members (agents and supervisors)
-# POST /supervisor/team - Add new team member
-# PUT /supervisor/team/{user_id} - Update team member details/permissions
-# DELETE /supervisor/team/{user_id} - Remove team member
+@router.get("/customers")
+def get_all_customers(
+    search: Optional[str] = Query(None),
+    status_filter: Optional[str] = Query(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all customers for supervisor oversight"""
+    
+    query = db.query(User).filter(User.role == "CUSTOMER")
+    
+    if search:
+        query = query.filter(
+            or_(
+                User.full_name.contains(search),
+                User.email.contains(search)
+            )
+        )
+    
+    customers = query.all()
+    
+    result = []
+    for customer_user in customers:
+        # Get customer profile
+        customer_profile = db.query(Customer).filter(Customer.user_id == customer_user.id).first()
+        
+        # Get actual customer statistics
+        total_tickets = db.query(Ticket).filter(Ticket.customer_id == customer_user.id).count()
+        active_tickets = db.query(Ticket).filter(
+            Ticket.customer_id == customer_user.id,
+            Ticket.status.in_([TicketStatus.OPEN, TicketStatus.IN_PROGRESS])
+        ).count()
+        
+        # Calculate actual orders from Order table
+        total_orders = db.query(Order).filter(Order.customer_id == customer_user.id).count()
+        
+        customer_status = "Active" if customer_user.is_active else "Blocked"
+        
+        # Filter by status if requested
+        if status_filter and status_filter != "All Customers":
+            if status_filter == "Active Customers" and customer_status != "Active":
+                continue
+            elif status_filter == "Blocked Customers" and customer_status != "Blocked":
+                continue
+        
+        result.append({
+            "id": customer_user.id,
+            "name": customer_user.full_name,
+            "email": customer_user.email,
+            "status": customer_status,
+            "is_active": customer_user.is_active,
+            "total_orders": total_orders,
+            "total_tickets": total_tickets,
+            "active_tickets": min(active_tickets, total_tickets),  # Ensure active <= total
+            "member_since": customer_profile.member_since if customer_profile else customer_user.created_at,
+            "last_login": customer_user.last_login
+        })
+    
+    return result
 
-# TODO: Implement supervisor customers endpoints
-# GET /supervisor/customers - Get all customers in the system
-# GET /supervisor/customers/{customer_id} - Get detailed customer information and history
+from pydantic import BaseModel
 
-# TODO: Implement analytics and reporting endpoints
-# GET /supervisor/analytics - Get system-wide analytics
-# GET /supervisor/reports - Generate various reports
-# GET /supervisor/kpis - Get key performance indicators
+class TicketReassign(BaseModel):
+    agent_id: int
 
-# TODO: Implement supervisor profile endpoints
-# GET /supervisor/profile - Get supervisor profile
-# PUT /supervisor/profile - Update supervisor profile
+class AgentStatusUpdate(BaseModel):
+    is_active: bool
 
-# TODO: Implement supervisor settings endpoints
-# GET /supervisor/settings - Get supervisor settings
-# PUT /supervisor/settings - Update supervisor settings
+class CustomerStatusUpdate(BaseModel):
+    is_active: bool
+
+@router.put("/tickets/{ticket_id}/reassign")
+def reassign_ticket(
+    ticket_id: str,
+    reassign_data: TicketReassign,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Reassign ticket to different agent"""
+    
+    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    # Verify agent exists
+    agent = db.query(User).filter(User.id == reassign_data.agent_id, User.role == "AGENT").first()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    
+    ticket.agent_id = reassign_data.agent_id
+    ticket.status = TicketStatus.IN_PROGRESS
+    ticket.updated_at = datetime.utcnow()
+    
+    db.commit()
+    
+    return {"message": f"Ticket reassigned to {agent.full_name}"}
+
+@router.put("/tickets/{ticket_id}/resolve")
+def resolve_ticket(
+    ticket_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Mark ticket as resolved"""
+    
+    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    ticket.status = TicketStatus.RESOLVED
+    ticket.updated_at = datetime.utcnow()
+    
+    db.commit()
+    
+    return {"message": "Ticket resolved successfully"}
+
+@router.put("/tickets/{ticket_id}/close")
+def close_ticket(
+    ticket_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Mark ticket as closed"""
+    
+    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    ticket.status = TicketStatus.CLOSED
+    ticket.updated_at = datetime.utcnow()
+    
+    db.commit()
+    
+    return {"message": "Ticket closed successfully"}
+
+@router.put("/agents/{agent_id}/status")
+def update_agent_status(
+    agent_id: int,
+    status_data: AgentStatusUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Block/unblock agent"""
+    
+    agent_user = db.query(User).filter(User.id == agent_id, User.role == "AGENT").first()
+    if not agent_user:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    
+    agent_user.is_active = status_data.is_active
+    db.commit()
+    
+    action = "unblocked" if status_data.is_active else "blocked"
+    return {"message": f"Agent {agent_user.full_name} has been {action}"}
+
+@router.put("/customers/{customer_id}/status")
+def update_customer_status(
+    customer_id: int,
+    status_data: CustomerStatusUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Block/unblock customer"""
+    
+    customer_user = db.query(User).filter(User.id == customer_id, User.role == "CUSTOMER").first()
+    if not customer_user:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    customer_user.is_active = status_data.is_active
+    db.commit()
+    
+    action = "unblocked" if status_data.is_active else "blocked"
+    return {"message": f"Customer {customer_user.full_name} has been {action}"}
+
+@router.get("/analytics")
+def get_supervisor_analytics(
+    time_range: str = Query("24h"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get analytics data for supervisor dashboard"""
+    
+    # Calculate time range
+    if time_range == "24h":
+        start_date = datetime.utcnow() - timedelta(hours=24)
+    elif time_range == "7d":
+        start_date = datetime.utcnow() - timedelta(days=7)
+    elif time_range == "30d":
+        start_date = datetime.utcnow() - timedelta(days=30)
+    else:
+        start_date = datetime.utcnow() - timedelta(hours=24)
+    
+    # Ticket statistics for the time range
+    tickets_in_range = db.query(Ticket).filter(Ticket.created_at >= start_date).all()
+    
+    ticket_stats = {
+        "open": len([t for t in tickets_in_range if t.status == TicketStatus.OPEN]),
+        "assigned": len([t for t in tickets_in_range if t.status == TicketStatus.ASSIGNED]),
+        "resolved": len([t for t in tickets_in_range if t.status == TicketStatus.RESOLVED]),
+        "closed": len([t for t in tickets_in_range if t.status == TicketStatus.CLOSED])
+    }
+    
+    # Agent performance metrics
+    agents = db.query(User).join(Agent).filter(User.role == "AGENT").all()
+    agent_performance = []
+    
+    for agent_user in agents:
+        agent_profile = db.query(Agent).filter(Agent.user_id == agent_user.id).first()
+        agent_tickets = [t for t in tickets_in_range if t.agent_id == agent_user.id]
+        
+        agent_performance.append({
+            "name": agent_user.full_name,
+            "tickets_handled": len(agent_tickets),
+            "avg_response_time": agent_profile.response_time if agent_profile else 0,
+            "satisfaction_rating": agent_profile.satisfaction_rating if agent_profile else 0,
+            "status": agent_profile.status if agent_profile else "OFFLINE"
+        })
+    
+    return {
+        "time_range": time_range,
+        "ticket_stats": ticket_stats,
+        "total_tickets": len(tickets_in_range),
+        "agent_performance": agent_performance
+    }
+

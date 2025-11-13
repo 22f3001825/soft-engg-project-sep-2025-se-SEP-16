@@ -36,6 +36,21 @@ export const AllTicketsView = ({ onOpen }) => {
     }
   };
 
+  const handleResolveTicket = async (ticketId) => {
+    try {
+      await agentApi.resolveTicket(ticketId);
+      // Update ticket status locally
+      setTickets(prev => prev.map(ticket => 
+        ticket.id === ticketId 
+          ? { ...ticket, status: 'RESOLVED' }
+          : ticket
+      ));
+    } catch (error) {
+      console.error('Failed to resolve ticket:', error);
+      alert('Failed to resolve ticket. Please try again.');
+    }
+  };
+
   const resetFilters = () => {
     setSearchQuery('');
     setStatusFilter('all');

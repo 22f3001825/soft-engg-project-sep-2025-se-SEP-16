@@ -1,18 +1,37 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Header } from '../../components/common/Header';
+import vendorApi from '../../services/vendorApi';
 import { Download, Lightbulb, ChevronDown, ChevronUp, BarChart3, PieChart, TrendingUp } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../components/ui/collapsible';
 
 const AnalyticsDashboard = () => {
   const [dateRange, setDateRange] = useState('30');
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [showInsights, setShowInsights] = useState(true);
   const [faqsOpen, setFaqsOpen] = useState({});
   const [hoveredBar, setHoveredBar] = useState(null);
   const [hoveredPieSlice, setHoveredPieSlice] = useState(null);
   const [showTooltip, setShowTooltip] = useState(false);
+
+  // Load analytics data
+  useEffect(() => {
+    const loadAnalytics = async () => {
+      try {
+        setLoading(true);
+        const data = await vendorApi.getAnalytics(dateRange);
+        setAnalyticsData(data);
+      } catch (error) {
+        console.error('Failed to load analytics:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadAnalytics();
+  }, [dateRange]);
 
   // Logical dummy data with proper periods
   const allComplaintsTrend = [
@@ -39,30 +58,12 @@ const AnalyticsDashboard = () => {
     { category: 'Other', count: 15, percentage: 10, color: '#8B5CF6', period: 'all' }
   ];
 
-  // Filter data based on date range
-  const filteredData = useMemo(() => {
-    const filteredTrend = allComplaintsTrend.filter(item => item.period === dateRange);
-
-    // Scale issue categories based on filtered complaints
-    const totalComplaints = filteredTrend.reduce((sum, item) => sum + item.complaints, 0);
-    const avgComplaints = filteredTrend.length > 0 ? totalComplaints / filteredTrend.length : 0;
-
-    const filteredCategories = allIssueCategories.map(cat => ({
-      ...cat,
-      count: Math.round((cat.percentage / 100) * avgComplaints),
-      percentage: cat.percentage
-    }));
-
-    return {
-      complaintsTrend: filteredTrend,
-      issueCategories: filteredCategories,
-      totalComplaints,
-      trendChange: filteredTrend.length > 1 ?
-        ((filteredTrend[filteredTrend.length - 1].complaints - filteredTrend[0].complaints) / filteredTrend[0].complaints * 100) : 0
-    };
-  }, [dateRange]);
-
-  const { complaintsTrend, issueCategories, totalComplaints, trendChange } = filteredData;
+  // Use API data or fallback to dummy data
+  const complaintsTrend = analyticsData?.complaintsTrend || [];
+  const issueCategories = analyticsData?.issueCategories || [];
+  const totalComplaints = complaintsTrend.reduce((sum, item) => sum + item.complaints, 0);
+  const trendChange = complaintsTrend.length > 1 ?
+    ((complaintsTrend[complaintsTrend.length - 1].complaints - complaintsTrend[0].complaints) / complaintsTrend[0].complaints * 100) : 0;
 
   const aiInsights = [
     `Recent Pattern: ${trendChange > 0 ? 'Increasing' : 'Decreasing'} trend of ${Math.abs(trendChange).toFixed(1)}% in complaints over selected period.`,
@@ -97,7 +98,18 @@ const AnalyticsDashboard = () => {
     setFaqsOpen(prev => ({ ...prev, [index]: !prev[index] }));
   };
 
-  const maxComplaints = Math.max(...complaintsTrend.map(d => d.complaints));
+  const maxComplaints = complaintsTrend.length > 0 ? Math.max(...complaintsTrend.map(d => d.complaints)) : 1;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading analytics...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 relative overflow-hidden">

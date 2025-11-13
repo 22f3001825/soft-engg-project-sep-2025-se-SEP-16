@@ -19,12 +19,8 @@ import {
   Label,
 } from "recharts";
 
-import {
-  supervisor,
-  dashboardStats,
-  ticketChartData,
-  agents,
-} from "./data/supervisordummydata";
+import supervisorApi from "../../services/supervisorApi";
+import { toast } from "sonner";
 
 const ICONS = { BarChart3, Activity, TrendingUp, CheckCircle2 };
 const COLORS = ["#3b82f6", "#facc15", "#22c55e", "#9ca3af"];
@@ -32,6 +28,8 @@ const COLORS = ["#3b82f6", "#facc15", "#22c55e", "#9ca3af"];
 export const SupervisorDashboard = () => {
   const [timeRange, setTimeRange] = useState("Last 24 Hours");
   const [chartData, setChartData] = useState([]);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const updateChartData = (range) => {
     switch (range) {
@@ -43,7 +41,12 @@ export const SupervisorDashboard = () => {
           { name: "Closed", value: 20 },
         ];
       case "Last 7 Days":
-        return ticketChartData;
+        return [
+          { name: "Open", value: 60 },
+          { name: "Assigned", value: 120 },
+          { name: "Resolved", value: 80 },
+          { name: "Closed", value: 40 },
+        ];
       case "Last 15 Days":
         return [
           { name: "Open", value: 50 },
@@ -59,17 +62,90 @@ export const SupervisorDashboard = () => {
           { name: "Closed", value: 140 },
         ];
       default:
-        return ticketChartData;
+        return [
+          { name: "Open", value: 40 },
+          { name: "Assigned", value: 90 },
+          { name: "Resolved", value: 50 },
+          { name: "Closed", value: 20 },
+        ];
     }
   };
 
   useEffect(() => {
-    setChartData(updateChartData("Last 24 Hours"));
+    fetchDashboardData();
   }, []);
 
-  const handleTimeRangeChange = (value) => {
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const data = await supervisorApi.getDashboard();
+      setDashboardData(data);
+      
+      // Use real chart data from API
+      if (data.chart_data) {
+        setChartData(data.chart_data);
+      } else {
+        // Fallback chart data
+        setChartData([
+          { name: "Open", value: data.stats.open_tickets },
+          { name: "In Progress", value: data.stats.assigned_tickets },
+          { name: "Resolved", value: data.stats.resolved_tickets },
+          { name: "Closed", value: data.stats.closed_tickets }
+        ]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error);
+      toast.error('Backend server not running. Using demo data.');
+      
+      // Fallback to demo data
+      const fallbackData = {
+        stats: {
+          total_tickets: 245,
+          active_agents: 8,
+          open_tickets: 42,
+          assigned_tickets: 89,
+          resolved_tickets: 67,
+          closed_tickets: 47
+        },
+        team_performance: [
+          { name: "Emma Wilson", status: "AVAILABLE", solved_tickets: 23, avg_response_time: "2.1h" },
+          { name: "James Chen", status: "BUSY", solved_tickets: 18, avg_response_time: "1.8h" },
+          { name: "Sarah Davis", status: "AVAILABLE", solved_tickets: 31, avg_response_time: "2.3h" }
+        ]
+      };
+      
+      setDashboardData(fallbackData);
+      setChartData([
+        { name: "Open", value: 42 },
+        { name: "Assigned", value: 89 },
+        { name: "Resolved", value: 67 },
+        { name: "Closed", value: 47 }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTimeRangeChange = async (value) => {
     setTimeRange(value);
-    setChartData(updateChartData(value));
+    try {
+      const timeMap = {
+        "Last 24 Hours": "24h",
+        "Last 7 Days": "7d", 
+        "Last 15 Days": "15d",
+        "Last 30 Days": "30d"
+      };
+      const analytics = await supervisorApi.getAnalytics(timeMap[value] || "24h");
+      setChartData([
+        { name: "Open", value: analytics.ticket_stats.open },
+        { name: "Assigned", value: analytics.ticket_stats.assigned },
+        { name: "Resolved", value: analytics.ticket_stats.resolved },
+        { name: "Closed", value: analytics.ticket_stats.closed }
+      ]);
+    } catch (error) {
+      console.error('Failed to fetch analytics:', error);
+      setChartData(updateChartData(value));
+    }
   };
 
   const totalTickets = chartData.reduce((sum, item) => sum + item.value, 0);
@@ -97,7 +173,7 @@ export const SupervisorDashboard = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 bg-clip-text text-transparent drop-shadow-sm">
-                Welcome back, {supervisor.name}!
+                Welcome back, Supervisor!
               </h1>
               <p className="text-gray-600 text-base mt-2 font-medium">
                 Here’s your team’s performance and ticket insights at a glance.
@@ -111,7 +187,16 @@ export const SupervisorDashboard = () => {
 
         {/* ---------- Stats Cards ---------- */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {dashboardStats.map((stat, index) => {
+          {loading ? (
+            Array(4).fill(0).map((_, index) => (
+              <Card key={index} className="animate-pulse bg-gray-200 h-24"></Card>
+            ))
+          ) : dashboardData ? [
+            { title: "Total Tickets", value: dashboardData.stats.total_tickets, icon: "BarChart3" },
+            { title: "Active Agents", value: dashboardData.stats.active_agents, icon: "Activity" },
+            { title: "Open Tickets", value: dashboardData.stats.open_tickets, icon: "TrendingUp" },
+            { title: "Resolved Tickets", value: dashboardData.stats.resolved_tickets, icon: "CheckCircle2" }
+          ].map((stat, index) => {
             const Icon = ICONS[stat.icon];
             return (
               <Card
@@ -155,7 +240,7 @@ export const SupervisorDashboard = () => {
                 </CardContent>
               </Card>
             );
-          })}
+          }) : []}
         </div>
 
         {/* ---------- Team Performance & Ticket Chart ---------- */}
@@ -179,7 +264,11 @@ export const SupervisorDashboard = () => {
 
             <CardContent className="pb-4">
               <div className="space-y-3">
-                {agents.map((member) => (
+                {loading ? (
+                  Array(3).fill(0).map((_, index) => (
+                    <div key={index} className="animate-pulse bg-gray-200 h-16 rounded-lg"></div>
+                  ))
+                ) : dashboardData?.team_performance?.map((member) => (
                   <div
                     key={member.name}
                     className="flex items-center justify-between p-4 rounded-lg border bg-gradient-to-r from-gray-50 to-white hover:from-blue-50 hover:to-indigo-50 transition-all"
@@ -193,20 +282,12 @@ export const SupervisorDashboard = () => {
                           {member.name}
                         </p>
                         <p className="text-sm text-gray-500">
-                          Solved: {member.solved} | Avg Time: {member.avgTime}
+                          Assigned: {member.assigned_tickets} | Resolved: {member.resolved_tickets}
                         </p>
                       </div>
                     </div>
-                    <span
-                      className={`text-sm font-medium ${
-                        member.status === "Online"
-                          ? "text-green-600"
-                          : member.status === "Busy"
-                          ? "text-orange-600"
-                          : "text-gray-500"
-                      }`}
-                    >
-                      {member.status}
+                    <span className="text-sm font-medium text-blue-600">
+                      Active
                     </span>
                   </div>
                 ))}
@@ -220,16 +301,6 @@ export const SupervisorDashboard = () => {
               <CardTitle className="text-lg font-semibold text-gray-800">
                 Ticket Volume
               </CardTitle>
-              <select
-                value={timeRange}
-                onChange={(e) => handleTimeRangeChange(e.target.value)}
-                className="border rounded-md p-2 text-sm bg-white shadow-sm focus:outline-none text-gray-700"
-              >
-                <option>Last 24 Hours</option>
-                <option>Last 7 Days</option>
-                <option>Last 15 Days</option>
-                <option>Last 30 Days</option>
-              </select>
             </CardHeader>
 
             <CardContent className="pt-2 pb-0">

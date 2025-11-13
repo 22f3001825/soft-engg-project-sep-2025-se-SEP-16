@@ -342,6 +342,32 @@ def update_settings(
         raise HTTPException(status_code=404, detail="Agent profile not found")
     
     # For now, just return success since we can't store preferences
-    # In a real implementation, you'd store these in a separate settings table
+    # In a real implementation, we'd store these in a separate settings table
     db.commit()
     return {"message": "Settings updated successfully"}
+
+@router.put("/tickets/{ticket_id}/resolve")
+def resolve_ticket(
+    ticket_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Mark ticket as resolved by agent"""
+    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    # Verify agent is assigned to this ticket or can resolve it
+    if ticket.agent_id and ticket.agent_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to resolve this ticket")
+    
+    # If ticket is unassigned, assign it to current agent first
+    if not ticket.agent_id:
+        ticket.agent_id = current_user.id
+    
+    ticket.status = TicketStatus.RESOLVED
+    ticket.updated_at = datetime.utcnow()
+    
+    db.commit()
+    
+    return {"message": "Ticket resolved successfully"}

@@ -111,10 +111,10 @@ def seed_users_and_profiles(db):
         db.add(agent)
         users.append(user)
     
-    # Create 1 supervisor
+    # Create 1 supervisor with unique credentials
     user = User(
-        email="supervisor@intellica.com",
-        password=get_password_hash("supervisor123"),
+        email="supervisor.demo@intellica.com",
+        password=get_password_hash("demo2024"),
         full_name="Robert Johnson",
         role=UserRole.SUPERVISOR,
         avatar="https://api.dicebear.com/7.x/avataaars/svg?seed=RobertJohnson"
@@ -131,37 +131,36 @@ def seed_users_and_profiles(db):
     db.add(supervisor)
     users.append(user)
     
-    # Create 4 vendors with realistic companies
-    vendor_data = [
-        ("TechMart Solutions", "vendor@techmart.com", "Electronics"),
-        ("CakeZone Bakery", "orders@cakezone.com", "Food & Beverages"),
-        ("StyleHub Fashion", "sales@stylehub.com", "Fashion & Clothing"),
-        ("HomeComfort Furniture", "support@homecomfort.com", "Home & Garden")
-    ]
+    # Create 1 vendor with complete profile data
+    user = User(
+        email="vendor@techmart.com",
+        password=get_password_hash("vendor123"),
+        full_name="TechMart Solutions Team",
+        role=UserRole.VENDOR,
+        avatar="https://api.dicebear.com/7.x/avataaars/svg?seed=TechMart"
+    )
+    db.add(user)
+    db.flush()
     
-    for company, email, category in vendor_data:
-        user = User(
-            email=email,
-            password=get_password_hash("vendor123"),
-            full_name=f"{company} Team",
-            role=UserRole.VENDOR,
-            avatar=f"https://api.dicebear.com/7.x/avataaars/svg?seed={company.replace(' ', '')}"
-        )
-        db.add(user)
-        db.flush()
-        
-        vendor = Vendor(
-            user_id=user.id,
-            company_name=company,
-            business_license=f"BL-{company.upper().replace(' ', '')}-2024",
-            product_categories=category,
-            total_products=randint(8, 15)
-        )
-        db.add(vendor)
-        users.append(user)
+    vendor = Vendor(
+        user_id=user.id,
+        company_name="TechMart Solutions",
+        business_type="Electronics Retailer",
+        business_license="BL-TECHMART-2024",
+        tax_id="TAX-TM-2024",
+        contact_email="support@techmart.com",
+        contact_phone="+1-800-TECH-MART",
+        address="123 Tech Street, Silicon Valley, CA 94000",
+        product_categories="Electronics",
+        total_products=10,
+        rating=4.6,
+        verified=True
+    )
+    db.add(vendor)
+    users.append(user)
     
     db.commit()
-    print(f"Created {len(users)} users (10 customers, 5 agents, 1 supervisor, 4 vendors)")
+    print(f"Created {len(users)} users (10 customers, 5 agents, 1 supervisor, 1 vendor)")
     return users
 
 def seed_products(db, vendors):
@@ -170,83 +169,40 @@ def seed_products(db, vendors):
     
     products = []
     
-    # Realistic product data by category
-    product_data = {
-        "Electronics": [
-            ("Wireless Bluetooth Headphones", 89.99, "Premium noise-canceling headphones with 30-hour battery life"),
-            ("Smartphone Protective Case", 24.99, "Durable case with military-grade drop protection"),
-            ("USB-C Fast Charging Cable", 19.99, "6ft braided cable with fast charging support"),
-            ("Portable Power Bank 20000mAh", 49.99, "High-capacity charger with dual USB ports"),
-            ("Wireless Charging Pad", 34.99, "Qi-compatible fast wireless charger"),
-            ("Bluetooth Speaker", 79.99, "Waterproof speaker with 360-degree sound"),
-            ("Smart Watch Band", 29.99, "Premium silicone band for fitness tracking"),
-            ("Phone Screen Protector", 14.99, "Tempered glass with anti-fingerprint coating"),
-            ("Car Phone Mount", 39.99, "Magnetic mount with 360-degree rotation"),
-            ("Gaming Mouse", 59.99, "RGB gaming mouse with programmable buttons")
-        ],
-        "Food & Beverages": [
-            ("Chocolate Truffle Cake", 45.99, "Rich chocolate cake with Belgian truffle filling"),
-            ("Organic Wildflower Honey", 28.99, "Pure honey from local organic farms"),
-            ("Artisan Coffee Beans", 32.99, "Single-origin beans, medium roast, 1lb bag"),
-            ("Handmade Pasta Collection", 22.99, "Authentic Italian pasta with traditional recipes"),
-            ("Extra Virgin Olive Oil", 38.99, "Cold-pressed oil from Mediterranean olives"),
-            ("Gourmet Tea Sampler", 24.99, "Collection of premium loose-leaf teas"),
-            ("Artisan Bread Loaf", 12.99, "Fresh-baked sourdough bread"),
-            ("Organic Fruit Preserves", 18.99, "Small-batch jams made with organic fruits"),
-            ("Premium Spice Set", 42.99, "Collection of exotic spices from around the world"),
-            ("Craft Beer Selection", 35.99, "Curated selection of local craft beers")
-        ],
-        "Fashion & Clothing": [
-            ("Cotton Casual T-Shirt", 19.99, "100% organic cotton tee in multiple colors"),
-            ("Premium Denim Jeans", 89.99, "Classic fit jeans with stretch comfort"),
-            ("Leather Wallet", 79.99, "Genuine leather with RFID blocking technology"),
-            ("Running Sneakers", 129.99, "Lightweight athletic shoes with cushioned sole"),
-            ("Wool Winter Scarf", 34.99, "Soft merino wool scarf for cold weather"),
-            ("Designer Sunglasses", 149.99, "UV protection with polarized lenses"),
-            ("Casual Button Shirt", 49.99, "Wrinkle-resistant shirt for everyday wear"),
-            ("Leather Belt", 59.99, "Genuine leather belt with classic buckle"),
-            ("Sports Cap", 24.99, "Adjustable cap with moisture-wicking fabric"),
-            ("Cozy Hoodie", 69.99, "Soft fleece hoodie with kangaroo pocket")
-        ],
-        "Home & Garden": [
-            ("Ceramic Coffee Mug Set", 29.99, "Set of 4 handcrafted ceramic mugs"),
-            ("Bamboo Cutting Board", 39.99, "Eco-friendly board with juice groove"),
-            ("LED Desk Lamp", 54.99, "Adjustable lamp with USB charging port"),
-            ("Decorative Throw Pillow", 16.99, "Soft pillow with modern geometric pattern"),
-            ("Essential Oil Diffuser", 44.99, "Ultrasonic diffuser with color-changing lights"),
-            ("Indoor Plant Pot", 19.99, "Ceramic pot with drainage tray"),
-            ("Kitchen Knife Set", 89.99, "Professional-grade stainless steel knives"),
-            ("Cozy Throw Blanket", 49.99, "Soft fleece blanket for living room"),
-            ("Wall Art Print", 34.99, "Modern abstract art for home decoration"),
-            ("Scented Candle Set", 39.99, "Set of 3 soy candles with relaxing scents")
-        ]
-    }
+    # Electronics products for TechMart vendor
+    electronics_products = [
+        ("Wireless Bluetooth Headphones", 89.99, "Premium noise-canceling headphones with 30-hour battery life"),
+        ("Smartphone Protective Case", 24.99, "Durable case with military-grade drop protection"),
+        ("USB-C Fast Charging Cable", 19.99, "6ft braided cable with fast charging support"),
+        ("Portable Power Bank 20000mAh", 49.99, "High-capacity charger with dual USB ports"),
+        ("Wireless Charging Pad", 34.99, "Qi-compatible fast wireless charger"),
+        ("Bluetooth Speaker", 79.99, "Waterproof speaker with 360-degree sound"),
+        ("Smart Watch Band", 29.99, "Premium silicone band for fitness tracking"),
+        ("Phone Screen Protector", 14.99, "Tempered glass with anti-fingerprint coating"),
+        ("Car Phone Mount", 39.99, "Magnetic mount with 360-degree rotation"),
+        ("Gaming Mouse", 59.99, "RGB gaming mouse with programmable buttons")
+    ]
     
-    vendor_users = [u for u in vendors if u.role == UserRole.VENDOR]
-    categories = list(product_data.keys())
+    vendor_user = next(u for u in vendors if u.role == UserRole.VENDOR)
     
-    for i, vendor_user in enumerate(vendor_users):
-        category = categories[i]
-        category_products = product_data[category]
-        
-        # Each vendor gets 10 products
-        for j, (name, price, description) in enumerate(category_products):
-            product = Product(
-                id=f"PROD{vendor_user.id:03d}{j+1:03d}",
-                vendor_id=vendor_user.id,
-                sku=f"SKU-{category[:3].upper()}-{j+1:03d}",
-                name=name,
-                category=category,
-                price=price,
-                description=description,
-                stock_quantity=randint(25, 150),
-                images=[f"https://picsum.photos/400/400?random={vendor_user.id}{j}"],
-                is_active=True,
-                rating=round(uniform(4.2, 4.9), 1),
-                review_count=randint(15, 85)
-            )
-            db.add(product)
-            products.append(product)
+    # Create 10 products for the single vendor
+    for j, (name, price, description) in enumerate(electronics_products):
+        product = Product(
+            id=f"PROD{vendor_user.id:03d}{j+1:03d}",
+            vendor_id=vendor_user.id,
+            sku=f"SKU-TECH-{j+1:03d}",
+            name=name,
+            category="Electronics",
+            price=price,
+            description=description,
+            stock_quantity=randint(25, 150),
+            images=[f"https://picsum.photos/400/400?random={vendor_user.id}{j}"],
+            is_active=True,
+            rating=round(uniform(4.2, 4.9), 1),
+            review_count=randint(15, 85)
+        )
+        db.add(product)
+        products.append(product)
     
     db.commit()
     print(f"Created {len(products)} products")
@@ -396,6 +352,20 @@ def seed_tickets(db, customers, agents, orders):
             "agent_response": "I sincerely apologize for this shipping error. I can see exactly what happened - there was a mix-up in our fulfillment center. I'm expediting the correct blue t-shirt in size M to you via overnight shipping at no charge. You should receive it tomorrow. For the inconvenience, I'm also providing a full refund for the shipping cost of your original order.",
             "priority": TicketPriority.HIGH,
             "status": TicketStatus.RESOLVED
+        },
+        {
+            "subject": "Need help with product selection",
+            "customer_message": "I'm looking for a wireless speaker for outdoor use. Can someone help me choose the right product from your catalog?",
+            "agent_response": "",
+            "priority": TicketPriority.LOW,
+            "status": TicketStatus.OPEN
+        },
+        {
+            "subject": "Payment processing issue",
+            "customer_message": "My payment failed during checkout but I was still charged. Please help resolve this.",
+            "agent_response": "",
+            "priority": TicketPriority.HIGH,
+            "status": TicketStatus.OPEN
         }
     ]
     
@@ -524,16 +494,16 @@ def main():
         print("\n" + "="*60)
         print("REALISTIC MEDIUM DATABASE SEEDING COMPLETED!")
         print("="*60)
-        print(f"Users: {len(users)} (10 customers, 5 agents, 1 supervisor, 4 vendors)")
+        print(f"Users: {len(users)} (10 customers, 5 agents, 1 supervisor, 1 vendor)")
         print(f"Products: {len(products)} (realistic catalog)")
         print(f"Orders: {len(orders)} (5-8 per customer with logical statuses)")
         print(f"Tickets: {len(tickets)} (realistic support conversations)")
         print("="*60)
-        print("[✓] Logical order statuses based on order age")
-        print("[✓] Realistic ticket conversations between customers and agents")
-        print("[✓] Professional order and ticket IDs")
-        print("[✓] Real-world product catalog")
-        print("[✓] Proper customer-agent message attribution")
+        print("[OK] Logical order statuses based on order age")
+        print("[OK] Realistic ticket conversations between customers and agents")
+        print("[OK] Professional order and ticket IDs")
+        print("[OK] Real-world product catalog")
+        print("[OK] Proper customer-agent message attribution")
         print("="*60)
         print("Ready for professional testing!")
         

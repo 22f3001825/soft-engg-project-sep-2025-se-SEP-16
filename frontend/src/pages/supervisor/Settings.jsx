@@ -4,23 +4,32 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/ca
 import { Switch } from "../../components/ui/switch";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
+import { useAuth } from "../../context/AuthContext";
 
 export const Settings = () => {
+  const { user } = useAuth();
   const [settings, setSettings] = useState({
     autoRefundLimit: 150,
     workingHoursStart: "09:00",
     workingHoursEnd: "18:00",
     autoAssignTickets: true,
+    emailNotifications: true,
+    systemAlerts: true,
   });
 
   const [toast, setToast] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const savedSettings = localStorage.getItem("supervisorSettings");
+    loadSettings();
+  }, []);
+
+  const loadSettings = () => {
+    const savedSettings = localStorage.getItem(`supervisorSettings_${user?.id || 'default'}`);
     if (savedSettings) {
       setSettings(JSON.parse(savedSettings));
     }
-  }, []);
+  };
 
   useEffect(() => {
     if (toast) {
@@ -29,12 +38,24 @@ export const Settings = () => {
     }
   }, [toast]);
 
-  const handleSave = () => {
-    localStorage.setItem("supervisorSettings", JSON.stringify(settings));
-    setToast({
-      type: "success",
-      message: "Settings have been updated successfully.",
-    });
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      localStorage.setItem(`supervisorSettings_${user?.id || 'default'}`, JSON.stringify(settings));
+      
+      setToast({
+        type: "success",
+        message: "Settings have been updated successfully.",
+      });
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      setToast({
+        type: "error",
+        message: "Failed to save settings. Please try again.",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleToggle = (key) => {
@@ -64,7 +85,7 @@ export const Settings = () => {
       {toast && (
         <div
           className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-lg shadow-lg text-white font-medium animate-fade-in ${
-            toast.type === "success" ? "bg-green-500" : "bg-blue-500"
+            toast.type === "success" ? "bg-green-500" : toast.type === "error" ? "bg-red-500" : "bg-blue-500"
           }`}
         >
           {toast.message}
@@ -108,7 +129,7 @@ export const Settings = () => {
                   -
                 </Button>
                 <div className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white px-4 py-1 rounded-full text-sm font-semibold shadow-md min-w-[70px] text-center">
-                  Rs.{settings.autoRefundLimit.toFixed(2)}
+                  ${settings.autoRefundLimit.toFixed(2)}
                 </div>
                 <Button
                   className="bg-indigo-500 hover:bg-indigo-600 text-white rounded-full w-8 h-8 flex items-center justify-center"
@@ -156,13 +177,36 @@ export const Settings = () => {
               />
             </div>
 
+            {/* Email Notifications */}
+            <div className="flex items-center justify-between bg-white/60 backdrop-blur-md hover:bg-white/80 transition border border-indigo-100 shadow-sm px-6 py-5 rounded-xl">
+              <span className="text-lg font-semibold text-gray-900">
+                Email notifications
+              </span>
+              <Switch
+                checked={settings.emailNotifications}
+                onCheckedChange={() => handleToggle("emailNotifications")}
+              />
+            </div>
+
+            {/* System Alerts */}
+            <div className="flex items-center justify-between bg-white/60 backdrop-blur-md hover:bg-white/80 transition border border-indigo-100 shadow-sm px-6 py-5 rounded-xl">
+              <span className="text-lg font-semibold text-gray-900">
+                System alerts
+              </span>
+              <Switch
+                checked={settings.systemAlerts}
+                onCheckedChange={() => handleToggle("systemAlerts")}
+              />
+            </div>
+
             {/* Save Button */}
             <div className="pt-6 text-center">
               <Button
-                className="bg-gradient-to-r from-indigo-500 to-sky-600 hover:from-indigo-600 hover:to-sky-700 text-white font-semibold px-8 py-2 rounded-lg shadow-md"
+                className="bg-gradient-to-r from-indigo-500 to-sky-600 hover:from-indigo-600 hover:to-sky-700 text-white font-semibold px-8 py-2 rounded-lg shadow-md disabled:opacity-50"
                 onClick={handleSave}
+                disabled={loading}
               >
-                Save Changes
+                {loading ? "Saving..." : "Save Changes"}
               </Button>
             </div>
 

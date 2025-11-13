@@ -2,10 +2,12 @@ import React, { useState, useEffect } from "react";
 import { Header } from "../../components/common/Supervisor_header";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
-import { agents as dummyAgents } from "./data/supervisordummydata";
+import supervisorApi from "../../services/supervisorApi";
+import { toast } from "sonner";
 
 export const TeamManagement = () => {
-  const [agents, setAgents] = useState(dummyAgents);
+  const [agents, setAgents] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Filters & Search
   const [filter, setFilter] = useState("All Agents");
@@ -20,23 +22,38 @@ export const TeamManagement = () => {
   // Toast Notification
   const [toast, setToast] = useState(null);
   useEffect(() => {
+    fetchAgents();
+  }, []);
+
+  useEffect(() => {
     if (toast) {
       const timer = setTimeout(() => setToast(null), 3000);
       return () => clearTimeout(timer);
     }
   }, [toast]);
 
+  const fetchAgents = async () => {
+    try {
+      setLoading(true);
+      const data = await supervisorApi.getAgents();
+      setAgents(data);
+    } catch (error) {
+      console.error('Failed to fetch agents:', error);
+      toast.error('Failed to load agents');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Filter logic
   const getFilteredAgents = () => {
     let filtered = [...agents];
-    if (filter === "Ratings above 4.5") filtered = filtered.filter((a) => a.rating > 4.5);
-    else if (filter === "Ratings above 4") filtered = filtered.filter((a) => a.rating > 4);
-    else if (filter === "Ratings above 3") filtered = filtered.filter((a) => a.rating > 3);
-    else if (filter === "Ratings below 3") filtered = filtered.filter((a) => a.rating < 3);
+    if (filter === "Active Agents") filtered = filtered.filter((a) => a.is_active);
+    else if (filter === "Inactive Agents") filtered = filtered.filter((a) => !a.is_active);
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter(
-        (a) => a.name.toLowerCase().includes(q) || a.status.toLowerCase().includes(q)
+        (a) => a.name.toLowerCase().includes(q) || a.department?.toLowerCase().includes(q)
       );
     }
     return filtered;
@@ -50,23 +67,35 @@ export const TeamManagement = () => {
   };
   const handleBlockClick = (a) => {
     setSelectedAgent(a);
-    setIsUnblockAction(a.status === "Blocked");
+    setIsUnblockAction(!a.is_active);
     setShowBlockModal(true);
   };
-  const handleConfirmBlock = () => {
-    setAgents((prev) =>
-      prev.map((x) =>
-        x.name === selectedAgent.name
-          ? { ...x, status: isUnblockAction ? "Online" : "Blocked" }
-          : x
-      )
-    );
-    setToast({
-      type: isUnblockAction ? "success" : "error",
-      message: isUnblockAction
-        ? `${selectedAgent.name} has been unblocked.`
-        : `${selectedAgent.name} has been blocked.`,
-    });
+  const handleConfirmBlock = async () => {
+    try {
+      await supervisorApi.updateAgentStatus(selectedAgent.id, isUnblockAction);
+      
+      setAgents((prev) =>
+        prev.map((x) =>
+          x.id === selectedAgent.id
+            ? { ...x, is_active: isUnblockAction }
+            : x
+        )
+      );
+      
+      setToast({
+        type: isUnblockAction ? "success" : "error",
+        message: isUnblockAction
+          ? `${selectedAgent.name} has been unblocked.`
+          : `${selectedAgent.name} has been blocked.`,
+      });
+    } catch (error) {
+      console.error('Failed to update agent status:', error);
+      setToast({
+        type: "error",
+        message: "Failed to update agent status",
+      });
+    }
+    
     setShowBlockModal(false);
   };
 
@@ -118,10 +147,8 @@ export const TeamManagement = () => {
                 className="border rounded-lg p-2 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm text-gray-700 focus:ring-2 focus:ring-indigo-400"
               >
                 <option>All Agents</option>
-                <option>Ratings above 4.5</option>
-                <option>Ratings above 4</option>
-                <option>Ratings above 3</option>
-                <option>Ratings below 3</option>
+                <option>Active Agents</option>
+                <option>Inactive Agents</option>
               </select>
 
               <input
@@ -137,14 +164,7 @@ export const TeamManagement = () => {
               </Button>
             </div>
 
-            <div className="flex gap-3">
-              <Button className="bg-gradient-to-r from-blue-100 to-indigo-100 text-indigo-700 hover:from-blue-200 hover:to-indigo-200 transition-all">
-                Bulk Reassign
-              </Button>
-              <Button className="bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-700 hover:from-yellow-200 hover:to-amber-200 transition-all">
-                Notify
-              </Button>
-            </div>
+
           </CardContent>
         </Card>
 
@@ -164,9 +184,8 @@ export const TeamManagement = () => {
                       <th className="p-3 rounded-tl-xl">Agent</th>
                       <th className="p-3">Status</th>
                       <th className="p-3">Assigned</th>
-                      <th className="p-3">Solved</th>
-                      <th className="p-3">Avg Resolution</th>
-                      <th className="p-3">Ratings</th>
+                      <th className="p-3">Resolved</th>
+
                       <th className="p-3 rounded-tr-xl">Action</th>
                     </tr>
                   </thead>
@@ -175,7 +194,7 @@ export const TeamManagement = () => {
                       <tr
                         key={index}
                         className={`border-b last:border-0 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 ${
-                          agent.status === "Blocked" ? "bg-red-50" : ""
+                          !agent.is_active ? "bg-red-50" : ""
                         }`}
                       >
                         <td className="p-3 font-medium text-gray-800 flex items-center gap-2">
@@ -184,23 +203,11 @@ export const TeamManagement = () => {
                           </div>
                           {agent.name}
                         </td>
-                        <td
-                          className={`p-3 font-semibold ${
-                            agent.status === "Online"
-                              ? "text-green-600"
-                              : agent.status === "Busy"
-                              ? "text-orange-600"
-                              : "text-gray-600"
-                          }`}
-                        >
-                          {agent.status}
+                        <td className="p-3 font-semibold text-green-600">
+                          {agent.is_active ? 'Active' : 'Inactive'}
                         </td>
-                        <td className="p-3">{agent.tickets.length}</td>
-                        <td className="p-3">{agent.solved}</td>
-                        <td className="p-3">{agent.avgTime}</td>
-                        <td className="p-3 font-medium text-yellow-600">
-                          ⭐ {agent.rating.toFixed(1)}
-                        </td>
+                        <td className="p-3">{agent.assigned_tickets}</td>
+                        <td className="p-3">{agent.resolved_tickets}</td>
                         <td className="p-3 flex flex-wrap gap-2">
                           <Button
                             size="sm"
@@ -209,7 +216,7 @@ export const TeamManagement = () => {
                           >
                             View Details
                           </Button>
-                          {agent.status === "Blocked" ? (
+                          {!agent.is_active ? (
                             <Button
                               size="sm"
                               className="bg-green-500 hover:bg-green-600 text-white"
@@ -251,19 +258,19 @@ export const TeamManagement = () => {
                 <strong>Name:</strong> {selectedAgent.name}
               </p>
               <p>
-                <strong>Status:</strong> {selectedAgent.status}
+                <strong>Status:</strong> {selectedAgent.is_active ? 'Active' : 'Inactive'}
               </p>
               <p>
-                <strong>Tickets Assigned:</strong> {selectedAgent.tickets.length}
+                <strong>Assigned Tickets:</strong> {selectedAgent.assigned_tickets}
               </p>
               <p>
-                <strong>Average Resolution Time:</strong> {selectedAgent.avgTime}
+                <strong>Resolved Tickets:</strong> {selectedAgent.resolved_tickets}
               </p>
               <p>
-                <strong>Rating:</strong> ⭐ {selectedAgent.rating.toFixed(1)}
+                <strong>Department:</strong> {selectedAgent.department}
               </p>
               <p>
-                <strong>Handling Tickets:</strong> {selectedAgent.tickets.join(", ")}
+                <strong>Current Tickets:</strong> {selectedAgent.current_tickets?.join(", ") || "None"}
               </p>
             </div>
             <div className="flex justify-end mt-6">

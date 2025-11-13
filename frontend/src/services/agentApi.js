@@ -102,6 +102,12 @@ class AgentApiService {
       body: JSON.stringify(settingsData)
     });
   }
+
+  async resolveTicket(ticketId) {
+    return this.request(`/agent/tickets/${ticketId}/resolve`, {
+      method: 'PUT'
+    });
+  }
 }
 
 export default new AgentApiService();

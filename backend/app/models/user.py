@@ -41,12 +41,12 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)  # Unique user identifier
     
     # Authentication fields - Required for login/signup (Features 1-10)
-    email = Column(String(120), unique=True, nullable=False)  # Login username, must be unique
+    email = Column(String(120), unique=True, nullable=False, index=True)  # Login username, must be unique
     password = Column(String(255), nullable=False)  # Hashed password using bcrypt
     
     # User information
     full_name = Column(String(120), nullable=False)  # Display name across the platform
-    role = Column(Enum(UserRole), nullable=False)  # Determines access permissions and features
+    role = Column(Enum(UserRole), nullable=False, index=True)  # Determines access permissions and features
     avatar = Column(Text)  # Profile picture URL, generated from DiceBear API
     
     # Account status - Required for security and user management
@@ -158,7 +158,7 @@ class Supervisor(Base):
     # Escalation handling - Required for ticket management (Feature 1)
     escalation_level = Column(Integer)  # Higher level = can handle more complex issues
     # Determines which escalated tickets this supervisor can handle
-
+    
     # Relationship back to User table
     user = relationship("User", back_populates="supervisor_profile")
 

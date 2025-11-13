@@ -35,8 +35,8 @@ async def login(
     return Token(access_token=access_token, token_type="bearer", user={"id": user.id, "email": user.email, "full_name": user.full_name, "role": user.role.value})
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user_info(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+async def get_current_user_info(db: Session = Depends(get_db)):
     """Get current user info"""
     from app.services.auth import get_current_user
-    user = get_current_user(db, token)
+    user = get_current_user(db=db)
     return {"email": user.email, "full_name": user.full_name, "role": user.role.value}

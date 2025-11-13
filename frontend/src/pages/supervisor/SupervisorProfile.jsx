@@ -7,7 +7,8 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
 import { Badge } from "../../components/ui/badge";
-import { Camera, Edit, Save, User, Mail, Shield, Award } from "lucide-react";
+import { Camera, Edit, Save, User, Mail, Shield, Award, Users } from "lucide-react";
+import supervisorApi from "../../services/supervisorApi";
 
 export const SupervisorProfile = () => {
   const { user } = useAuth();
@@ -17,14 +18,17 @@ export const SupervisorProfile = () => {
   const boyAvatar = "https://cdn-icons-png.flaticon.com/512/4322/4322991.png";
 
   const [profileData, setProfileData] = useState({
-    name: user?.name || "Harsh Mathur",
-    email: user?.email || "supervisor@intellica.com",
+    name: user?.name || "Robert Johnson",
+    email: user?.email || "supervisor.demo@intellica.com",
     role: user?.role || "supervisor",
-    joinDate: "2024-01-10",
-    totalTickets: 420,
-    closedTickets: 398,
-    avgResolutionTime: "1h 45m",
     avatar: user?.avatar || boyAvatar,
+  });
+
+  const [performanceData, setPerformanceData] = useState({
+    totalTickets: 0,
+    activeAgents: 0,
+    resolvedTickets: 0,
+    loading: true
   });
 
   // 🔁 Load from localStorage if exists
@@ -33,7 +37,23 @@ export const SupervisorProfile = () => {
     if (!savedUser) {
       localStorage.setItem("intellica_user", JSON.stringify(profileData));
     }
+    fetchPerformanceData();
   }, []);
+
+  const fetchPerformanceData = async () => {
+    try {
+      const data = await supervisorApi.getDashboard();
+      setPerformanceData({
+        totalTickets: data.stats.total_tickets,
+        activeAgents: data.stats.active_agents,
+        resolvedTickets: data.stats.resolved_tickets,
+        loading: false
+      });
+    } catch (error) {
+      console.error('Failed to fetch performance data:', error);
+      setPerformanceData(prev => ({ ...prev, loading: false }));
+    }
+  };
 
   // 🔔 Auto-hide toast
   useEffect(() => {
@@ -181,33 +201,39 @@ export const SupervisorProfile = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg font-semibold text-gray-800">
                   <Shield className="h-5 w-5 text-green-600" />
-                  Performance Overview
+                  Team Performance Overview
                 </CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center p-5 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl border border-indigo-100 hover:shadow-md transition">
-                  <Award className="h-6 w-6 text-indigo-600 mx-auto mb-2" />
-                  <Label className="text-xs text-gray-500">Total Tickets</Label>
-                  <p className="text-lg font-bold text-indigo-700 mt-1">
-                    {profileData.totalTickets}
-                  </p>
-                </div>
+                {performanceData.loading ? (
+                  <div className="col-span-3 text-center py-8 text-gray-500">Loading...</div>
+                ) : (
+                  <>
+                    <div className="text-center p-5 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl border border-indigo-100 hover:shadow-md transition">
+                      <Award className="h-6 w-6 text-indigo-600 mx-auto mb-2" />
+                      <Label className="text-xs text-gray-500">Total Tickets</Label>
+                      <p className="text-lg font-bold text-indigo-700 mt-1">
+                        {performanceData.totalTickets}
+                      </p>
+                    </div>
 
-                <div className="text-center p-5 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-100 hover:shadow-md transition">
-                  <User className="h-6 w-6 text-green-600 mx-auto mb-2" />
-                  <Label className="text-xs text-gray-500">Avg Resolution Time</Label>
-                  <p className="text-lg font-bold text-green-700 mt-1">
-                    {profileData.avgResolutionTime}
-                  </p>
-                </div>
+                    <div className="text-center p-5 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-100 hover:shadow-md transition">
+                      <Users className="h-6 w-6 text-green-600 mx-auto mb-2" />
+                      <Label className="text-xs text-gray-500">Active Agents</Label>
+                      <p className="text-lg font-bold text-green-700 mt-1">
+                        {performanceData.activeAgents}
+                      </p>
+                    </div>
 
-                <div className="text-center p-5 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border border-purple-100 hover:shadow-md transition">
-                  <Award className="h-6 w-6 text-purple-600 mx-auto mb-2" />
-                  <Label className="text-xs text-gray-500">Tickets Closed</Label>
-                  <p className="text-lg font-bold text-purple-700 mt-1">
-                    {profileData.closedTickets}
-                  </p>
-                </div>
+                    <div className="text-center p-5 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border border-purple-100 hover:shadow-md transition">
+                      <Award className="h-6 w-6 text-purple-600 mx-auto mb-2" />
+                      <Label className="text-xs text-gray-500">Resolved Tickets</Label>
+                      <p className="text-lg font-bold text-purple-700 mt-1">
+                        {performanceData.resolvedTickets}
+                      </p>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>
