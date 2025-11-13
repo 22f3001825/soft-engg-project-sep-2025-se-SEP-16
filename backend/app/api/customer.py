@@ -460,10 +460,13 @@ def upload_ticket_attachment(
         if file.size > 10 * 1024 * 1024:
             raise HTTPException(status_code=400, detail="File size too large (max 10MB)")
         
-        # Save file
+            # Save file
         file_path = os.path.join(upload_dir, file.filename)
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        try:
+            with open(file_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+        except (OSError, IOError) as e:
+            raise HTTPException(status_code=500, detail="Failed to save file")
         
         uploaded_files.append({
             "filename": file.filename,

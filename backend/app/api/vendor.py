@@ -61,9 +61,6 @@ def get_vendor_dashboard(current_user: User = Depends(get_current_user), db: Ses
     # Calculate metrics
     total_products = len(vendor_products)
     
-    # Safe queries with proper error handling
-    total_products = len(vendor_products)
-    
     try:
         if product_ids:
             # Simple count queries
@@ -80,10 +77,8 @@ def get_vendor_dashboard(current_user: User = Depends(get_current_user), db: Ses
         else:
             total_orders = 0
             total_complaints = 0
-    except Exception as e:
-        # Fallback to safe values if queries fail
-        total_orders = 0
-        total_complaints = 0
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to retrieve dashboard data")
     
     # Calculate return rate (simplified)
     return_rate = round((total_complaints / max(total_orders, 1)) * 100, 1)
@@ -128,9 +123,14 @@ def get_vendor_analytics(date_range: str = "30", current_user: User = Depends(ge
     if current_user.role != "VENDOR":
         raise HTTPException(status_code=403, detail="Access denied")
     
-    # Calculate date range
-    days = int(date_range)
-    start_date = datetime.now() - timedelta(days=days)
+    try:
+        # Calculate date range
+        days = int(date_range)
+        start_date = datetime.now() - timedelta(days=days)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date range")
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to retrieve analytics data")
     
     # Get vendor's products for filtering
     vendor_products = db.query(Product).filter(Product.vendor_id == current_user.id).all()

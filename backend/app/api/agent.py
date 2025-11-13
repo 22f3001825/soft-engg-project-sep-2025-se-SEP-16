@@ -22,9 +22,14 @@ router = APIRouter(prefix="/agent", tags=["agent"])
 @router.get("/dashboard")
 def get_dashboard(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get agent dashboard data"""
-    agent = db.query(Agent).filter(Agent.user_id == current_user.id).first()
-    if not agent:
-        raise HTTPException(status_code=404, detail="Agent profile not found")
+    try:
+        agent = db.query(Agent).filter(Agent.user_id == current_user.id).first()
+        if not agent:
+            raise HTTPException(status_code=404, detail="Agent profile not found")
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to retrieve dashboard data")
     
     # Get ticket statistics (agent-specific)
     assigned_tickets = db.query(Ticket).filter(Ticket.agent_id == current_user.id).count()
@@ -188,15 +193,21 @@ def update_ticket_status(
     db: Session = Depends(get_db)
 ):
     """Update ticket status"""
-    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
-    if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket not found")
-    
-    ticket.status = TicketStatus(status_data.status)
-    ticket.updated_at = datetime.utcnow()
-    
-    db.commit()
-    return {"message": "Ticket status updated successfully"}
+    try:
+        ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+        if not ticket:
+            raise HTTPException(status_code=404, detail="Ticket not found")
+        
+        ticket.status = TicketStatus(status_data.status)
+        ticket.updated_at = datetime.utcnow()
+        
+        db.commit()
+        return {"message": "Ticket status updated successfully"}
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid status value")
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to update ticket status")
 
 @router.post("/tickets/{ticket_id}/messages")
 def add_ticket_message(

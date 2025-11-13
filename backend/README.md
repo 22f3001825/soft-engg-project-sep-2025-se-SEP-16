@@ -42,6 +42,37 @@
 
 The API will be available at `http://127.0.0.1:8000`
 
+## Login Credentials
+
+The database is seeded with test users for different portals. Use these credentials to login:
+
+### Customer Accounts (Password: customer123)
+- ali.jawad@gmail.com (Ali Jawad)
+- rachita.vohra@yahoo.com (Rachita Vohra)
+- harsh.mathur@outlook.com (Harsh Mathur)
+- priya.mehta@gmail.com (Priya Mehta)
+- aman.verma@hotmail.com (Aman Verma)
+- sarah.johnson@gmail.com (Sarah Johnson)
+- michael.chen@yahoo.com (Michael Chen)
+- emily.rodriguez@gmail.com (Emily Rodriguez)
+- david.kim@outlook.com (David Kim)
+- jessica.brown@gmail.com (Jessica Brown)
+
+### Agent Accounts (Password: agent123)
+- emma.wilson@intellica.com (Emma Wilson)
+- james.taylor@intellica.com (James Taylor)
+- olivia.davis@intellica.com (Olivia Davis)
+- william.miller@intellica.com (William Miller)
+- isabella.moore@intellica.com (Isabella Moore)
+
+### Supervisor Account (Password: demo2024)
+- supervisor.demo@intellica.com (Robert Johnson)
+
+### Vendor Account (Password: vendor123)
+- vendor@techmart.com (TechMart Solutions Team)
+
+**Note:** All passwords are encrypted in the database. Use the plain text passwords above for login.
+
 ## API Documentation
 
 Once running, visit `http://127.0.0.1:8000/docs` for interactive API documentation.

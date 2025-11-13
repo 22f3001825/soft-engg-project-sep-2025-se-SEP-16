@@ -18,9 +18,11 @@ def get_supervisor_dashboard(
     db: Session = Depends(get_db)
 ):
     """Get supervisor dashboard statistics"""
-    
-    # Total tickets across all agents
-    total_tickets = db.query(Ticket).count()
+    try:
+        # Total tickets across all agents
+        total_tickets = db.query(Ticket).count()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to retrieve dashboard data")
     
     # Active agents count (only agents that are actually active)
     active_agents = db.query(User).filter(
@@ -299,23 +301,31 @@ def reassign_ticket(
     db: Session = Depends(get_db)
 ):
     """Reassign ticket to different agent"""
-    
-    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
-    if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket not found")
-    
-    # Verify agent exists
-    agent = db.query(User).filter(User.id == reassign_data.agent_id, User.role == "AGENT").first()
-    if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
-    
-    ticket.agent_id = reassign_data.agent_id
-    ticket.status = TicketStatus.IN_PROGRESS
-    ticket.updated_at = datetime.utcnow()
-    
-    db.commit()
-    
-    return {"message": f"Ticket reassigned to {agent.full_name}"}
+    try:
+        ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+        if not ticket:
+            raise HTTPException(status_code=404, detail="Ticket not found")
+        
+        # Verify agent exists
+        agent = db.query(User).filter(User.id == reassign_data.agent_id, User.role == "AGENT").first()
+        if not agent:
+            raise HTTPException(status_code=404, detail="Agent not found")
+        
+        if not agent.is_active:
+            raise HTTPException(status_code=400, detail="Cannot assign to inactive agent")
+        
+        ticket.agent_id = reassign_data.agent_id
+        ticket.status = TicketStatus.IN_PROGRESS
+        ticket.updated_at = datetime.utcnow()
+        
+        db.commit()
+        
+        return {"message": f"Ticket reassigned to {agent.full_name}"}
+    except HTTPException:
+        raise
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to reassign ticket")
 
 @router.put("/tickets/{ticket_id}/resolve")
 def resolve_ticket(
