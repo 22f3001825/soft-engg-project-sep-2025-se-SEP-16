@@ -102,10 +102,6 @@ test-results/
 playwright-report/
 coverage/
 
-# Database
-*.db
-*.sqlite
-*.sqlite3
 
 # Backup files
 *.backup
