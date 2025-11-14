@@ -4,6 +4,7 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Separator } from '../../components/ui/separator';
 import { Input } from '../../components/ui/input';
+import { ConfirmationDialog } from '../../components/ui/confirmation-dialog';
 import agentApi from '../../services/agentApi';
 import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
@@ -14,6 +15,7 @@ export const TicketDetails = ({ ticketId, onBack, onNavigate }) => {
   const [ticket, setTicket] = React.useState(null);
   const [currentTicketId, setCurrentTicketId] = React.useState(ticketId ? ticketId : '');
   const [findId, setFindId] = React.useState('');
+  const [confirmDialog, setConfirmDialog] = React.useState({ isOpen: false, type: '', data: null });
 
   React.useEffect(() => {
     if (!currentTicketId) {
@@ -94,24 +96,48 @@ export const TicketDetails = ({ ticketId, onBack, onNavigate }) => {
     </div>
   );
 
-  const handleApproveRefund = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleApproveRefund = async () => {
     if (!ticket) return;
     
-    toast.success('Refund Initiated', {
-      description: `Refund for ticket ${ticket.id} has been initiated successfully.`
-    });
+    try {
+      await agentApi.approveRefund(ticket.id, {
+        order_id: ticket.related_order?.id,
+        amount: ticket.related_order?.total,
+        reason: 'Agent approved refund request'
+      });
+      
+      // Update ticket status locally
+      setTicket(prev => ({ ...prev, status: 'RESOLVED' }));
+      
+      toast.success('Refund Approved', {
+        description: `Refund for ticket ${ticket.id} has been approved and processed.`
+      });
+    } catch (error) {
+      console.error('Failed to approve refund:', error);
+      toast.error('Failed to approve refund', {
+        description: 'Please try again or contact system administrator.'
+      });
+    }
   };
 
-  const handleReject = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleReject = async () => {
     if (!ticket) return;
     
-    toast.error('Refund Rejected', {
-      description: `Refund request for ticket ${ticket.id} has been rejected.`
-    });
+    try {
+      await agentApi.rejectRefund(ticket.id, 'Refund request does not meet policy requirements');
+      
+      // Update ticket status locally
+      setTicket(prev => ({ ...prev, status: 'RESOLVED' }));
+      
+      toast.error('Refund Rejected', {
+        description: `Refund request for ticket ${ticket.id} has been rejected.`
+      });
+    } catch (error) {
+      console.error('Failed to reject refund:', error);
+      toast.error('Failed to reject refund', {
+        description: 'Please try again or contact system administrator.'
+      });
+    }
   };
 
   const handleRequestInfo = (e) => {
@@ -251,7 +277,15 @@ export const TicketDetails = ({ ticketId, onBack, onNavigate }) => {
                 </div>
                 <div className="flex gap-2">
                   <Button 
-                    onClick={handleApproveRefund} 
+                    onClick={() => setConfirmDialog({
+                      isOpen: true,
+                      type: 'approve',
+                      data: {
+                        title: 'Approve Refund',
+                        message: `Are you sure you want to approve the refund for ticket ${ticket.id}? The customer will be notified of this decision.`,
+                        action: handleApproveRefund
+                      }
+                    })}
                     className="flex-1 flex items-center gap-2 bg-gradient-to-r from-success to-success/90 hover:from-success/90 hover:to-success text-white shadow-md"
                   >
                     <CheckCircle2 className="h-4 w-4" />
@@ -259,7 +293,15 @@ export const TicketDetails = ({ ticketId, onBack, onNavigate }) => {
                   </Button>
                   <Button 
                     variant="destructive" 
-                    onClick={handleReject} 
+                    onClick={() => setConfirmDialog({
+                      isOpen: true,
+                      type: 'reject',
+                      data: {
+                        title: 'Reject Refund Request',
+                        message: `Are you sure you want to reject the refund request for ticket ${ticket.id}? The customer will be notified of this decision.`,
+                        action: handleReject
+                      }
+                    })}
                     className="flex-1 flex items-center gap-2 bg-gradient-to-r from-destructive to-destructive/90 hover:from-destructive/90 hover:to-destructive shadow-md"
                   >
                     <XCircle className="h-4 w-4" />
@@ -280,15 +322,23 @@ export const TicketDetails = ({ ticketId, onBack, onNavigate }) => {
                 {(ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS') && (
                   <Button 
                     className="w-full justify-center bg-gradient-to-r from-green-500 to-green-600 text-white font-bold text-base py-6 text-lg shadow-lg hover:from-green-600 hover:to-green-700 transition-all"
-                    onClick={async () => {
-                      try {
-                        await agentApi.resolveTicket(ticket.id);
-                        setTicket(prev => ({ ...prev, status: 'RESOLVED' }));
-                        toast.success('Ticket resolved successfully');
-                      } catch (error) {
-                        toast.error('Failed to resolve ticket');
+                    onClick={() => setConfirmDialog({
+                      isOpen: true,
+                      type: 'resolve',
+                      data: {
+                        title: 'Mark Ticket as Resolved',
+                        message: `Are you sure you want to mark ticket ${ticket.id} as resolved? This will close the ticket and notify the customer.`,
+                        action: async () => {
+                          try {
+                            await agentApi.resolveTicket(ticket.id);
+                            setTicket(prev => ({ ...prev, status: 'RESOLVED' }));
+                            toast.success('Ticket resolved successfully');
+                          } catch (error) {
+                            toast.error('Failed to resolve ticket');
+                          }
+                        }
                       }
-                    }}
+                    })}
                   >
                     <CheckCircle2 className="h-5 w-5 mr-2" />
                     Mark as Resolved
@@ -329,6 +379,26 @@ export const TicketDetails = ({ ticketId, onBack, onNavigate }) => {
         </div>
       </>
       )}
+      
+      <ConfirmationDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ isOpen: false, type: '', data: null })}
+        onConfirm={() => {
+          confirmDialog.data?.action();
+          setConfirmDialog({ isOpen: false, type: '', data: null });
+        }}
+        title={confirmDialog.data?.title || ''}
+        message={confirmDialog.data?.message || ''}
+        confirmText={
+          confirmDialog.type === 'approve' ? 'Approve Refund' : 
+          confirmDialog.type === 'reject' ? 'Reject Request' : 
+          'Mark as Resolved'
+        }
+        cancelText="Cancel"
+        type={
+          confirmDialog.type === 'approve' || confirmDialog.type === 'resolve' ? 'success' : 'danger'
+        }
+      />
     </div>
   );
 };

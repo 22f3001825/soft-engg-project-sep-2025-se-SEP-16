@@ -108,6 +108,21 @@ class AgentApiService {
       method: 'PUT'
     });
   }
+
+  // Refund Management
+  async approveRefund(ticketId, refundData = {}) {
+    return this.request(`/agent/tickets/${ticketId}/refund/approve`, {
+      method: 'POST',
+      body: JSON.stringify(refundData)
+    });
+  }
+
+  async rejectRefund(ticketId, rejectionReason = '') {
+    return this.request(`/agent/tickets/${ticketId}/refund/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ reason: rejectionReason })
+    });
+  }
 }
 
 export default new AgentApiService();

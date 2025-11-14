@@ -122,7 +122,7 @@ export const AllTicketsView = ({ onOpen }) => {
                 onClick={() => setAssignedOnly(!assignedOnly)}
                 className="flex-1 h-12"
               >
-                {assignedOnly ? "My Tickets" : "All Tickets"}
+                {assignedOnly ? "My Tickets" : "Available Tickets"}
               </Button>
               <Button
                 variant="outline"
