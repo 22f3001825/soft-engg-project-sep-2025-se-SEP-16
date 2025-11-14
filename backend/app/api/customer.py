@@ -255,31 +255,47 @@ def request_return(
     if order.status != OrderStatus.DELIVERED:
         raise HTTPException(status_code=400, detail="Only delivered orders can be returned")
     
+    # Calculate refund amount
+    order_items = db.query(OrderItem).filter(OrderItem.order_id == order.id).all()
+    total_items = len(order_items)
+    returned_items = len(return_request.items)
+    refund_amount = round((order.total / total_items) * returned_items, 2)
+    
     # Create a support ticket for the return request
     ticket = Ticket(
         id=str(uuid.uuid4()),
         customer_id=current_user.id,
         subject=f"Return Request for Order {return_request.order_id}",
         status=TicketStatus.OPEN,
-        priority=TicketPriority.MEDIUM
+        priority=TicketPriority.MEDIUM,
+        related_order_id=return_request.order_id
     )
     
     db.add(ticket)
     db.flush()
     
-    # Add initial message
+    # Add initial message with refund details
     message = Message(
         id=str(uuid.uuid4()),
         ticket_id=ticket.id,
         sender_id=current_user.id,
         sender_name=current_user.full_name,
-        content=f"Return request for items: {', '.join(return_request.items)}. Reason: {return_request.reason}. {return_request.description or ''}"
+        content=f"Return request for items: {', '.join(return_request.items)}. Reason: {return_request.reason}. {return_request.description or ''}\n\nEstimated refund amount: ${refund_amount}"
     )
     
     db.add(message)
+    
+    # Update order status to indicate return requested
+    order.status = OrderStatus.RETURNED
+    
     db.commit()
     
-    return {"ticket_id": ticket.id, "message": "Return request submitted successfully"}
+    return {
+        "ticket_id": ticket.id, 
+        "message": "Return request submitted successfully",
+        "refund_amount": refund_amount,
+        "status": "pending_approval"
+    }
 
 # Tickets APIs
 @router.get("/tickets")
@@ -332,7 +348,8 @@ def create_ticket(
         customer_id=current_user.id,
         subject=ticket_data.subject,
         status=TicketStatus.OPEN,
-        priority=TicketPriority(ticket_data.priority)
+        priority=TicketPriority(ticket_data.priority),
+        related_order_id=ticket_data.order_id if ticket_data.order_id and ticket_data.order_id != "none" else None
     )
     
     db.add(ticket)
@@ -500,15 +517,19 @@ def get_profile(
     if not customer:
         raise HTTPException(status_code=404, detail="Customer profile not found")
     
+    # Get real-time counts
+    total_orders = db.query(Order).filter(Order.customer_id == current_user.id).count()
+    total_tickets = db.query(Ticket).filter(Ticket.customer_id == current_user.id).count()
+    
     return {
         "id": current_user.id,
         "email": current_user.email,
         "full_name": current_user.full_name,
         "avatar": current_user.avatar,
         "preferences": customer.preferences,
-        "total_orders": customer.total_orders,
-        "total_tickets": customer.total_tickets,
-        "member_since": customer.member_since
+        "total_orders": total_orders,
+        "total_tickets": total_tickets,
+        "member_since": current_user.created_at
     }
 
 @router.put("/profile")

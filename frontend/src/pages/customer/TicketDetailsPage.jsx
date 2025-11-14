@@ -175,6 +175,22 @@ export const TicketDetailsPage = () => {
                         </div>
                         <div className={`rounded-2xl p-4 shadow-sm ${message.sender_type === 'customer' ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : 'bg-gradient-to-r from-gray-50 to-slate-100 text-gray-900'}`}>
                           <p className="leading-relaxed">{message.content}</p>
+                          {/* Display image attachments */}
+                          {message.content.includes('Uploaded') && (message.content.includes('.jpg') || message.content.includes('.jpeg') || message.content.includes('.png') || message.content.includes('.webp')) ? (
+                            <div className="mt-3">
+                              {message.content.match(/([^\s]+\.(jpg|jpeg|png|webp))/gi)?.map((filename, idx) => (
+                                <img 
+                                  key={idx}
+                                  src={`http://localhost:8000/uploads/tickets/${ticketData.id}/${filename}`}
+                                  alt={filename}
+                                  className="max-w-xs rounded-lg border shadow-sm"
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                       {message.sender_type === 'customer' && (
@@ -222,13 +238,15 @@ export const TicketDetailsPage = () => {
                         onChange={async (e) => {
                           const files = Array.from(e.target.files);
                           if (files.length > 0) {
+                            toast.loading('Uploading files...');
                             try {
-                              toast.loading('Uploading files...');
                               await apiService.uploadAttachment(ticketId, files);
+                              toast.dismiss(); // Clear all toasts
                               toast.success(`${files.length} file(s) uploaded successfully`);
                               fetchTicketDetails(); // Refresh to show new message
                             } catch (error) {
                               console.error('Upload failed:', error);
+                              toast.dismiss(); // Clear all toasts
                               toast.error('Failed to upload files');
                             }
                           }
