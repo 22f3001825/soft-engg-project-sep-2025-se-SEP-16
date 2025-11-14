@@ -50,7 +50,7 @@ export const AgentDashboard = () => {
   };
 
   const stats = dashboardData ? [
-    { title: 'All Tickets', value: dashboardData.stats.available_tickets, icon: MessageSquare, tone: 'text-blue-600' },
+    { title: 'Available Tickets', value: dashboardData.stats.available_tickets, icon: MessageSquare, tone: 'text-blue-600' },
     { title: 'Assigned to me', value: dashboardData.stats.assigned_to_me, icon: Users, tone: 'text-emerald-600' },
     { title: 'High Priority', value: dashboardData.stats.high_priority, icon: BarChart3, tone: 'text-violet-600' },
     { title: 'Overdue', value: dashboardData.stats.overdue, icon: AlertCircle, tone: 'text-red-600' }
@@ -103,7 +103,7 @@ export const AgentDashboard = () => {
                 onClick={() => setActive('tickets')}
                 className="hover:bg-primary/10 hover:border-primary/50 hover:text-primary"
               >
-                View All Tickets
+                View Available Tickets
               </Button>
             </div>
             <TicketsTable tickets={tickets} onOpen={t => { setSelectedTicket(t); setActive('ticket'); }} />
@@ -126,8 +126,8 @@ export const AgentDashboard = () => {
                   <MessageSquare className="h-5 w-5 text-primary-foreground" />
                 </div>
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-foreground">All Tickets</h1>
-                  <p className="text-sm text-muted-foreground mt-1">Manage all support tickets</p>
+                  <h1 className="text-2xl md:text-3xl font-bold text-foreground">Available Tickets</h1>
+                  <p className="text-sm text-muted-foreground mt-1">Manage available support tickets</p>
                 </div>
               </div>
               <Button variant="outline" onClick={() => setActive('dashboard')} className="hover:bg-primary/10 hover:border-primary/50 hover:text-primary">

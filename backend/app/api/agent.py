@@ -382,3 +382,108 @@ def resolve_ticket(
     db.commit()
     
     return {"message": "Ticket resolved successfully"}
+
+@router.post("/tickets/{ticket_id}/refund/approve")
+def approve_refund(
+    ticket_id: str,
+    refund_data: dict = Body(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Approve refund request for a ticket"""
+    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    # Verify agent can approve refunds for this ticket
+    if ticket.agent_id and ticket.agent_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to approve refund for this ticket")
+    
+    # If ticket is unassigned, assign it to current agent
+    if not ticket.agent_id:
+        ticket.agent_id = current_user.id
+    
+    # Update related order status if exists
+    if ticket.related_order_id:
+        order = db.query(Order).filter(Order.id == ticket.related_order_id).first()
+        if order:
+            order.status = OrderStatus.RETURNED
+            order.updated_at = datetime.utcnow()
+    
+    # Add system message about refund approval
+    approval_message = Message(
+        id=str(uuid.uuid4()),
+        ticket_id=ticket.id,
+        sender_id=current_user.id,
+        sender_name=current_user.full_name,
+        content=f"Refund approved by {current_user.full_name}. Amount: ${refund_data.get('amount', 'N/A')}. Reason: {refund_data.get('reason', 'Agent approved refund request')}",
+        is_internal=False
+    )
+    
+    # Create notification for customer
+    customer_notification = Notification(
+        user_id=ticket.customer_id,
+        title="Refund Approved",
+        message=f"Your refund request for ticket {ticket.id} has been approved and will be processed within 3-5 business days.",
+        type=NotificationType.TICKET,
+        read=False
+    )
+    
+    ticket.status = TicketStatus.RESOLVED
+    ticket.updated_at = datetime.utcnow()
+    
+    db.add(approval_message)
+    db.add(customer_notification)
+    db.commit()
+    
+    return {"message": "Refund approved successfully", "ticket_id": ticket_id}
+
+@router.post("/tickets/{ticket_id}/refund/reject")
+def reject_refund(
+    ticket_id: str,
+    rejection_data: dict = Body(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Reject refund request for a ticket"""
+    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    # Verify agent can reject refunds for this ticket
+    if ticket.agent_id and ticket.agent_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to reject refund for this ticket")
+    
+    # If ticket is unassigned, assign it to current agent
+    if not ticket.agent_id:
+        ticket.agent_id = current_user.id
+    
+    reason = rejection_data.get('reason', 'Refund request does not meet policy requirements')
+    
+    # Add system message about refund rejection
+    rejection_message = Message(
+        id=str(uuid.uuid4()),
+        ticket_id=ticket.id,
+        sender_id=current_user.id,
+        sender_name=current_user.full_name,
+        content=f"Refund request rejected by {current_user.full_name}. Reason: {reason}",
+        is_internal=False
+    )
+    
+    # Create notification for customer
+    customer_notification = Notification(
+        user_id=ticket.customer_id,
+        title="Refund Request Rejected",
+        message=f"Your refund request for ticket {ticket.id} has been rejected. Reason: {reason}",
+        type=NotificationType.TICKET,
+        read=False
+    )
+    
+    ticket.status = TicketStatus.RESOLVED
+    ticket.updated_at = datetime.utcnow()
+    
+    db.add(rejection_message)
+    db.add(customer_notification)
+    db.commit()
+    
+    return {"message": "Refund rejected successfully", "ticket_id": ticket_id}
