@@ -23,7 +23,8 @@ export const ReturnRefundPage = () => {
     selectedItems: [],
     reason: '',
     description: '',
-    refundMethod: 'original'
+    refundMethod: 'original',
+    attachments: []
   });
   const [ordersData, setOrdersData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -82,7 +83,19 @@ export const ReturnRefundPage = () => {
       };
       
       const response = await apiService.requestReturn(returnData);
-      toast.success(`Refund request submitted successfully! Ticket ${response.ticket_id} created.`);
+      
+      // Upload attachments if any
+      if (formData.attachments && formData.attachments.length > 0) {
+        try {
+          await apiService.uploadAttachment(response.ticket_id, formData.attachments);
+          toast.success(`Refund request submitted with ${formData.attachments.length} attachment(s)! Ticket ${response.ticket_id} created.`);
+        } catch (uploadError) {
+          console.error('Failed to upload attachments:', uploadError);
+          toast.success(`Refund request submitted! Ticket ${response.ticket_id} created. (Attachments failed to upload)`);
+        }
+      } else {
+        toast.success(`Refund request submitted successfully! Ticket ${response.ticket_id} created.`);
+      }
       
       setTimeout(() => {
         navigate('/customer/dashboard');
@@ -266,11 +279,41 @@ export const ReturnRefundPage = () => {
 
                 <div className="space-y-2">
                   <Label>Upload photos of damage (Optional)</Label>
-                  <div className="border-2 border-dashed rounded-lg p-8 text-center hover:bg-secondary btn-transition cursor-pointer">
+                  <div 
+                    className="border-2 border-dashed rounded-lg p-8 text-center hover:bg-secondary btn-transition cursor-pointer"
+                    onClick={() => document.getElementById('refund-file-input').click()}
+                  >
                     <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                     <p className="text-sm text-muted-foreground mb-1">Click to upload or drag and drop</p>
                     <p className="text-xs text-muted-foreground">PNG, JPG up to 10MB</p>
                   </div>
+                  <input
+                    id="refund-file-input"
+                    type="file"
+                    multiple
+                    accept=".png,.jpg,.jpeg"
+                    className="hidden"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files);
+                      if (files.length > 0) {
+                        toast.success(`${files.length} file(s) selected for upload`);
+                        setFormData({ ...formData, attachments: files });
+                      }
+                    }}
+                  />
+                  {formData.attachments && formData.attachments.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-sm text-muted-foreground mb-2">Selected files:</p>
+                      <div className="space-y-1">
+                        {formData.attachments.map((file, idx) => (
+                          <div key={idx} className="text-xs bg-secondary p-2 rounded flex justify-between items-center">
+                            <span>{file.name}</span>
+                            <span className="text-muted-foreground">{(file.size / 1024).toFixed(1)}KB</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

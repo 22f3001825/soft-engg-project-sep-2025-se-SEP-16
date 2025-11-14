@@ -47,7 +47,19 @@ export const NewTicketPage = () => {
       };
 
       const response = await apiService.createTicket(ticketData);
-      toast.success(`Ticket created successfully!`);
+      
+      // Upload attachments if any
+      if (attachments.length > 0) {
+        try {
+          await apiService.uploadAttachment(response.ticket_id, attachments);
+          toast.success(`Ticket created with ${attachments.length} attachment(s)!`);
+        } catch (uploadError) {
+          console.error('Failed to upload attachments:', uploadError);
+          toast.success('Ticket created! (Attachments failed to upload)');
+        }
+      } else {
+        toast.success('Ticket created successfully!');
+      }
       
       setTimeout(() => {
         navigate('/customer/tickets');
