@@ -221,7 +221,7 @@ class RAGService:
 Knowledge Base Context:
 {context_text}
 
-{f"Previous Conversation:\n{history_text}\n" if history_text else ""}
+{("Previous Conversation:\n" + history_text + "\n") if history_text else ""}
 Customer Question: {query}
 
 Instructions:
