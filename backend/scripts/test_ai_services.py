@@ -6,29 +6,33 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.services.llm_service import get_llm_service
-from app.services.embedding_service import get_embedding_service
-from app.services.rag_service import get_rag_service
-from app.services.vision_service import get_vision_service
+from app.services.llm_service import LLMService
+from app.services.embedding_service import EmbeddingService
+from app.services.rag_service import RAGService
+from app.services.vision_service import VisionService
 
 
 def test_llm_service():
     """Test LLM service"""
     print("\n=== Testing LLM Service ===")
-    llm = get_llm_service()
+    llm = LLMService()
     
-    if not llm.is_available():
+    if not llm.check_health():
         print("[ERROR] LLM service not available")
-        print("   Make sure Ollama is running and llama3.1:8b is pulled")
+        print("   Make sure Ollama is running: ollama serve")
+        print("   And model is pulled: ollama pull tinyllama")
         return False
     
     print("[OK] LLM service is available")
+    print(f"   Model: {llm.model}")
     
     # Test generation
     prompt = "What is 2+2? Answer in one sentence."
-    response = llm.generate(prompt, max_tokens=50)
+    result = llm.generate(prompt, max_tokens=50)
+    response = result.get('text', '')
     print(f"   Test prompt: {prompt}")
     print(f"   Response: {response[:100]}...")
+    print(f"   Generation time: {result.get('generation_time_ms', 0):.0f}ms")
     
     return True
 
@@ -36,84 +40,68 @@ def test_llm_service():
 def test_embedding_service():
     """Test embedding service"""
     print("\n=== Testing Embedding Service ===")
-    embedding = get_embedding_service()
-    
-    if not embedding.is_available():
-        print("[ERROR] Embedding service not available")
-        return False
-    
-    print("[OK] Embedding service is available")
-    print(f"   Model: {embedding.model_name}")
-    print(f"   Dimension: {embedding.get_embedding_dimension()}")
-    
-    # Test encoding
-    texts = ["Hello world", "How are you?"]
-    embeddings = embedding.encode(texts)
-    
-    if embeddings is not None:
-        print(f"   Generated embeddings shape: {embeddings.shape}")
-        print("[OK] Embedding generation successful")
-        return True
-    else:
-        print("[ERROR] Failed to generate embeddings")
+    try:
+        embedding = EmbeddingService()
+        print("[OK] Embedding service initialized")
+        print(f"   Model: {embedding.model_name}")
+        
+        # Test encoding
+        texts = ["Hello world", "How are you?"]
+        embeddings = embedding.encode(texts)
+        
+        if embeddings is not None and len(embeddings) > 0:
+            print(f"   Generated {len(embeddings)} embeddings")
+            print(f"   Embedding dimension: {len(embeddings[0])}")
+            print("[OK] Embedding generation successful")
+            return True
+        else:
+            print("[ERROR] Failed to generate embeddings")
+            return False
+    except Exception as e:
+        print(f"[ERROR] Embedding service failed: {str(e)}")
         return False
 
 
 def test_rag_service():
     """Test RAG service"""
     print("\n=== Testing RAG Service ===")
-    rag = get_rag_service()
-    
-    if not rag.is_available():
-        print("[ERROR] RAG service not available")
-        print("   Make sure LLM and Embedding services are working")
+    try:
+        rag = RAGService()
+        print("[OK] RAG service initialized")
+        
+        # Test simple query
+        print("   Testing knowledge base query...")
+        result = rag.answer_question("What is the return policy?")
+        
+        if result and result.get('response'):
+            print(f"   Response: {result['response'][:150]}...")
+            print(f"   Sources: {len(result.get('sources', []))} documents")
+            print("[OK] RAG query successful")
+            return True
+        else:
+            print("[WARN] RAG returned empty response")
+            return False
+    except Exception as e:
+        print(f"[ERROR] RAG service failed: {str(e)}")
         return False
-    
-    print("[OK] RAG service is available")
-    
-    # Test indexing (will fail if no KB articles)
-    print("   Testing knowledge base indexing...")
-    result = rag.index_knowledge_base()
-    
-    if result['success']:
-        print(f"   [OK] Indexed {result.get('indexed', 0)} articles")
-    else:
-        print(f"   [WARN] Indexing result: {result.get('message', 'No articles')}")
-    
-    # Test retrieval
-    print("   Testing document retrieval...")
-    docs = rag.retrieve_relevant_docs("refund policy", top_k=3)
-    print(f"   Retrieved {len(docs)} documents")
-    
-    if docs:
-        print(f"   Top result: {docs[0]['content'][:100]}...")
-    
-    # Test question answering
-    print("   Testing question answering...")
-    answer = rag.answer_question("What is your refund policy?")
-    print(f"   Response: {answer['response'][:150]}...")
-    print(f"   Sources: {answer['sources']}")
-    
-    return True
 
 
 def test_vision_service():
     """Test vision service"""
     print("\n=== Testing Vision Service ===")
-    vision = get_vision_service()
-    
-    if not vision.is_available():
-        print("[ERROR] Vision service not available")
+    try:
+        vision = VisionService()
+        print("[OK] Vision service initialized")
+        print(f"   Model: {vision.model_name}")
+        
+        # Note: Actual image testing requires an image file
+        print("   [INFO] Image analysis requires actual image file")
+        print("   Use the API endpoint to test with real images")
+        
+        return True
+    except Exception as e:
+        print(f"[ERROR] Vision service failed: {str(e)}")
         return False
-    
-    print("[OK] Vision service is available")
-    print(f"   Model: {vision.model_name}")
-    
-    # Note: Actual image testing requires an image file
-    print("   [INFO] Image analysis requires actual image file")
-    print("   Use the API endpoint to test with real images")
-    
-    return True
 
 
 def main():
