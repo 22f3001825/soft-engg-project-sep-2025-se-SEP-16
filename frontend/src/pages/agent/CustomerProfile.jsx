@@ -4,13 +4,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar'
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Textarea } from '../../components/ui/textarea';
+import { AgentLayout } from './AgentLayout';
 import agentApi from '../../services/agentApi';
-import { User, Mail, Phone, ShoppingBag, MessageSquare, FileText, TrendingUp, Calendar, AlertCircle, CheckCircle2, Clock, Sparkles, ArrowLeft } from 'lucide-react';
+import { User, Mail, Phone, ShoppingBag, MessageSquare, FileText, TrendingUp, Calendar, AlertCircle, CheckCircle2, Clock, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
 
 
-export const CustomerProfile = ({ onBack }) => {
+export const CustomerProfile = () => {
   const [note, setNote] = useState('');
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const [customers, setCustomers] = useState([]);
@@ -78,7 +79,8 @@ export const CustomerProfile = ({ onBack }) => {
   const totalLTV = customer?.orders?.reduce((sum, o) => sum + o.total, 0) || 0;
 
   return (
-    <div className="space-y-6 animate-slide-in-up">
+    <AgentLayout>
+      <div className="space-y-6 animate-slide-in-up">
       {/* Header */}
       <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary via-primary/90 to-accent p-1 shadow-lg">
         <div className="rounded-lg bg-background/95 backdrop-blur px-6 py-4 flex items-center justify-between">
@@ -91,12 +93,7 @@ export const CustomerProfile = ({ onBack }) => {
               <p className="text-sm text-muted-foreground mt-1">View and manage customer information</p>
             </div>
           </div>
-          {onBack && (
-            <Button variant="outline" onClick={onBack} className="ml-auto hover:bg-primary/10 hover:border-primary/50 hover:text-primary">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Button>
-          )}
+
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -362,7 +359,8 @@ export const CustomerProfile = ({ onBack }) => {
       </div>
       </>
       )}
-    </div>
+      </div>
+    </AgentLayout>
   );
 };
 

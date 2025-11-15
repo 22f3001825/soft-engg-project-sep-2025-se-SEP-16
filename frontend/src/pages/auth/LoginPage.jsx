@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -13,9 +13,28 @@ import { toast } from 'sonner';
 
 export const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, signup } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState('login');
+  
+  useEffect(() => {
+    if (location.pathname === '/register') {
+      setActiveTab('signup');
+    } else {
+      setActiveTab('login');
+    }
+  }, [location.pathname]);
+  
+  const handleTabChange = (value) => {
+    setActiveTab(value);
+    if (value === 'signup') {
+      navigate('/register');
+    } else {
+      navigate('/login');
+    }
+  };
   
   // Login state
   const [loginData, setLoginData] = useState({
@@ -143,18 +162,12 @@ export const LoginPage = () => {
             </div>
           </div>
           
-          <div className="pt-8 text-sm text-muted-foreground">
-            <p><strong>Demo Credentials:</strong></p>
-            <p className="mt-2">Customer: customer@intellica.com / customer123</p>
-            <p>Agent: agent@intellica.com / agent123</p>
-            <p>Supervisor: supervisor@intellica.com / supervisor123</p>
-            <p>Vendor: vendor@intellica.com / vendor123</p>
-          </div>
+
         </div>
 
         {/* Right Side - Login/Signup Form */}
         <Card className="w-full shadow-xl">
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <CardHeader>
               <div className="flex justify-center mb-4 md:hidden">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent">

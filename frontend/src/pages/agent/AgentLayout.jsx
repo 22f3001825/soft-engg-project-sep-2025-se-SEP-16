@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import { Button } from '../../components/ui/button';
 import { Separator } from '../../components/ui/separator';
@@ -6,15 +7,32 @@ import { cn } from '../../lib/utils';
 import { useAuth } from '../../context/AuthContext';
 import { LogOut, User, Settings, MessageSquare, FileText, LayoutGrid, Mail, IdCard } from 'lucide-react';
 
-export const AgentLayout = ({ active, onNavigate, actions, children }) => {
+export const AgentLayout = ({ actions, children }) => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  const getActiveTab = () => {
+    const path = location.pathname;
+    if (path === '/agent/dashboard') return 'dashboard';
+    if (path === '/agent/ticket') return 'ticket';
+    if (path === '/agent/response_templates') return 'templates';
+    if (path === '/agent/active_customers') return 'customer';
+    if (path === '/agent/settings') return 'settings';
+    if (path === '/agent/profile') return 'profile';
+    if (path.startsWith('/agent/tickets/')) return 'ticket';
+    if (path.startsWith('/agent/ticket/') && path.includes('/communication')) return 'communication';
+    return 'dashboard';
+  };
+  
+  const active = getActiveTab();
 
   const items = [
-    { key: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
-    { key: 'ticket', label: 'Ticket Details', icon: FileText },
-    { key: 'templates', label: 'Response Templates', icon: FileText },
-    { key: 'customer', label: 'Customer Profile', icon: IdCard },
-    { key: 'settings', label: 'Settings', icon: Settings }
+    { key: 'dashboard', label: 'Dashboard', icon: LayoutGrid, path: '/agent/dashboard' },
+    { key: 'ticket', label: 'Tickets', icon: FileText, path: '/agent/ticket' },
+    { key: 'templates', label: 'Response Templates', icon: FileText, path: '/agent/response_templates' },
+    { key: 'customer', label: 'Active Customers', icon: IdCard, path: '/agent/active_customers' },
+    { key: 'settings', label: 'Settings', icon: Settings, path: '/agent/settings' }
   ];
 
   return (
@@ -48,7 +66,7 @@ export const AgentLayout = ({ active, onNavigate, actions, children }) => {
       <div className="flex-1 flex overflow-hidden">
         <aside className="w-64 border-r bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 border-indigo-200/50 border-2 shadow-xl backdrop-blur-sm flex flex-col flex-shrink-0">
           <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
-            {items.map(({ key, label, icon: Icon }) => (
+            {items.map(({ key, label, icon: Icon, path }) => (
               <button
                 key={key}
                 className={cn(
@@ -58,7 +76,7 @@ export const AgentLayout = ({ active, onNavigate, actions, children }) => {
                     ? 'bg-gradient-to-r from-indigo-500 to-cyan-500 text-white shadow-lg border-indigo-300' 
                     : 'text-slate-600 hover:text-slate-900'
                 )}
-                onClick={() => onNavigate(key)}
+                onClick={() => navigate(path)}
               >
                 <div className={cn(
                   'p-1.5 rounded-md transition-colors',
