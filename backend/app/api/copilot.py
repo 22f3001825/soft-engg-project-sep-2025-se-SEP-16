@@ -12,7 +12,7 @@ import json
 
 from app.database import get_db
 from app.models.user import User, Agent
-from app.models.ticket import Ticket, Message
+from app.models.ticket import Ticket, Message, TicketStatus
 from app.models.ai_copilot import TicketSummary, SuggestedResponse, RefundExplanation
 from app.models.refund import RefundRequest, FraudCheck
 from app.services.auth import get_current_user

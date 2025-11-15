@@ -130,7 +130,7 @@ Define when and how supervisors can approve refunds, compensation, or policy exc
 
 ## Scenarios to REJECT Goodwill
 
-### **❌ Do NOT approve goodwill if:**
+### **Do NOT approve goodwill if:**
 
 1. **Serial returner**: Customer has 3+ approved goodwill exceptions in past 6 months.
 2. **Fraud indicators**: Fraud score >60, reused photos, suspicious pattern.

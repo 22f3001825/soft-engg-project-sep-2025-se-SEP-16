@@ -15,7 +15,7 @@ tags: [supervisor, reporting, analytics, team-performance]
 | Average Handling Time | 15 mins | 13.6 mins | +1.4 | On track |
 | SLA Compliance | 98% | 96.8% | -1.2 | Slight delay due to vendor backlogs |
 | CSAT Score | 4.5 | 4.7 | +0.2 | Excellent |
-| Fraud Flag Rate | <2% | 1.6% | ✅ | |
+| Fraud Flag Rate | <2% | 1.6% | PASS | |
 
 ## Highlights
 - AI Copilot reduced average reply drafting time by 32%.

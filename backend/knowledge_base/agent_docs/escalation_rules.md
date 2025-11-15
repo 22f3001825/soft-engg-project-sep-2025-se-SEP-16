@@ -113,13 +113,13 @@ Before escalating, ensure:
 
 ## Prohibited Escalation Practices
 
-❌ **DO NOT escalate if:**
+**DO NOT escalate if:**
 - Issue can be resolved using existing templates/SOPs.
 - You haven't attempted standard troubleshooting steps.
 - Missing required artifacts (order ID, evidence, reasoning).
 - Customer simply asks to "speak to manager" without valid unresolved issue → Politely offer resolution first.
 
-✅ **DO escalate when:**
+**DO escalate when:**
 - Policy unclear or contradictory.
 - High financial/fraud risk.
 - Customer dissatisfied after genuine resolution attempts.
