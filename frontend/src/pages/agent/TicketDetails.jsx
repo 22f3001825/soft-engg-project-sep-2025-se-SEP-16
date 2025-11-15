@@ -1,4 +1,6 @@
 import React from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { AgentLayout } from './AgentLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -10,10 +12,12 @@ import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
 import { ArrowLeft, MessageSquare, Package, Info, CheckCircle2, XCircle, Ticket, Clock, User, Sparkles, Zap } from 'lucide-react';
 
-export const TicketDetails = ({ ticketId, onBack, onNavigate }) => {
+export const TicketDetails = () => {
   const { user } = useAuth();
+  const { ticket_id } = useParams();
+  const navigate = useNavigate();
   const [ticket, setTicket] = React.useState(null);
-  const [currentTicketId, setCurrentTicketId] = React.useState(ticketId ? ticketId : '');
+  const [currentTicketId, setCurrentTicketId] = React.useState(ticket_id || '');
   const [findId, setFindId] = React.useState('');
   const [confirmDialog, setConfirmDialog] = React.useState({ isOpen: false, type: '', data: null });
 
@@ -159,7 +163,8 @@ export const TicketDetails = ({ ticketId, onBack, onNavigate }) => {
   };
 
   return (
-    <div className="space-y-6 animate-slide-in-up">
+    <AgentLayout>
+      <div className="space-y-6 animate-slide-in-up">
       {!ticket && renderSearchOnly}
       {ticket && (
       <>
@@ -399,7 +404,8 @@ export const TicketDetails = ({ ticketId, onBack, onNavigate }) => {
           confirmDialog.type === 'approve' || confirmDialog.type === 'resolve' ? 'success' : 'danger'
         }
       />
-    </div>
+      </div>
+    </AgentLayout>
   );
 };
 

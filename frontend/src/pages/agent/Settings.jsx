@@ -4,6 +4,7 @@ import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
 import { Button } from '../../components/ui/button';
 import { Switch } from '../../components/ui/switch';
+import { AgentLayout } from './AgentLayout';
 import agentApi from '../../services/agentApi';
 import { User, Bell, FileText, Save, Settings as SettingsIcon, Mail } from 'lucide-react';
 import { toast } from 'sonner';
@@ -51,7 +52,8 @@ export const Settings = () => {
   };
 
   return (
-    <div className="space-y-8 animate-slide-in-up">
+    <AgentLayout>
+      <div className="space-y-8 animate-slide-in-up">
       {/* Header*/}
       <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary via-primary/90 to-accent p-1 shadow-lg">
         <div className="rounded-lg bg-background/95 backdrop-blur px-6 py-4">
@@ -134,7 +136,8 @@ export const Settings = () => {
           {saving ? 'Saving...' : 'Save Settings'}
         </Button>
       </div>
-    </div>
+      </div>
+    </AgentLayout>
   );
 };
 

@@ -1,26 +1,23 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { MessageSquare, Users, BarChart3, AlertCircle, LayoutDashboard } from 'lucide-react';
 import { AgentLayout } from './AgentLayout';
 import { StatsCards } from './components/StatsCards';
 import { TicketsTable } from './components/TicketsTable';
 import { AllTicketsView } from './components/AllTicketsView';
-import { TicketDetails } from './TicketDetails';
-import { ResponseTemplates } from './ResponseTemplates';
-import { CommunicationTools } from './CommunicationTools';
-import { CustomerProfile } from './CustomerProfile';
-import { Settings } from './Settings';
 import agentApi from '../../services/agentApi';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/button';
 
 export const AgentDashboard = () => {
   const { user } = useAuth();
-  const [active, setActive] = useState('dashboard');
+  const navigate = useNavigate();
+  const location = useLocation();
   const [tickets, setTickets] = useState([]);
   const [dashboardData, setDashboardData] = useState(null);
-  const [selectedTicket, setSelectedTicket] = useState(undefined);
-  const [commTicketId, setCommTicketId] = useState(undefined);
   const [loading, setLoading] = useState(true);
+  
+  const active = location.pathname === '/agent/ticket' ? 'ticket' : 'dashboard';
 
   useEffect(() => {
     fetchDashboardData();
@@ -59,20 +56,9 @@ export const AgentDashboard = () => {
   
 
   
-  const handleNavigate = (to, params) => {
-    let nextTab = typeof to === 'string' ? to : (to.tab || 'dashboard');
-    setActive(nextTab);
-    if (nextTab !== 'ticket') setSelectedTicket(undefined);
-    if (nextTab === 'comm' && params && params.ticketId) {
-      setCommTicketId(params.ticketId);
-    } else if (nextTab === 'comm' && to.ticketId) {
-      setCommTicketId(to.ticketId);
-    } else if (nextTab === 'comm') {
-      setCommTicketId(undefined);
-    }
-  };
+
   return (
-    <AgentLayout active={active} onNavigate={handleNavigate}>
+    <AgentLayout>
       {active === 'dashboard' && (
         <div className="space-y-8 animate-slide-in-up">
           {/* Header */}
@@ -100,24 +86,17 @@ export const AgentDashboard = () => {
               <h2 className="text-xl font-semibold text-foreground">My Recent Tickets</h2>
               <Button 
                 variant="outline" 
-                onClick={() => setActive('tickets')}
+                onClick={() => navigate('/agent/ticket')}
                 className="hover:bg-primary/10 hover:border-primary/50 hover:text-primary"
               >
                 View Available Tickets
               </Button>
             </div>
-            <TicketsTable tickets={tickets} onOpen={t => { setSelectedTicket(t); setActive('ticket'); }} />
+            <TicketsTable tickets={tickets} onOpen={t => navigate(`/agent/tickets/${t.id}`)} />
           </div>
         </div>
       )}
       {active === 'ticket' && (
-        <TicketDetails
-          ticketId={selectedTicket ? selectedTicket.id : undefined}
-          onBack={() => setActive('dashboard')}
-          onNavigate={handleNavigate}
-        />
-      )}
-      {active === 'tickets' && (
         <div className="space-y-6 animate-slide-in-up">
           <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary via-primary/90 to-accent p-1 shadow-lg">
             <div className="rounded-lg bg-background/95 backdrop-blur px-6 py-4 flex items-center justify-between">
@@ -130,18 +109,14 @@ export const AgentDashboard = () => {
                   <p className="text-sm text-muted-foreground mt-1">Manage available support tickets</p>
                 </div>
               </div>
-              <Button variant="outline" onClick={() => setActive('dashboard')} className="hover:bg-primary/10 hover:border-primary/50 hover:text-primary">
+              <Button variant="outline" onClick={() => navigate('/agent/dashboard')} className="hover:bg-primary/10 hover:border-primary/50 hover:text-primary">
                 Back to Dashboard
               </Button>
             </div>
           </div>
-          <AllTicketsView onOpen={t => { setSelectedTicket(t); setActive('ticket'); }} />
+          <AllTicketsView onOpen={t => navigate(`/agent/tickets/${t.id}`)} />
         </div>
       )}
-      {active === 'templates' && <ResponseTemplates />}
-      {active === 'comm' && <CommunicationTools ticketId={commTicketId} />}
-      {active === 'customer' && <CustomerProfile onBack={() => setActive('dashboard')} />}
-      {active === 'settings' && <Settings />}
     </AgentLayout>
   );
 };

@@ -18,8 +18,15 @@ import { ReturnRefundPage } from './pages/customer/ReturnRefundPage';
 import { ProfilePage as CustomerProfilePage } from './pages/customer/ProfilePage';
 import { SettingsPage as CustomerSettingsPage } from './pages/customer/SettingsPage';
 
-// Other Portals
+// Agent Portal
 import { AgentDashboard } from './pages/agent/AgentDashboard';
+import { ResponseTemplates } from './pages/agent/ResponseTemplates';
+import { CustomerProfile } from './pages/agent/CustomerProfile';
+import { TicketDetails } from './pages/agent/TicketDetails';
+import { CommunicationTools } from './pages/agent/CommunicationTools';
+import { Settings as AgentSettings } from './pages/agent/Settings';
+
+// Other Portals
 
 
 import { SupervisorDashboard } from './pages/supervisor/SupervisorDashboard';
@@ -50,6 +57,7 @@ function App() {
 
             {/* Auth Routes */}
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<LoginPage />} />
 
             {/* Customer Portal Routes */}
             <Route
@@ -125,7 +133,7 @@ function App() {
               }
             />
 
-            {/* Other Portal Routes */}
+            {/* Agent Portal Routes */}
             <Route
               path="/agent/dashboard"
               element={
@@ -134,6 +142,57 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/agent/ticket"
+              element={
+                <ProtectedRoute allowedRoles={['agent']}>
+                  <AgentDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/agent/response_templates"
+              element={
+                <ProtectedRoute allowedRoles={['agent']}>
+                  <ResponseTemplates />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/agent/active_customers"
+              element={
+                <ProtectedRoute allowedRoles={['agent']}>
+                  <CustomerProfile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/agent/tickets/:ticket_id"
+              element={
+                <ProtectedRoute allowedRoles={['agent']}>
+                  <TicketDetails />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/agent/ticket/:ticket_id/communication"
+              element={
+                <ProtectedRoute allowedRoles={['agent']}>
+                  <CommunicationTools />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/agent/settings"
+              element={
+                <ProtectedRoute allowedRoles={['agent']}>
+                  <AgentSettings />
+                </ProtectedRoute>
+              }
+            />
+
+
+            {/* Other Portal Routes */}
             <Route
               path="/supervisor/dashboard"
               element={
@@ -159,7 +218,7 @@ function App() {
               }
             />
             <Route
-              path="/supervisor/supervisor_customers"
+              path="/supervisor/all_customers"
               element={
                 <ProtectedRoute allowedRoles={['supervisor']}>
                   <SupervisorCustomers />

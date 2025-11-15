@@ -32,7 +32,7 @@ export const Header = () => {
     { name: 'Dashboard', path: '/supervisor/dashboard' },
     { name: 'Team Management', path: '/supervisor/team_management' },
     { name: 'Ticket Management', path: '/supervisor/ticket_management' },
-    { name: 'Customer Overview', path: '/supervisor/supervisor_customers' },
+    { name: 'Customer Overview', path: '/supervisor/all_customers' },
   ];
 
   return (
