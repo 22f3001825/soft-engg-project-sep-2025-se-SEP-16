@@ -198,8 +198,20 @@ def update_ticket_status(
         if not ticket:
             raise HTTPException(status_code=404, detail="Ticket not found")
         
+        old_status = ticket.status
         ticket.status = TicketStatus(status_data.status)
         ticket.updated_at = datetime.utcnow()
+        
+        # Create notification for customer on status change
+        if old_status != ticket.status:
+            customer_notification = Notification(
+                user_id=ticket.customer_id,
+                title="Ticket Status Updated",
+                message=f"Your support ticket #{ticket.id} status changed to {ticket.status.value}",
+                type=NotificationType.TICKET,
+                read=False
+            )
+            db.add(customer_notification)
         
         db.commit()
         return {"message": "Ticket status updated successfully"}
@@ -231,6 +243,34 @@ def add_ticket_message(
     )
     
     ticket.updated_at = datetime.utcnow()
+    
+    # Create notification for customer if not internal message
+    if not message_data.is_internal:
+        customer_notification = Notification(
+            user_id=ticket.customer_id,
+            title="New Response on Your Ticket",
+            message=f"Agent {current_user.full_name} replied to your support ticket #{ticket.id}",
+            type=NotificationType.TICKET,
+            read=False
+        )
+        db.add(customer_notification)
+        
+        # Notify vendor if ticket is related to their product
+        if ticket.related_order_id:
+            from app.models.order import OrderItem
+            from app.models.product import Product
+            order_items = db.query(OrderItem).filter(OrderItem.order_id == ticket.related_order_id).all()
+            if order_items:
+                vendor_id = db.query(Product).filter(Product.id == order_items[0].product_id).first().vendor_id
+                if vendor_id:
+                    vendor_notification = Notification(
+                        user_id=vendor_id,
+                        title="Agent Response on Product Issue",
+                        message=f"Agent responded to customer complaint about your product (Ticket #{ticket.id})",
+                        type=NotificationType.TICKET,
+                        read=False
+                    )
+                    db.add(vendor_notification)
     
     db.add(message)
     db.commit()
@@ -378,6 +418,16 @@ def resolve_ticket(
     
     ticket.status = TicketStatus.RESOLVED
     ticket.updated_at = datetime.utcnow()
+    
+    # Create notification for customer
+    customer_notification = Notification(
+        user_id=ticket.customer_id,
+        title="Your Support Ticket Has Been Resolved",
+        message=f"Your support ticket #{ticket.id} has been resolved by {current_user.full_name}",
+        type=NotificationType.TICKET,
+        read=False
+    )
+    db.add(customer_notification)
     
     db.commit()
     

@@ -94,14 +94,6 @@ export const CustomerDashboard = () => {
       answer: "Click on 'Create Ticket' in the Quick Actions section or visit the Tickets page and click 'New Ticket' to submit your support request."
     },
     {
-      question: "What payment methods do you accept?",
-      answer: "We accept all major credit cards, PayPal, and bank transfers. Payment options are displayed during checkout."
-    },
-    {
-      question: "How do I update my account information?",
-      answer: "Visit the Profile page from the navigation menu to update your personal information, shipping addresses, and payment methods."
-    },
-    {
       question: "What is your return policy?",
       answer: "Items can be returned within 30 days of delivery. The item must be in its original condition and packaging. Visit the Orders page to initiate a return."
     }
@@ -351,38 +343,56 @@ export const CustomerDashboard = () => {
                     </div>
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto bg-gradient-to-br from-white via-slate-50/80 to-gray-50/60 border-0 shadow-2xl">
-                  <DialogHeader className="text-center pb-6 relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/5 via-violet-600/5 to-fuchsia-600/5 rounded-t-lg"></div>
-                    <div className="relative mx-auto w-16 h-16 bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 rounded-xl flex items-center justify-center mb-4 shadow-lg">
-                      <HelpCircle className="h-8 w-8 text-white" />
-                    </div>
-                    <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 bg-clip-text text-transparent mb-2">
-                      Frequently Asked Questions
-                    </DialogTitle>
-                    <p className="text-slate-600 text-base font-medium max-w-xl mx-auto leading-relaxed text-center">
-                      Find quick answers to the most common questions about our platform and services
-                    </p>
-                  </DialogHeader>
-                  <div className="space-y-4 mt-6 px-4">
-                    {faqData.map((faq, index) => (
-                      <div key={index} className="group bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-md border border-gray-100/80 hover:shadow-lg hover:border-indigo-200/60 transition-all duration-300 hover:-translate-y-1 relative overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-50/20 via-transparent to-violet-50/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                        <div className="relative">
-                          <h3 className="font-bold text-gray-900 mb-3 text-lg leading-tight group-hover:text-indigo-700 transition-colors duration-300">
-                            {faq.question}
-                          </h3>
-                          <p className="text-gray-700 leading-relaxed text-sm font-medium">{faq.answer}</p>
-                        </div>
+                <DialogContent className="max-w-4xl max-h-[90vh] bg-white border-0 shadow-2xl p-0">
+                  {/* Header */}
+                  <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-8 py-6 text-white">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                        <HelpCircle className="h-6 w-6 text-white" />
                       </div>
-                    ))}
+                      <div>
+                        <DialogTitle className="text-2xl font-bold text-white mb-1">
+                          Frequently Asked Questions
+                        </DialogTitle>
+                        <p className="text-indigo-100 text-sm">
+                          Find quick answers to the most common questions
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="mt-8 text-center relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-50/30 via-violet-50/30 to-fuchsia-50/30 rounded-b-lg"></div>
-                    <div className="relative py-4">
-                      <p className="text-slate-500 text-sm font-medium">
-                        For additional assistance, please contact our support team
+
+                  {/* Content */}
+                  <div className="max-h-[60vh] overflow-y-auto p-8 custom-scrollbar">
+                    {/* FAQ Items */}
+                    <div className="space-y-3">
+                      {faqData.map((faq, index) => (
+                        <details key={index} className="group border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                          <summary className="flex items-center justify-between p-5 cursor-pointer bg-white hover:bg-gray-50 transition-colors">
+                            <span className="font-semibold text-gray-900 text-base pr-4">{faq.question}</span>
+                            <svg className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </summary>
+                          <div className="px-5 pb-5 bg-gray-50 border-t border-gray-200">
+                            <p className="text-gray-700 leading-relaxed pt-4 text-base">{faq.answer}</p>
+                          </div>
+                        </details>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="bg-gray-50 border-t border-gray-200 px-8 py-6">
+                    <div className="text-center">
+                      <p className="text-gray-600 mb-4">
+                        Need more help? Our support team is here to assist you!
                       </p>
+                      <Link to="/customer/tickets/new">
+                        <Button className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300">
+                          <FileText className="h-4 w-4 mr-2" />
+                          Create Support Ticket
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                 </DialogContent>

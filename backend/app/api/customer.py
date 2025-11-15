@@ -15,7 +15,7 @@ from app.models.product import Product, ProductComplaint, ComplaintStatus
 from app.models.analytics import Notification, NotificationType
 from app.services.auth import get_current_user
 from app.schemas.customer import (
-    TicketCreate, MessageCreate, ReturnRequest, ProfileUpdate, SettingsUpdate
+    TicketCreate, MessageCreate, ReturnRequest, ProfileUpdate
 )
 
 router = APIRouter(prefix="/customer", tags=["customer"])
@@ -566,36 +566,35 @@ def get_settings(
     if not customer:
         raise HTTPException(status_code=404, detail="Customer profile not found")
     
-    # Default settings if not set
-    settings = customer.preferences or {}
+    # Default settings structure
     default_settings = {
         "notifications": {
             "email": True,
             "order_updates": True,
-            "refund_updates": True,
             "support_replies": True
-        },
-        "general": {
-            "theme": "light",
-            "timezone": "UTC+0",
-            "currency": "USD"
         }
     }
     
-    # Merge with defaults
-    for key, value in default_settings.items():
-        if key not in settings:
-            settings[key] = value
-        elif isinstance(value, dict):
-            for subkey, subvalue in value.items():
-                if subkey not in settings[key]:
-                    settings[key][subkey] = subvalue
+    # If no preferences stored, return defaults
+    if not customer.preferences:
+        return default_settings
+    
+    # Merge stored preferences with defaults to ensure all fields exist
+    settings = default_settings.copy()
+    if isinstance(customer.preferences, dict):
+        # Update with stored preferences
+        if "notifications" in customer.preferences and isinstance(customer.preferences["notifications"], dict):
+            settings["notifications"].update(customer.preferences["notifications"])
+        # Add any other top-level settings
+        for key, value in customer.preferences.items():
+            if key != "notifications":
+                settings[key] = value
     
     return settings
 
 @router.put("/settings")
 def update_settings(
-    settings_data: SettingsUpdate,
+    settings_data: dict = Body(...),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -607,10 +606,7 @@ def update_settings(
     
     # Update preferences with new settings
     current_preferences = customer.preferences or {}
-    
-    # Update settings data
-    settings_dict = settings_data.dict(exclude_unset=True)
-    current_preferences.update(settings_dict)
+    current_preferences.update(settings_data)
     customer.preferences = current_preferences
     
     db.commit()
@@ -660,3 +656,23 @@ def mark_notification_read(
     db.commit()
     
     return {"message": "Notification marked as read"}
+
+@router.delete("/notifications/{notification_id}")
+def delete_notification(
+    notification_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete notification"""
+    notification = db.query(Notification).filter(
+        Notification.id == notification_id,
+        Notification.user_id == current_user.id
+    ).first()
+    
+    if not notification:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    
+    db.delete(notification)
+    db.commit()
+    
+    return {"message": "Notification deleted successfully"}

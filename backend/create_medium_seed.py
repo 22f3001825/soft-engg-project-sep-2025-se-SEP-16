@@ -450,27 +450,68 @@ def seed_notifications(db, users):
             "Your support ticket has been closed"
         ],
         NotificationType.SYSTEM: [
-            "Welcome to our platform! Explore our latest products",
-            "Your account security settings have been updated",
-            "New features are now available in your dashboard",
-            "Scheduled maintenance completed successfully"
+            "Your account profile has been successfully updated",
+            "Password changed successfully for security",
+            "Email preferences have been saved",
+            "Account verification completed successfully"
+        ]
+    }
+    
+    vendor_notification_templates = {
+        NotificationType.ORDER: [
+            "New order received for your products",
+            "Order fulfillment deadline approaching",
+            "Customer requested order modification",
+            "Order cancellation request received"
+        ],
+        NotificationType.TICKET: [
+            "New support ticket created for your product",
+            "Customer complaint requires vendor response",
+            "Product quality issue reported by customer",
+            "Return request submitted for your product"
+        ],
+        NotificationType.SYSTEM: [
+            "Vendor dashboard analytics updated",
+            "Monthly performance report available",
+            "Product listing compliance check completed",
+            "Vendor account verification renewed"
         ]
     }
     
     for user in users:
         if user.role == UserRole.CUSTOMER:
-            num_notifications = randint(4, 8)
-            for i in range(num_notifications):
-                notif_type = choice(list(notification_templates.keys()))
-                message = choice(notification_templates[notif_type])
-                
+            # Create exactly 2 notifications for customers
+            notifications_data = [
+                (NotificationType.ORDER, "Your order has been shipped and is on its way", False),
+                (NotificationType.TICKET, "New response received on your support ticket", False)
+            ]
+            
+            for notif_type, message, read_status in notifications_data:
                 notification = Notification(
                     user_id=user.id,
                     title=f"{notif_type.value.title()} Update",
                     message=message,
                     type=notif_type,
-                    read=choice([True, True, False]),  # 66% read
-                    timestamp=datetime.now() - timedelta(days=randint(1, 15))
+                    read=read_status,
+                    timestamp=datetime.now() - timedelta(hours=randint(1, 24))
+                )
+                db.add(notification)
+        
+        elif user.role == UserRole.VENDOR:
+            # Create exactly 2 notifications for vendor
+            notifications_data = [
+                (NotificationType.TICKET, "New support ticket created for your product", False),
+                (NotificationType.ORDER, "New order received for your products", False)
+            ]
+            
+            for notif_type, message, read_status in notifications_data:
+                notification = Notification(
+                    user_id=user.id,
+                    title=f"{notif_type.value.title()} Alert",
+                    message=message,
+                    type=notif_type,
+                    read=read_status,
+                    timestamp=datetime.now() - timedelta(hours=randint(1, 12))
                 )
                 db.add(notification)
     
@@ -498,6 +539,7 @@ def main():
         print(f"Products: {len(products)} (realistic catalog)")
         print(f"Orders: {len(orders)} (5-8 per customer with logical statuses)")
         print(f"Tickets: {len(tickets)} (realistic support conversations)")
+        print("Notifications: 2 per customer, 2 per vendor (all unread)")
         print("="*60)
         print("[OK] Logical order statuses based on order age")
         print("[OK] Realistic ticket conversations between customers and agents")
