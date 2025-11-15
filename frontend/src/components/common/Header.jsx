@@ -26,14 +26,90 @@ export const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [notificationSettings, setNotificationSettings] = useState({
+    notifications: {
+      email: true,
+      order_updates: true,
+      support_replies: true
+    }
+  });
+  const [vendorNotificationSettings, setVendorNotificationSettings] = useState({
+    notifications: {
+      newComplaints: true,
+      resolvedComplaints: true
+    }
+  });
   
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // Filter notifications based on user settings
+  const filteredNotifications = notifications.filter(notification => {
+    const title = notification.title?.toLowerCase() || '';
+    const message = notification.message?.toLowerCase() || '';
+    
+    if (user?.role === 'customer') {
+      const settings = notificationSettings.notifications;
+      
+      // Filter based on notification type and user preferences
+      if ((title.includes('order') || message.includes('order')) && !settings.order_updates) {
+        return false;
+      }
+      if ((title.includes('support') || title.includes('ticket') || message.includes('support') || message.includes('ticket')) && !settings.support_replies) {
+        return false;
+      }
+      if ((title.includes('email') || message.includes('email')) && !settings.email) {
+        return false;
+      }
+    } else if (user?.role === 'vendor') {
+      const settings = vendorNotificationSettings.notifications;
+      
+      // Filter based on vendor notification preferences
+      if ((title.includes('complaint') || message.includes('complaint') || title.includes('issue') || message.includes('issue')) && !settings.newComplaints) {
+        return false;
+      }
+      if ((title.includes('resolved') || message.includes('resolved') || title.includes('closed') || message.includes('closed')) && !settings.resolvedComplaints) {
+        return false;
+      }
+    }
+    
+    return true;
+  });
+  
+  const unreadCount = filteredNotifications.filter(n => !n.read).length;
 
   useEffect(() => {
-    if (user?.role === 'customer') {
+    if (user?.role === 'customer' || user?.role === 'vendor') {
       fetchNotifications();
+      // Load notification settings
+      if (user?.role === 'customer') {
+        loadNotificationSettings();
+      } else if (user?.role === 'vendor') {
+        loadVendorNotificationSettings();
+      }
+    } else {
+      setLoading(false);
     }
   }, [user]);
+
+  const loadNotificationSettings = () => {
+    try {
+      const savedSettings = localStorage.getItem('customer_notification_settings');
+      if (savedSettings) {
+        setNotificationSettings(JSON.parse(savedSettings));
+      }
+    } catch (error) {
+      console.error('Failed to load notification settings:', error);
+    }
+  };
+
+  const loadVendorNotificationSettings = () => {
+    try {
+      const savedSettings = localStorage.getItem('vendor_notification_settings');
+      if (savedSettings) {
+        setVendorNotificationSettings(JSON.parse(savedSettings));
+      }
+    } catch (error) {
+      console.error('Failed to load vendor notification settings:', error);
+    }
+  };
 
   const fetchNotifications = async () => {
     try {
@@ -242,6 +318,7 @@ export const Header = () => {
                   {unreadCount > 0 && (
                     <span className="ml-2 text-xs text-sky-600">({unreadCount} new)</span>
                   )}
+
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <div className="max-h-[400px] overflow-y-auto">
@@ -256,16 +333,15 @@ export const Header = () => {
                       <p className="text-sm">No notifications yet</p>
                     </div>
                   ) : (
-                    notifications.map((notification) => (
+                    filteredNotifications.map((notification) => (
                       <div
                         key={notification.id}
-                        onClick={() => handleNotificationClick(notification)}
                         className={`px-3 py-3 hover:bg-sky-50/50 cursor-pointer transition-all duration-200 border-l-2 ${
                           !notification.read ? 'bg-sky-50/30 border-sky-500' : 'border-transparent'
-                        }`}
+                        } group`}
                       >
                         <div className="flex items-start justify-between">
-                          <div className="flex-1">
+                          <div className="flex-1" onClick={() => handleNotificationClick(notification)}>
                             <p className={`text-sm font-medium ${!notification.read ? 'text-sky-900' : 'text-sky-600'}`}>
                               {notification.title}
                             </p>
@@ -277,9 +353,27 @@ export const Header = () => {
                               {new Date(notification.timestamp).toLocaleString()}
                             </p>
                           </div>
-                          {!notification.read && (
-                            <div className="h-2 w-2 rounded-full bg-sky-500 mt-1 ml-2 shadow-sm shadow-sky-500/50 animate-pulse" />
-                          )}
+                          <div className="flex items-center space-x-2">
+                            {!notification.read && (
+                              <div className="h-2 w-2 rounded-full bg-sky-500 shadow-sm shadow-sky-500/50 animate-pulse" />
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                try {
+                                  await apiService.deleteNotification(notification.id);
+                                  setNotifications(prev => prev.filter(n => n.id !== notification.id));
+                                } catch (error) {
+                                  console.error('Failed to delete notification:', error);
+                                }
+                              }}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 hover:bg-red-100 hover:text-red-600"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ))

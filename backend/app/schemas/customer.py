@@ -17,8 +17,8 @@ class ProfileUpdate(BaseModel):
     preferences: Optional[Dict[str, Any]] = None
 
 class SettingsUpdate(BaseModel):
-    notifications: Optional[Dict[str, bool]] = None
-    general: Optional[Dict[str, str]] = None
+    class Config:
+        extra = "allow"
 
 class ReturnRequest(BaseModel):
     order_id: str

@@ -1,11 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from app.database import get_db
-from app.models.user import User, Vendor
+from app.models.user import User, Vendor, UserRole
 from app.models.product import Product, ProductComplaint
 from app.models.order import Order, OrderItem, OrderStatus
 from app.models.ticket import Ticket, TicketStatus
+from app.models.analytics import Notification, NotificationType
 from app.services.auth import get_current_user
 from pydantic import BaseModel
 from typing import Optional, List
@@ -51,7 +52,7 @@ class VendorProfileUpdate(BaseModel):
 @router.get("/dashboard")
 def get_vendor_dashboard(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get vendor dashboard overview with key metrics"""
-    if current_user.role != "VENDOR":
+    if current_user.role != UserRole.VENDOR:
         raise HTTPException(status_code=403, detail="Access denied")
     
     # Get vendor's products
@@ -120,7 +121,7 @@ def get_vendor_dashboard(current_user: User = Depends(get_current_user), db: Ses
 @router.get("/analytics")
 def get_vendor_analytics(date_range: str = "30", current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get detailed analytics for vendor's products"""
-    if current_user.role != "VENDOR":
+    if current_user.role != UserRole.VENDOR:
         raise HTTPException(status_code=403, detail="Access denied")
     
     try:
@@ -193,7 +194,7 @@ def get_vendor_analytics(date_range: str = "30", current_user: User = Depends(ge
 @router.get("/complaints")
 def get_vendor_complaints(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get all complaints for vendor's products"""
-    if current_user.role != "VENDOR":
+    if current_user.role != UserRole.VENDOR:
         raise HTTPException(status_code=403, detail="Access denied")
     
     # Get vendor's products
@@ -254,7 +255,7 @@ def get_vendor_complaints(current_user: User = Depends(get_current_user), db: Se
 @router.get("/profile")
 def get_vendor_profile(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get vendor profile information"""
-    if current_user.role != "VENDOR":
+    if current_user.role != UserRole.VENDOR:
         raise HTTPException(status_code=403, detail="Access denied")
     
     vendor_profile = db.query(Vendor).filter(Vendor.user_id == current_user.id).first()
@@ -284,7 +285,7 @@ def get_vendor_profile(current_user: User = Depends(get_current_user), db: Sessi
 @router.put("/profile")
 def update_vendor_profile(profile_data: VendorProfileUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Update vendor profile information"""
-    if current_user.role != "VENDOR":
+    if current_user.role != UserRole.VENDOR:
         raise HTTPException(status_code=403, detail="Access denied")
     
     vendor_profile = db.query(Vendor).filter(Vendor.user_id == current_user.id).first()
@@ -315,7 +316,7 @@ def update_vendor_profile(profile_data: VendorProfileUpdate, current_user: User 
 @router.get("/settings")
 def get_vendor_settings(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get vendor settings (stored in localStorage on frontend)"""
-    if current_user.role != "VENDOR":
+    if current_user.role != UserRole.VENDOR:
         raise HTTPException(status_code=403, detail="Access denied")
     
     # Return default settings - actual settings stored in localStorage
@@ -330,3 +331,52 @@ def get_vendor_settings(current_user: User = Depends(get_current_user), db: Sess
             "resolvedComplaints": True
         }
     }
+
+@router.get("/notifications")
+def get_vendor_notifications(
+    unread_only: bool = Query(False),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get vendor notifications"""
+    if current_user.role != UserRole.VENDOR:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    query = db.query(Notification).filter(Notification.user_id == current_user.id)
+    
+    if unread_only:
+        query = query.filter(Notification.read == False)
+    
+    notifications = query.order_by(Notification.timestamp.desc()).limit(50).all()
+    
+    return [{
+        "id": notif.id,
+        "title": notif.title,
+        "message": notif.message,
+        "type": notif.type,
+        "read": notif.read,
+        "timestamp": notif.timestamp
+    } for notif in notifications]
+
+@router.delete("/notifications/{notification_id}")
+def delete_vendor_notification(
+    notification_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete vendor notification"""
+    if current_user.role != UserRole.VENDOR:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    notification = db.query(Notification).filter(
+        Notification.id == notification_id,
+        Notification.user_id == current_user.id
+    ).first()
+    
+    if not notification:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    
+    db.delete(notification)
+    db.commit()
+    
+    return {"message": "Notification deleted successfully"}

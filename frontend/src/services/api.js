@@ -121,12 +121,72 @@ class ApiService {
 
   // Notifications
   async getNotifications(unreadOnly = false) {
+    const user = JSON.parse(localStorage.getItem('intellica_user') || '{}');
+    if (user.role === 'vendor') {
+      const url = `http://localhost:8000/api/vendor/notifications?unread_only=${unreadOnly}`;
+      const response = await fetch(url, {
+        headers: this.getHeaders()
+      });
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          localStorage.removeItem('intellica_token');
+          localStorage.removeItem('intellica_user');
+          window.location.href = '/login';
+          return [];
+        }
+        console.error(`Vendor notifications API error: ${response.status}`);
+        return [];
+      }
+      return response.json();
+    }
     return this.request(`/customer/notifications?unread_only=${unreadOnly}`);
   }
 
   async markNotificationRead(notificationId) {
+    const user = JSON.parse(localStorage.getItem('intellica_user') || '{}');
+    if (user.role === 'vendor') {
+      const url = `http://localhost:8000/api/vendor/notifications/${notificationId}/read`;
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: this.getHeaders()
+      });
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          localStorage.removeItem('intellica_token');
+          localStorage.removeItem('intellica_user');
+          window.location.href = '/login';
+          return;
+        }
+        throw new Error(`API Error: ${response.status}`);
+      }
+      return response.json();
+    }
     return this.request(`/customer/notifications/${notificationId}/read`, {
       method: 'PUT'
+    });
+  }
+
+  async deleteNotification(notificationId) {
+    const user = JSON.parse(localStorage.getItem('intellica_user') || '{}');
+    if (user.role === 'vendor') {
+      const url = `http://localhost:8000/api/vendor/notifications/${notificationId}`;
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: this.getHeaders()
+      });
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          localStorage.removeItem('intellica_token');
+          localStorage.removeItem('intellica_user');
+          window.location.href = '/login';
+          return;
+        }
+        throw new Error(`API Error: ${response.status}`);
+      }
+      return response.json();
+    }
+    return this.request(`/customer/notifications/${notificationId}`, {
+      method: 'DELETE'
     });
   }
 

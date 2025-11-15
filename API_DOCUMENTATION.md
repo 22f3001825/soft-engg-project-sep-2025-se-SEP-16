@@ -48,6 +48,16 @@
 **Purpose**: Add agent reply to ticket
 **Body**: `{content, is_internal}`
 
+### POST `/agent/tickets/{ticket_id}/refund/approve`
+**Purpose**: Approve customer refund request
+**Body**: `{amount, reason}`
+**Returns**: Creates approval notification
+
+### POST `/agent/tickets/{ticket_id}/refund/reject`
+**Purpose**: Reject customer refund request
+**Body**: `{reason}`
+**Returns**: Creates rejection notification
+
 ### GET `/agent/customers`
 **Purpose**: Get customers assigned to agent
 **Query**: `search`
@@ -138,6 +148,9 @@
 ### PUT `/customer/notifications/{id}/read`
 **Purpose**: Mark notification as read
 
+### DELETE `/customer/notifications/{id}`
+**Purpose**: Delete notification permanently
+
 ---
 
 ## Supervisor APIs (`/supervisor`)
@@ -213,6 +226,17 @@
 **Purpose**: Get vendor preferences
 **Returns**: Dashboard settings, notifications
 
+### GET `/vendor/notifications`
+**Purpose**: Get vendor notifications
+**Query**: `unread_only`
+**Returns**: Vendor-specific notifications
+
+### PUT `/vendor/notifications/{id}/read`
+**Purpose**: Mark vendor notification as read
+
+### DELETE `/vendor/notifications/{id}`
+**Purpose**: Delete vendor notification permanently
+
 ---
 
 ## Common Response Formats
@@ -253,3 +277,26 @@
 - Supported formats: PNG, JPG, PDF, DOC, DOCX, TXT
 - Max size: 10MB per file
 - Endpoint: `/customer/tickets/{ticket_id}/attachments`
+- Files served at: `/uploads/tickets/{ticket_id}/{filename}`
+
+### Database Features
+- **Real-time Data**: All counts and metrics calculated dynamically
+- **Logical Relationships**: Orders, tickets, and complaints properly linked
+- **Role-based Access**: Each API validates user permissions
+- **Notification System**: Automated notifications for key events
+- **File Management**: Secure file upload with validation
+- **Analytics**: Trend analysis based on actual data relationships
+
+### API Prefixes
+- Authentication: `/auth`
+- Customer APIs: `/api/v1/customer`
+- Agent APIs: `/api/v1/agent`
+- Supervisor APIs: `/api/v1/supervisor`
+- Vendor APIs: `/api/vendor`
+
+### Total Endpoints: 47
+- Authentication: 2 endpoints
+- Customer: 13 endpoints
+- Agent: 14 endpoints
+- Supervisor: 11 endpoints
+- Vendor: 9 endpoints

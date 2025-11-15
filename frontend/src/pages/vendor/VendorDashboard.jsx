@@ -168,66 +168,12 @@ const VendorDashboard = React.memo(() => {
             <p className="text-gray-600 text-lg">Monitor product performance and customer satisfaction</p>
           </div>
           <div className="flex gap-3">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 shadow-lg hover:shadow-xl transition-all duration-300">
-                  <Star className="h-4 w-4 mr-2" />
-                  AI Copilot
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                    AI Vendor Copilot
-                  </DialogTitle>
-                  <DialogDescription>
-                    Smart insights and recommendations for your vendor operations
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <TrendingUp className="h-5 w-5 text-blue-500" />
-                        Recent Pattern Analysis
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-gray-700">{aiInsights.recentPattern}</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <BarChart3 className="h-5 w-5 text-green-500" />
-                        Vendor Benchmark
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-gray-700">{aiInsights.vendorBenchmark}</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <ArrowRight className="h-5 w-5 text-orange-500" />
-                        Actionable Insights
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ul className="space-y-2">
-                        {aiInsights.actionableInsights.map((insight, index) => (
-                          <li key={index} className="flex items-start gap-2">
-                            <ArrowRight className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                            <span className="text-gray-700">{insight}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                  </Card>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Link to="/vendor/ai-copilot">
+              <Button className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 shadow-lg hover:shadow-xl transition-all duration-300">
+                <Star className="h-4 w-4 mr-2" />
+                AI Copilot
+              </Button>
+            </Link>
             <Link to="/vendor/complaints">
               <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300">
                 <Package className="h-4 w-4 mr-2" />

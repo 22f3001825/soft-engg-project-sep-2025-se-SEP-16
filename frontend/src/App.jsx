@@ -1,11 +1,13 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { Toaster } from './components/ui/sonner';
 
 // Auth Pages
 import { LoginPage } from './pages/auth/LoginPage';
+import LandingPage from './pages/LandingPage';
 
 // Customer Portal
 import { CustomerDashboard } from './pages/customer/CustomerDashboard';
@@ -39,6 +41,7 @@ import { Settings } from './pages/supervisor/Settings';
 
 import { VendorDashboard } from './pages/vendor/VendorDashboard';
 import AnalyticsDashboard from './pages/vendor/AnalyticsDashboard';
+import AICopilotPage from './pages/vendor/AICopilotPage';
 import { ProductComplaintsPage } from './pages/vendor/ProductComplaintsPage';
 import { ProductDetailsPage } from './pages/vendor/ProductDetailsPage';
 import { ProfilePage as VendorProfilePage } from './pages/vendor/ProfilePage';
@@ -48,12 +51,13 @@ import './App.css';
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
         <div className="App">
           <Routes>
-            {/* Default redirect */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            {/* Landing Page */}
+            <Route path="/" element={<LandingPage />} />
 
             {/* Auth Routes */}
             <Route path="/login" element={<LoginPage />} />
@@ -258,6 +262,14 @@ function App() {
               }
             />
             <Route
+              path="/vendor/ai-copilot"
+              element={
+                <ProtectedRoute allowedRoles={['vendor']}>
+                  <AICopilotPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/vendor/complaints"
               element={
                 <ProtectedRoute allowedRoles={['vendor']}>
@@ -296,8 +308,9 @@ function App() {
 
           <Toaster position="top-right" richColors />
         </div>
-      </BrowserRouter>
-    </AuthProvider>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
