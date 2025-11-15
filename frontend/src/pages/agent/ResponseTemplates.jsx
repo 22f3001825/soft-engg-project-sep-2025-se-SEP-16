@@ -4,6 +4,7 @@ import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
 import { ScrollArea } from '../../components/ui/scroll-area';
 import { Badge } from '../../components/ui/badge';
+import { AgentLayout } from './AgentLayout';
 import { storage } from './utils';
 import { Plus, FileText, Zap, Search, Tag, Save, Eye, Sparkles, MessageSquare, Copy } from 'lucide-react';
 import { Textarea } from '../../components/ui/textarea';
@@ -84,7 +85,8 @@ export const ResponseTemplates = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <AgentLayout>
+      <div className="space-y-8">
       {/*Header */}
       <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary via-primary/90 to-accent p-1 shadow-lg">
         <div className="rounded-lg bg-background/95 backdrop-blur px-6 py-4 flex items-center justify-between">
@@ -267,6 +269,7 @@ export const ResponseTemplates = () => {
         </Card>
       </div>
     </div>
+    </AgentLayout>
   );
 };
 

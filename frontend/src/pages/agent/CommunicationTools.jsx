@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { AgentLayout } from './AgentLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
@@ -20,8 +21,10 @@ const cannedTemplates = [
   { label: 'Polite closing', text: 'Let us know if there is anything else we can help you with!', hasVariables: false },
 ];
 
-export const CommunicationTools = ({ ticketId, onBack }) => {
+export const CommunicationTools = () => {
   const navigate = useNavigate();
+  const { ticket_id } = useParams();
+  const ticketId = ticket_id;
   // Ticket Chat
   const [ticketChat, setTicketChat] = useState({ messages: [], newMessage: '', loading: false });
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -139,7 +142,8 @@ export const CommunicationTools = ({ ticketId, onBack }) => {
   };
 
   return (
-    <div className="flex flex-col gap-8 animate-slide-in-up">
+    <AgentLayout>
+      <div className="flex flex-col gap-8 animate-slide-in-up">
       {/* Header */}
       <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary via-primary/90 to-accent p-1 shadow-lg">
         <div className="rounded-lg bg-background/95 backdrop-blur px-6 py-4 flex flex-wrap items-center gap-3">
@@ -328,7 +332,8 @@ export const CommunicationTools = ({ ticketId, onBack }) => {
           </CardContent>
         </Card>
 
-    </div>
+      </div>
+    </AgentLayout>
   );
 };
 
