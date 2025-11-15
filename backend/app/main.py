@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from app.api import auth, customer, agent, supervisor, vendor
+from app.api import auth, customer, agent, supervisor, vendor, copilot, chat
 import os
 
 app = FastAPI(
@@ -29,6 +29,8 @@ app.include_router(customer.router, prefix="/api/v1", tags=["Customer"])
 app.include_router(agent.router, prefix="/api/v1", tags=["Agent"])
 app.include_router(supervisor.router, prefix="/api/v1", tags=["Supervisor"])
 app.include_router(vendor.router, prefix="/api/vendor", tags=["Vendor"])
+app.include_router(copilot.router, prefix="/api/v1", tags=["AI Copilot"])
+app.include_router(chat.router, prefix="/api/v1", tags=["Chat"])
 
 @app.get("/")
 async def root():
