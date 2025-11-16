@@ -479,6 +479,23 @@ def approve_refund(
         read=False
     )
     
+    # Create different notification for vendor
+    if ticket.related_order_id:
+        from app.models.order import OrderItem
+        from app.models.product import Product
+        order_items = db.query(OrderItem).filter(OrderItem.order_id == ticket.related_order_id).all()
+        if order_items:
+            vendor_id = db.query(Product).filter(Product.id == order_items[0].product_id).first().vendor_id
+            if vendor_id:
+                vendor_notification = Notification(
+                    user_id=vendor_id,
+                    title="Refund Processed for Your Product",
+                    message=f"A refund has been approved for your product related to ticket {ticket.id}. This may affect your product analytics.",
+                    type=NotificationType.TICKET,
+                    read=False
+                )
+                db.add(vendor_notification)
+    
     ticket.status = TicketStatus.RESOLVED
     ticket.updated_at = datetime.utcnow()
     

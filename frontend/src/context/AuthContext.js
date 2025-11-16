@@ -16,11 +16,39 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     // Check if user is logged in (from localStorage)
-    const savedUser = localStorage.getItem('intellica_user');
-    const token = localStorage.getItem('intellica_token');
-    if (savedUser && token) {
-      const userData = JSON.parse(savedUser);
-      setUser(userData);
+    // Try to find the current tab's role-specific session based on URL
+    const currentPath = window.location.pathname;
+    let targetRole = null;
+    
+    if (currentPath.startsWith('/customer')) targetRole = 'customer';
+    else if (currentPath.startsWith('/agent')) targetRole = 'agent';
+    else if (currentPath.startsWith('/supervisor')) targetRole = 'supervisor';
+    else if (currentPath.startsWith('/vendor')) targetRole = 'vendor';
+    
+    let foundUser = null;
+    
+    if (targetRole) {
+      // Check for specific role session first
+      const savedUser = localStorage.getItem(`intellica_user_${targetRole}`);
+      const token = localStorage.getItem(`intellica_token_${targetRole}`);
+      if (savedUser && token) {
+        foundUser = JSON.parse(savedUser);
+      }
+    } else {
+      // Fallback: find any valid session for non-role-specific pages
+      const roles = ['customer', 'agent', 'supervisor', 'vendor'];
+      for (const role of roles) {
+        const savedUser = localStorage.getItem(`intellica_user_${role}`);
+        const token = localStorage.getItem(`intellica_token_${role}`);
+        if (savedUser && token) {
+          foundUser = JSON.parse(savedUser);
+          break;
+        }
+      }
+    }
+    
+    if (foundUser) {
+      setUser(foundUser);
     }
     setLoading(false);
   }, []);
@@ -71,8 +99,8 @@ export const AuthProvider = ({ children }) => {
         };
 
         setUser(userData);
-        localStorage.setItem('intellica_user', JSON.stringify(userData));
-        localStorage.setItem('intellica_token', data.access_token);
+        localStorage.setItem(`intellica_user_${userData.role}`, JSON.stringify(userData));
+        localStorage.setItem(`intellica_token_${userData.role}`, data.access_token);
         return { success: true, user: userData };
       } else {
         return { success: false, message: data.detail || 'Login failed' };
@@ -111,8 +139,8 @@ export const AuthProvider = ({ children }) => {
         };
 
         setUser(userData);
-        localStorage.setItem('intellica_user', JSON.stringify(userData));
-        localStorage.setItem('intellica_token', data.access_token);
+        localStorage.setItem(`intellica_user_${userData.role}`, JSON.stringify(userData));
+        localStorage.setItem(`intellica_token_${userData.role}`, data.access_token);
         return { success: true, user: userData };
       } else {
         return { success: false, message: data.detail || 'Registration failed' };
@@ -124,9 +152,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    if (user) {
+      localStorage.removeItem(`intellica_user_${user.role}`);
+      localStorage.removeItem(`intellica_token_${user.role}`);
+    }
     setUser(null);
-    localStorage.removeItem('intellica_user');
-    localStorage.removeItem('intellica_token');
   };
 
 

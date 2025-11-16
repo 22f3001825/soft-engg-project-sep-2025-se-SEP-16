@@ -2,7 +2,12 @@ const API_BASE_URL = 'http://localhost:8000/api/v1';
 
 class ApiService {
   getToken() {
-    return localStorage.getItem('intellica_token');
+    const roles = ['customer', 'agent', 'supervisor', 'vendor'];
+    for (const role of roles) {
+      const token = localStorage.getItem(`intellica_token_${role}`);
+      if (token) return token;
+    }
+    return null;
   }
 
   getHeaders() {
@@ -28,8 +33,11 @@ class ApiService {
     if (!response.ok) {
       if (response.status === 401) {
         // Token expired or invalid - redirect to login
-        localStorage.removeItem('intellica_token');
-        localStorage.removeItem('intellica_user');
+        const roles = ['customer', 'agent', 'supervisor', 'vendor'];
+        roles.forEach(role => {
+          localStorage.removeItem(`intellica_token_${role}`);
+          localStorage.removeItem(`intellica_user_${role}`);
+        });
         window.location.href = '/login';
         return;
       }
@@ -121,7 +129,15 @@ class ApiService {
 
   // Notifications
   async getNotifications(unreadOnly = false) {
-    const user = JSON.parse(localStorage.getItem('intellica_user') || '{}');
+    const roles = ['customer', 'agent', 'supervisor', 'vendor'];
+    let user = {};
+    for (const role of roles) {
+      const userData = localStorage.getItem(`intellica_user_${role}`);
+      if (userData) {
+        user = JSON.parse(userData);
+        break;
+      }
+    }
     if (user.role === 'vendor') {
       const url = `http://localhost:8000/api/vendor/notifications?unread_only=${unreadOnly}`;
       const response = await fetch(url, {
@@ -129,8 +145,11 @@ class ApiService {
       });
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
-          localStorage.removeItem('intellica_token');
-          localStorage.removeItem('intellica_user');
+          const roles = ['customer', 'agent', 'supervisor', 'vendor'];
+          roles.forEach(role => {
+            localStorage.removeItem(`intellica_token_${role}`);
+            localStorage.removeItem(`intellica_user_${role}`);
+          });
           window.location.href = '/login';
           return [];
         }
@@ -143,7 +162,15 @@ class ApiService {
   }
 
   async markNotificationRead(notificationId) {
-    const user = JSON.parse(localStorage.getItem('intellica_user') || '{}');
+    const roles = ['customer', 'agent', 'supervisor', 'vendor'];
+    let user = {};
+    for (const role of roles) {
+      const userData = localStorage.getItem(`intellica_user_${role}`);
+      if (userData) {
+        user = JSON.parse(userData);
+        break;
+      }
+    }
     if (user.role === 'vendor') {
       const url = `http://localhost:8000/api/vendor/notifications/${notificationId}/read`;
       const response = await fetch(url, {
@@ -152,8 +179,11 @@ class ApiService {
       });
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
-          localStorage.removeItem('intellica_token');
-          localStorage.removeItem('intellica_user');
+          const roles = ['customer', 'agent', 'supervisor', 'vendor'];
+          roles.forEach(role => {
+            localStorage.removeItem(`intellica_token_${role}`);
+            localStorage.removeItem(`intellica_user_${role}`);
+          });
           window.location.href = '/login';
           return;
         }
@@ -167,7 +197,15 @@ class ApiService {
   }
 
   async deleteNotification(notificationId) {
-    const user = JSON.parse(localStorage.getItem('intellica_user') || '{}');
+    const roles = ['customer', 'agent', 'supervisor', 'vendor'];
+    let user = {};
+    for (const role of roles) {
+      const userData = localStorage.getItem(`intellica_user_${role}`);
+      if (userData) {
+        user = JSON.parse(userData);
+        break;
+      }
+    }
     if (user.role === 'vendor') {
       const url = `http://localhost:8000/api/vendor/notifications/${notificationId}`;
       const response = await fetch(url, {
@@ -176,8 +214,11 @@ class ApiService {
       });
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
-          localStorage.removeItem('intellica_token');
-          localStorage.removeItem('intellica_user');
+          const roles = ['customer', 'agent', 'supervisor', 'vendor'];
+          roles.forEach(role => {
+            localStorage.removeItem(`intellica_token_${role}`);
+            localStorage.removeItem(`intellica_user_${role}`);
+          });
           window.location.href = '/login';
           return;
         }
@@ -206,8 +247,11 @@ class ApiService {
     if (!response.ok) {
       if (response.status === 401) {
         // Token expired or invalid - redirect to login
-        localStorage.removeItem('intellica_token');
-        localStorage.removeItem('intellica_user');
+        const roles = ['customer', 'agent', 'supervisor', 'vendor'];
+        roles.forEach(role => {
+          localStorage.removeItem(`intellica_token_${role}`);
+          localStorage.removeItem(`intellica_user_${role}`);
+        });
         window.location.href = '/login';
         return;
       }
