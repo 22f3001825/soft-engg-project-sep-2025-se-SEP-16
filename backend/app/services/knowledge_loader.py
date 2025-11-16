@@ -29,19 +29,26 @@ class KnowledgeLoader:
         self.documents = []
         
     def load_all_documents(self) -> List[Dict]:
-        """Load all markdown documents from knowledge base"""
+        """Load all markdown and CSV documents from knowledge base"""
         documents = []
         
         if not self.kb_path.exists():
             return documents
         
-        for doc_type in ["agent_docs", "supervisor_docs"]:
+        for doc_type in ["agent_docs", "supervisor_docs", "customer_docs"]:
             doc_dir = self.kb_path / doc_type
             if doc_dir.exists():
+                # Load markdown files
                 for file_path in doc_dir.glob("*.md"):
                     doc = self._load_document(file_path, doc_type)
                     if doc:
                         documents.append(doc)
+                
+                # Load CSV files (for customer FAQs)
+                for file_path in doc_dir.glob("*.csv"):
+                    csv_docs = self._load_csv_document(file_path, doc_type)
+                    if csv_docs:
+                        documents.extend(csv_docs)
         
         self.documents = documents
         return documents
@@ -69,6 +76,40 @@ class KnowledgeLoader:
             print(f"Error loading {file_path}: {e}")
             return None
     
+    def _load_csv_document(self, file_path: Path, doc_type: str) -> List[Dict]:
+        """Load CSV document (FAQ format) and convert to individual documents"""
+        try:
+            import csv
+            documents = []
+            
+            with open(file_path, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    # Each FAQ entry becomes a separate document
+                    question = row.get('question', '')
+                    answer = row.get('answer', '')
+                    category = row.get('category', 'General')
+                    keywords = row.get('keywords', '').split(',')
+                    
+                    content = f"Q: {question}\n\nA: {answer}"
+                    
+                    doc = {
+                        "title": question,
+                        "content": content,
+                        "category": f"FAQ - {category}",
+                        "subcategory": doc_type.replace("_docs", ""),
+                        "file_name": file_path.name,
+                        "file_path": str(file_path),
+                        "tags": [k.strip() for k in keywords if k.strip()],
+                        "keywords": [k.strip() for k in keywords if k.strip()]
+                    }
+                    documents.append(doc)
+            
+            return documents
+        except Exception as e:
+            print(f"Error loading CSV {file_path}: {e}")
+            return []
+    
     def _extract_title(self, content: str, fallback: str) -> str:
         """Extract title from markdown content"""
         lines = content.split('\n')
@@ -79,6 +120,18 @@ class KnowledgeLoader:
     
     def _categorize_document(self, filename: str, doc_type: str) -> str:
         """Categorize document based on filename"""
+        # Customer-facing documents
+        if doc_type == "customer_docs":
+            if 'faq' in filename:
+                return "Customer FAQ"
+            elif 'policy' in filename:
+                return "Customer Policy"
+            elif 'guide' in filename:
+                return "Customer Guide"
+            else:
+                return "Customer Information"
+        
+        # Agent/Supervisor documents
         if 'policy' in filename:
             return "Policy"
         elif 'sop' in filename:
