@@ -13,6 +13,7 @@ from app.models.user import User
 from app.models.refund import ImageAnalysis
 from app.services.rag_service import get_rag_service
 from app.services.vision_service import get_vision_service
+from app.services.refund_eligibility_service import get_eligibility_service
 from app.services.auth import get_current_user
 import logging
 
@@ -418,3 +419,98 @@ async def index_knowledge_base(
     result = rag_service.index_knowledge_base()
     
     return result
+
+
+# Refund Eligibility Endpoints
+
+class RefundEligibilityRequest(BaseModel):
+    product_category: str
+    purchase_date: str  # ISO format date
+    reason: str
+    condition: str = "unused"
+    has_packaging: bool = True
+    has_receipt: bool = True
+    additional_info: Optional[str] = None
+
+
+@router.post("/check-refund-eligibility")
+async def check_refund_eligibility(
+    request: RefundEligibilityRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Check if customer is eligible for refund based on policies
+    Uses RAG to analyze against company policies
+    """
+    try:
+        eligibility_service = get_eligibility_service()
+        
+        # Parse purchase date
+        purchase_date = datetime.fromisoformat(request.purchase_date.replace('Z', '+00:00'))
+        
+        # Check eligibility
+        result = eligibility_service.check_eligibility(
+            product_category=request.product_category,
+            purchase_date=purchase_date,
+            reason=request.reason,
+            condition=request.condition,
+            has_packaging=request.has_packaging,
+            has_receipt=request.has_receipt,
+            additional_info=request.additional_info
+        )
+        
+        return {
+            "success": True,
+            "eligibility": result
+        }
+        
+    except Exception as e:
+        logger.error(f"Error checking eligibility: {e}")
+        raise HTTPException(status_code=500, detail="Failed to check eligibility")
+
+
+@router.get("/return-window/{category}")
+async def get_return_window(
+    category: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get return window information for a product category
+    """
+    try:
+        eligibility_service = get_eligibility_service()
+        result = eligibility_service.get_return_window(category)
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error getting return window: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get return window")
+
+
+@router.post("/explain-rejection")
+async def explain_rejection(
+    product_category: str,
+    days_since_purchase: int,
+    reason: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get customer-friendly explanation for why a return might be rejected
+    """
+    try:
+        eligibility_service = get_eligibility_service()
+        explanation = eligibility_service.explain_rejection(
+            product_category=product_category,
+            days_since_purchase=days_since_purchase,
+            reason=reason
+        )
+        
+        return {
+            "explanation": explanation
+        }
+        
+    except Exception as e:
+        logger.error(f"Error explaining rejection: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate explanation")

@@ -247,13 +247,13 @@ Intellica Support Team
 
 ## Prohibited Escalation Practices
 
-**❌ DO NOT escalate if:**
+**DO NOT escalate if:**
 - Issue can be resolved using existing SOPs/templates.
 - You haven't checked the relevant category return policy.
 - Documentation is incomplete (missing evidence, no recommendation).
 - Customer simply asks to "speak to manager" without unresolved issue → Offer resolution first; escalate only if genuinely stuck.
 
-**✅ DO escalate when:**
+**DO escalate when:**
 - Policy is unclear or contradictory.
 - Refund amount exceeds agent approval threshold.
 - Fraud or security risk detected.

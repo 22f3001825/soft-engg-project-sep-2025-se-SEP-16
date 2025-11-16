@@ -10,6 +10,7 @@ from datetime import datetime
 
 from app.services.embedding_service import get_embedding_service
 from app.services.llm_service import llm_service
+from app.services.knowledge_loader import knowledge_loader
 from app.database import SessionLocal
 from app.models.chat import KnowledgeBase
 
@@ -53,9 +54,13 @@ class RAGService:
             self.client = None
             self.collection = None
     
-    def index_knowledge_base(self) -> Dict[str, any]:
+    def index_knowledge_base(self, use_file_kb: bool = True) -> Dict[str, any]:
         """
-        Index all knowledge base articles from database into vector store
+        Index all knowledge base articles into vector store
+        
+        Args:
+            use_file_kb: If True, use file-based knowledge loader (default)
+                        If False, use database KnowledgeBase table
         
         Returns:
             Dictionary with indexing results
@@ -63,61 +68,123 @@ class RAGService:
         if not self.collection or not self.embedding_service.is_available():
             return {"success": False, "error": "Services not available"}
         
-        db = SessionLocal()
         try:
-            # Get all active knowledge base articles
-            articles = db.query(KnowledgeBase).filter(
-                KnowledgeBase.is_active == True
-            ).all()
-            
-            if not articles:
-                return {"success": True, "indexed": 0, "message": "No articles to index"}
-            
-            # Prepare texts and metadata
-            texts = []
-            metadatas = []
-            ids = []
-            
-            for article in articles:
-                # Combine title and content for better retrieval
-                text = f"{article.title}\n\n{article.content}"
-                texts.append(text)
+            if use_file_kb:
+                # Use file-based knowledge loader (46 documents)
+                documents = knowledge_loader.documents
+                if not documents:
+                    # Try to load if not already loaded
+                    documents = knowledge_loader.load_all_documents()
                 
-                metadatas.append({
-                    "article_id": str(article.id),
-                    "title": article.title,
-                    "category": article.category or "general",
-                    "tags": article.tags or "",
-                    "created_at": article.created_at.isoformat() if article.created_at else ""
-                })
+                if not documents:
+                    return {"success": True, "indexed": 0, "message": "No documents to index"}
                 
-                ids.append(f"kb_{article.id}")
+                # Prepare texts and metadata
+                texts = []
+                metadatas = []
+                ids = []
+                
+                for i, doc in enumerate(documents):
+                    # Use full content for embedding
+                    text = f"{doc['title']}\n\n{doc['content']}"
+                    texts.append(text)
+                    
+                    metadatas.append({
+                        "doc_id": str(i),
+                        "title": doc['title'],
+                        "category": doc['category'],
+                        "subcategory": doc['subcategory'],
+                        "file_name": doc['file_name'],
+                        "tags": ','.join(doc['tags']) if doc['tags'] else "",
+                        "keywords": ','.join(doc['keywords']) if doc['keywords'] else ""
+                    })
+                    
+                    ids.append(f"doc_{i}")
+                
+                # Generate embeddings in batches
+                logger.info(f"Generating embeddings for {len(texts)} documents...")
+                embeddings = self.embedding_service.encode(texts)
+                if embeddings is None:
+                    return {"success": False, "error": "Failed to generate embeddings"}
+                
+                # Clear existing collection and add new documents
+                try:
+                    self.client.delete_collection(self.collection_name)
+                    self.collection = self.client.create_collection(
+                        name=self.collection_name,
+                        metadata={"description": "Knowledge base for customer support"}
+                    )
+                except:
+                    pass
+                
+                # Add to ChromaDB
+                self.collection.add(
+                    embeddings=embeddings.tolist(),
+                    documents=texts,
+                    metadatas=metadatas,
+                    ids=ids
+                )
+                
+                logger.info(f"Indexed {len(documents)} knowledge base documents")
+                return {
+                    "success": True,
+                    "indexed": len(documents),
+                    "message": f"Successfully indexed {len(documents)} documents",
+                    "categories": list(set(doc['category'] for doc in documents))
+                }
             
-            # Generate embeddings
-            embeddings = self.embedding_service.encode(texts)
-            if embeddings is None:
-                return {"success": False, "error": "Failed to generate embeddings"}
-            
-            # Add to ChromaDB
-            self.collection.add(
-                embeddings=embeddings.tolist(),
-                documents=texts,
-                metadatas=metadatas,
-                ids=ids
-            )
-            
-            logger.info(f"Indexed {len(articles)} knowledge base articles")
-            return {
-                "success": True,
-                "indexed": len(articles),
-                "message": f"Successfully indexed {len(articles)} articles"
-            }
+            else:
+                # Use database KnowledgeBase table (original implementation)
+                db = SessionLocal()
+                try:
+                    articles = db.query(KnowledgeBase).filter(
+                        KnowledgeBase.is_active == True
+                    ).all()
+                    
+                    if not articles:
+                        return {"success": True, "indexed": 0, "message": "No articles to index"}
+                    
+                    texts = []
+                    metadatas = []
+                    ids = []
+                    
+                    for article in articles:
+                        text = f"{article.title}\n\n{article.content}"
+                        texts.append(text)
+                        
+                        metadatas.append({
+                            "article_id": str(article.id),
+                            "title": article.title,
+                            "category": article.category or "general",
+                            "tags": article.tags or "",
+                            "created_at": article.created_at.isoformat() if article.created_at else ""
+                        })
+                        
+                        ids.append(f"kb_{article.id}")
+                    
+                    embeddings = self.embedding_service.encode(texts)
+                    if embeddings is None:
+                        return {"success": False, "error": "Failed to generate embeddings"}
+                    
+                    self.collection.add(
+                        embeddings=embeddings.tolist(),
+                        documents=texts,
+                        metadatas=metadatas,
+                        ids=ids
+                    )
+                    
+                    logger.info(f"Indexed {len(articles)} knowledge base articles")
+                    return {
+                        "success": True,
+                        "indexed": len(articles),
+                        "message": f"Successfully indexed {len(articles)} articles"
+                    }
+                finally:
+                    db.close()
             
         except Exception as e:
             logger.error(f"Error indexing knowledge base: {e}")
             return {"success": False, "error": str(e)}
-        finally:
-            db.close()
     
     def retrieve_relevant_docs(
         self,
@@ -216,25 +283,36 @@ class RAGService:
             history_text = "\n".join(history_parts)
         
         # Create prompt
-        prompt = f"""You are a helpful customer support assistant for Intellica. Answer the customer's question using the provided knowledge base information.
+        system_prompt = """You are a helpful and empathetic customer support assistant for Intellica, an e-commerce platform. 
+Your role is to help customers with returns, refunds, and general support questions.
+Always be professional, friendly, and customer-focused."""
+
+        prompt = f"""Answer the customer's question using the provided knowledge base information.
 
 Knowledge Base Context:
 {context_text}
 
-{f"Previous Conversation:\n{history_text}\n" if history_text else ""}
+{("Previous Conversation:\n" + history_text + "\n") if history_text else ""}
 Customer Question: {query}
 
 Instructions:
 - Provide a clear, helpful, and professional response
 - Use information from the knowledge base when relevant
-- If the knowledge base doesn't contain the answer, politely say so and offer to escalate
-- Be empathetic and customer-focused
-- Keep responses concise but complete
+- If the knowledge base doesn't contain the answer, politely say so and offer to connect them with a human agent
+- Be empathetic and understanding
+- Keep responses concise but complete (2-4 sentences)
+- Use a friendly, conversational tone
+- If discussing policies, explain them in simple terms
 
 Response:"""
         
         # Generate response
-        result = self.llm_service.generate(prompt, max_tokens=500)
+        result = self.llm_service.generate(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            temperature=0.7,
+            max_tokens=500
+        )
         response = result.get('text', 'Unable to generate response')
         
         return response, source_ids
