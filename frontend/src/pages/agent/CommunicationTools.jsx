@@ -163,11 +163,9 @@ export const CommunicationTools = () => {
             </Badge>
           )}
           <div className="flex-1"></div>
-          {onBack && (
-            <Button variant="outline" onClick={onBack} className="ml-auto hover:bg-primary/10 hover:border-primary/50 hover:text-primary">
-              Back to Dashboard
-            </Button>
-          )}
+          <Button variant="outline" onClick={() => navigate('/agent/dashboard')} className="ml-auto hover:bg-primary/10 hover:border-primary/50 hover:text-primary">
+            Back to Dashboard
+          </Button>
         </div>
       </div>
       {/* FULL WIDTH TICKET CHAT */}

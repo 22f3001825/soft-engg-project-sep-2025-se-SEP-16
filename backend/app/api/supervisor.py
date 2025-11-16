@@ -10,7 +10,7 @@ from typing import Optional
 from datetime import datetime, timedelta
 import uuid
 
-router = APIRouter(prefix="/supervisor", tags=["supervisor"])
+router = APIRouter()
 
 @router.get("/dashboard")
 def get_supervisor_dashboard(

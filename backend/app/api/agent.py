@@ -16,7 +16,7 @@ from app.schemas.agent import (
     CommunicationSend, TemplateCreate, TemplateUpdate, SettingsUpdate
 )
 
-router = APIRouter(prefix="/agent", tags=["agent"])
+router = APIRouter()
 
 # Dashboard APIs
 @router.get("/dashboard")

@@ -25,9 +25,9 @@ if os.path.exists("uploads"):
 
 # Include routers
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
-app.include_router(customer.router, prefix="/api/v1", tags=["Customer"])
-app.include_router(agent.router, prefix="/api/v1", tags=["Agent"])
-app.include_router(supervisor.router, prefix="/api/v1", tags=["Supervisor"])
+app.include_router(customer.router, prefix="/api/v1/customer", tags=["Customer"])
+app.include_router(agent.router, prefix="/api/v1/agent", tags=["Agent"])
+app.include_router(supervisor.router, prefix="/api/v1/supervisor", tags=["Supervisor"])
 app.include_router(vendor.router, prefix="/api/vendor", tags=["Vendor"])
 
 

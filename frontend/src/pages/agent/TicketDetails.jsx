@@ -364,7 +364,7 @@ export const TicketDetails = () => {
                 )}
                 <Button 
                   className="w-full justify-center bg-gradient-to-r from-primary to-accent text-white font-bold text-base py-6 text-lg shadow-lg hover:from-primary/90 hover:to-accent/90 transition-all"
-                  onClick={() => navigate(`/agent/communication/${ticket.id}`)}
+                  onClick={() => navigate(`/agent/ticket/${ticket.id}/communication`)}
                 >
                   <MessageSquare className="h-5 w-5 mr-2" />
                   Open Communication Tools
