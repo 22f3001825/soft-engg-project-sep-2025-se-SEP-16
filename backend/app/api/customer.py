@@ -18,7 +18,7 @@ from app.schemas.customer import (
     TicketCreate, MessageCreate, ReturnRequest, ProfileUpdate
 )
 
-router = APIRouter(prefix="/customer", tags=["customer"])
+router = APIRouter()
 
 # Dashboard APIs
 @router.get("/dashboard")
