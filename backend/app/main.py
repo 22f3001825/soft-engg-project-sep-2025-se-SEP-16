@@ -5,7 +5,7 @@ from app.api import auth, customer, agent, supervisor, vendor
 import os
 
 app = FastAPI(
-    title="AI Support System",
+    title="Intellica",
     description="Simple AI-powered customer support platform",
     version="1.0.0"
 )
@@ -33,7 +33,7 @@ app.include_router(vendor.router, prefix="/api/vendor", tags=["Vendor"])
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to AI Support System API"}
+    return {"message": "Welcome to Intellica AI Support System API"}
 
 @app.get("/health")
 async def health_check():
