@@ -13,12 +13,14 @@ logger = logging.getLogger(__name__)
 class EmbeddingService:
     """Service for generating text embeddings"""
     
-    def __init__(self, model_name: str = "BAAI/bge-m3"):
+    def __init__(self, model_name: str = "sentence-transformers/all-MiniLM-L6-v2"):
         """
         Initialize embedding service
         
         Args:
             model_name: HuggingFace model name for embeddings
+                       Default: all-MiniLM-L6-v2 (fast, 384 dims, good quality)
+                       Alternative: BAAI/bge-m3 (slow, 1024 dims, best quality)
         """
         self.model_name = model_name
         self.model: Optional[SentenceTransformer] = None

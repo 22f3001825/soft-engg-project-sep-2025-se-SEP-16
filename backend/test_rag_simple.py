@@ -30,6 +30,7 @@ from app.models.order import Order
 from app.models.ticket import Ticket
 
 db = SessionLocal()
+eligibility_service = get_eligibility_service()
 
 # Check LLM availability
 llm_available = llm_service.check_health()
@@ -156,29 +157,31 @@ print("\n" + "=" * 80)
 print("[TEST 4] KNOWLEDGE BASE INDEXING (Vector Database)")
 print("=" * 80)
 
+indexing_result = {"success": False, "indexed": 0}  # Initialize with default values
+
 try:
     rag_service = get_rag_service()
     
     print(f"\nIndexing {len(docs)} documents into vector database...")
-    print("Note: This takes 30-60s on first run (generating embeddings)")
-    print("Why slow? Creating 1024-dimensional vectors for each document on CPU")
+    print("Note: This takes 10-30s on first run (generating embeddings)")
+    print("Using lightweight embedding model for fast CPU performance")
     
     start = time.time()
-    result = rag_service.index_knowledge_base(use_file_kb=True)
+    indexing_result = rag_service.index_knowledge_base(use_file_kb=True)
     duration = time.time() - start
     
-    if result['success']:
+    if indexing_result['success']:
         print(f"\nIndexing Results:")
-        print(f"  Documents indexed: {result['indexed']}")
+        print(f"  Documents indexed: {indexing_result['indexed']}")
         print(f"  Total time: {duration:.2f}s")
-        print(f"  Time per document: {duration/result['indexed']:.2f}s")
+        print(f"  Time per document: {duration/indexing_result['indexed']:.2f}s")
         
         if duration > 60:
             print(f"  Note: Slow indexing is normal on CPU (expected 30-60s)")
         
         print("\nRESULT: PASS - Knowledge base indexed successfully")
     else:
-        print(f"\nRESULT: FAIL - {result.get('error')}")
+        print(f"\nRESULT: FAIL - {indexing_result.get('error')}")
         
 except Exception as e:
     print(f"\nRESULT: FAIL - {e}")
@@ -355,9 +358,9 @@ print("=" * 80)
 if llm_available:
     try:
         faq_queries = [
-            "How long does shipping take?",
-            "What payment methods do you accept?",
-            "Can I cancel my order?"
+            "How long do I have to return an item?",
+            "Do I need the original packaging to return?",
+            "What if my item arrived damaged?"
         ]
         
         print("\nTesting automated FAQ responses:")
@@ -367,7 +370,9 @@ if llm_available:
             
             result = rag_service.answer_question(query, top_k=3)
             
-            print(f"   A: {result['response'][:120]}...")
+            # Show full response (not truncated)
+            print(f"   A: {result['response']}")
+            print(f"   Sources: {result['retrieved_docs']} documents retrieved")
         
         print("\nRESULT: PASS - Customer support automation working")
         
@@ -457,7 +462,7 @@ print("-" * 80)
 print(f"  Database: CONNECTED ({len(customers)} customers, {len(orders)} orders)")
 print(f"  Knowledge Base: LOADED ({len(docs)} documents)")
 print(f"  Embedding Service: OPERATIONAL")
-print(f"  Vector Database: INDEXED ({result['indexed']} documents)")
+print(f"  Vector Database: INDEXED ({indexing_result['indexed']} documents)")
 print(f"  LLM Service: {'OPERATIONAL' if llm_available else 'NOT AVAILABLE'}")
 
 print("\n[OVERALL STATUS]")
