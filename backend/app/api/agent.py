@@ -1,3 +1,17 @@
+"""Agent API endpoints for the Intellica Customer Support System.
+
+This module provides comprehensive agent-facing API endpoints including:
+- Dashboard with ticket statistics and workload management
+- Ticket assignment, status updates, and resolution workflows
+- Customer communication and internal messaging
+- Customer profile management and history tracking
+- Agent settings and preferences
+- Refund approval and rejection workflows
+
+All endpoints include proper authentication, validation, error handling,
+and logging for security and maintainability.
+"""
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -11,6 +25,8 @@ from app.models.order import Order, OrderItem, OrderStatus
 from app.models.ticket import Ticket, Message, TicketStatus, TicketPriority
 from app.models.analytics import Notification, NotificationType
 from app.services.auth import get_current_user
+from app.core.logging import logger
+from app.core.validation import sanitize_string, sanitize_search_query, validate_uuid
 from app.schemas.agent import (
     TicketAssign, TicketStatusUpdate, MessageCreate, CustomerNote, 
     CommunicationSend, TemplateCreate, TemplateUpdate, SettingsUpdate
@@ -21,98 +37,163 @@ router = APIRouter()
 # Dashboard APIs
 @router.get("/dashboard")
 def get_dashboard(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Get agent dashboard data"""
+    """
+    Retrieve comprehensive dashboard data for the authenticated agent.
+    
+    This endpoint provides an overview of the agent's workload including:
+    - Key statistics (available tickets, assigned tickets, high priority, overdue)
+    - Recent ticket activity and updates
+    - Performance metrics and workload distribution
+    
+    Args:
+        current_user: Authenticated agent user from JWT token
+        db: Database session dependency
+        
+    Returns:
+        dict: Dashboard data including stats and recent tickets
+        
+    Raises:
+        HTTPException: 404 if agent profile not found
+        HTTPException: 500 if database operation fails
+    """
+    logger.info(f"Agent dashboard requested by user ID: {current_user.id}")
+    
     try:
         agent = db.query(Agent).filter(Agent.user_id == current_user.id).first()
         if not agent:
+            logger.warning(f"Agent profile not found for user ID: {current_user.id}")
             raise HTTPException(status_code=404, detail="Agent profile not found")
     except HTTPException:
         raise
-    except Exception:
+    except Exception as e:
+        logger.error(f"Database error retrieving agent profile: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to retrieve dashboard data")
     
-    # Get ticket statistics (agent-specific)
-    assigned_tickets = db.query(Ticket).filter(Ticket.agent_id == current_user.id).count()
-    available_tickets = db.query(Ticket).filter(
-        or_(Ticket.agent_id == current_user.id, Ticket.agent_id.is_(None))
-    ).count()
-    high_priority = db.query(Ticket).filter(
-        Ticket.agent_id == current_user.id,
-        Ticket.priority == TicketPriority.HIGH
-    ).count()
-    overdue_tickets = db.query(Ticket).filter(
-        Ticket.agent_id == current_user.id,
-        Ticket.status.in_([TicketStatus.OPEN, TicketStatus.IN_PROGRESS]),
-        Ticket.created_at < datetime.now() - timedelta(days=2)
-    ).count()
-    
-    # Get recent assigned tickets
-    recent_tickets = db.query(Ticket).filter(
-        Ticket.agent_id == current_user.id
-    ).order_by(Ticket.updated_at.desc()).limit(5).all()
-    
-    return {
-        "stats": {
-            "available_tickets": available_tickets,
-            "assigned_to_me": assigned_tickets,
-            "high_priority": high_priority,
-            "overdue": overdue_tickets
-        },
-        "recent_tickets": [{
-            "id": ticket.id,
-            "subject": ticket.subject,
-            "status": ticket.status,
-            "priority": ticket.priority,
-            "created_at": ticket.created_at,
-            "customer_name": db.query(User).filter(User.id == ticket.customer_id).first().full_name
-        } for ticket in recent_tickets]
-    }
+    try:
+        # Get ticket statistics (agent-specific)
+        assigned_tickets = db.query(Ticket).filter(Ticket.agent_id == current_user.id).count()
+        available_tickets = db.query(Ticket).filter(
+            or_(Ticket.agent_id == current_user.id, Ticket.agent_id.is_(None))
+        ).count()
+        high_priority = db.query(Ticket).filter(
+            Ticket.agent_id == current_user.id,
+            Ticket.priority == TicketPriority.HIGH
+        ).count()
+        overdue_tickets = db.query(Ticket).filter(
+            Ticket.agent_id == current_user.id,
+            Ticket.status.in_([TicketStatus.OPEN, TicketStatus.IN_PROGRESS]),
+            Ticket.created_at < datetime.now() - timedelta(days=2)
+        ).count()
+        
+        # Get recent assigned tickets
+        recent_tickets = db.query(Ticket).filter(
+            Ticket.agent_id == current_user.id
+        ).order_by(Ticket.updated_at.desc()).limit(5).all()
+        
+        dashboard_data = {
+            "stats": {
+                "available_tickets": available_tickets,
+                "assigned_to_me": assigned_tickets,
+                "high_priority": high_priority,
+                "overdue": overdue_tickets
+            },
+            "recent_tickets": [{
+                "id": ticket.id,
+                "subject": ticket.subject,
+                "status": ticket.status,
+                "priority": ticket.priority,
+                "created_at": ticket.created_at,
+                "customer_name": db.query(User).filter(User.id == ticket.customer_id).first().full_name
+            } for ticket in recent_tickets]
+        }
+        
+        logger.info(f"Dashboard data successfully retrieved for agent ID: {current_user.id}")
+        return dashboard_data
+        
+    except Exception as e:
+        logger.error(f"Error retrieving agent dashboard data: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve dashboard data")
 
 @router.get("/tickets")
 def get_tickets(
-    status: Optional[str] = Query(None),
-    priority: Optional[str] = Query(None),
-    assigned_only: bool = Query(False),
+    status: Optional[str] = Query(None, description="Filter tickets by status (open, in_progress, resolved, etc.)"),
+    priority: Optional[str] = Query(None, description="Filter tickets by priority (low, medium, high)"),
+    assigned_only: bool = Query(False, description="Show only tickets assigned to current agent"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get tickets with filtering - agents see only their tickets + unassigned"""
-    if assigned_only:
-        # Show only tickets assigned to this agent
-        query = db.query(Ticket).filter(Ticket.agent_id == current_user.id)
-    else:
-        # Show tickets assigned to this agent + unassigned tickets (available to pick up)
-        query = db.query(Ticket).filter(
-            or_(Ticket.agent_id == current_user.id, Ticket.agent_id.is_(None))
-        )
+    """
+    Retrieve tickets with filtering options for agent workflow management.
     
-    if status and status != "all":
-        query = query.filter(Ticket.status == status.upper())
+    This endpoint allows agents to view and filter tickets based on:
+    - Assignment status (assigned to agent or available to pick up)
+    - Ticket status (open, in progress, resolved, etc.)
+    - Priority level (low, medium, high)
+    - Customer information and message counts
     
-    if priority and priority != "all":
-        query = query.filter(Ticket.priority == priority.upper())
-    
-    tickets = query.order_by(Ticket.created_at.desc()).all()
-    
-    result = []
-    for ticket in tickets:
-        customer = db.query(User).filter(User.id == ticket.customer_id).first()
-        message_count = db.query(Message).filter(Message.ticket_id == ticket.id).count()
+    Args:
+        status: Optional status filter (case-insensitive)
+        priority: Optional priority filter (case-insensitive)
+        assigned_only: If True, shows only tickets assigned to current agent
+        current_user: Authenticated agent user from JWT token
+        db: Database session dependency
         
-        result.append({
-            "id": ticket.id,
-            "subject": ticket.subject,
-            "status": ticket.status,
-            "priority": ticket.priority,
-            "created_at": ticket.created_at,
-            "updated_at": ticket.updated_at,
-            "customer_name": customer.full_name if customer else "Unknown",
-            "customer_email": customer.email if customer else "",
-            "message_count": message_count,
-            "agent_id": ticket.agent_id
-        })
+    Returns:
+        List[dict]: List of tickets with customer and message information
+        
+    Raises:
+        HTTPException: 500 if database operation fails
+    """
+    logger.info(f"Tickets requested by agent ID: {current_user.id}, status: {status}, priority: {priority}, assigned_only: {assigned_only}")
     
-    return result
+    try:
+        if assigned_only:
+            # Show only tickets assigned to this agent
+            query = db.query(Ticket).filter(Ticket.agent_id == current_user.id)
+        else:
+            # Show tickets assigned to this agent + unassigned tickets (available to pick up)
+            query = db.query(Ticket).filter(
+                or_(Ticket.agent_id == current_user.id, Ticket.agent_id.is_(None))
+            )
+        
+        # Validate and apply status filter
+        if status and status != "all":
+            status_sanitized = sanitize_string(status, 50).upper()
+            query = query.filter(Ticket.status == status_sanitized)
+            logger.debug(f"Applied status filter: {status_sanitized}")
+        
+        # Validate and apply priority filter
+        if priority and priority != "all":
+            priority_sanitized = sanitize_string(priority, 50).upper()
+            query = query.filter(Ticket.priority == priority_sanitized)
+            logger.debug(f"Applied priority filter: {priority_sanitized}")
+        
+        tickets = query.order_by(Ticket.created_at.desc()).all()
+        
+        result = []
+        for ticket in tickets:
+            customer = db.query(User).filter(User.id == ticket.customer_id).first()
+            message_count = db.query(Message).filter(Message.ticket_id == ticket.id).count()
+            
+            result.append({
+                "id": ticket.id,
+                "subject": ticket.subject,
+                "status": ticket.status,
+                "priority": ticket.priority,
+                "created_at": ticket.created_at,
+                "updated_at": ticket.updated_at,
+                "customer_name": customer.full_name if customer else "Unknown",
+                "customer_email": customer.email if customer else "",
+                "message_count": message_count,
+                "agent_id": ticket.agent_id
+            })
+        
+        logger.info(f"Retrieved {len(result)} tickets for agent ID: {current_user.id}")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error retrieving tickets for agent: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve tickets")
 
 @router.get("/tickets/{ticket_id}")
 def get_ticket_details(
@@ -228,54 +309,96 @@ def add_ticket_message(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Add agent message to ticket"""
-    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
-    if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket not found")
+    """
+    Add agent message to ticket with validation and notification handling.
     
-    message = Message(
-        id=str(uuid.uuid4()),
-        ticket_id=ticket.id,
-        sender_id=current_user.id,
-        sender_name=current_user.full_name,
-        content=message_data.content,
-        is_internal=message_data.is_internal or False
-    )
+    This endpoint allows agents to communicate with customers and add internal notes:
+    - Customer-facing messages (visible to customer)
+    - Internal notes (visible only to agents)
+    - Automatic notification generation
+    - Vendor notification for product-related issues
     
-    ticket.updated_at = datetime.utcnow()
-    
-    # Create notification for customer if not internal message
-    if not message_data.is_internal:
-        customer_notification = Notification(
-            user_id=ticket.customer_id,
-            title="New Response on Your Ticket",
-            message=f"Agent {current_user.full_name} replied to your support ticket #{ticket.id}",
-            type=NotificationType.TICKET,
-            read=False
-        )
-        db.add(customer_notification)
+    Args:
+        ticket_id: Unique identifier of the ticket
+        message_data: Message content and internal flag
+        current_user: Authenticated agent user from JWT token
+        db: Database session dependency
         
-        # Notify vendor if ticket is related to their product
-        if ticket.related_order_id:
-            from app.models.order import OrderItem
-            from app.models.product import Product
-            order_items = db.query(OrderItem).filter(OrderItem.order_id == ticket.related_order_id).all()
-            if order_items:
-                vendor_id = db.query(Product).filter(Product.id == order_items[0].product_id).first().vendor_id
-                if vendor_id:
-                    vendor_notification = Notification(
-                        user_id=vendor_id,
-                        title="Agent Response on Product Issue",
-                        message=f"Agent responded to customer complaint about your product (Ticket #{ticket.id})",
-                        type=NotificationType.TICKET,
-                        read=False
-                    )
-                    db.add(vendor_notification)
+    Returns:
+        dict: Success message confirming message addition
+        
+    Raises:
+        HTTPException: 400 if ticket_id format is invalid
+        HTTPException: 404 if ticket not found
+        HTTPException: 500 if database operation fails
+    """
+    logger.info(f"Message addition requested by agent ID: {current_user.id}, ticket: {ticket_id}")
     
-    db.add(message)
-    db.commit()
-    
-    return {"message": "Message added successfully"}
+    try:
+        # Validate ticket ID format
+        ticket_id_validated = sanitize_string(ticket_id, 100)
+        
+        ticket = db.query(Ticket).filter(Ticket.id == ticket_id_validated).first()
+        if not ticket:
+            logger.warning(f"Ticket not found: {ticket_id} for agent: {current_user.id}")
+            raise HTTPException(status_code=404, detail="Ticket not found")
+        
+        # Validate and sanitize message content
+        content_sanitized = sanitize_string(message_data.content, 2000)
+        if not content_sanitized:
+            raise HTTPException(status_code=400, detail="Message content is required")
+        
+        message = Message(
+            id=str(uuid.uuid4()),
+            ticket_id=ticket.id,
+            sender_id=current_user.id,
+            sender_name=current_user.full_name,
+            content=content_sanitized,
+            is_internal=message_data.is_internal or False
+        )
+        
+        ticket.updated_at = datetime.utcnow()
+        
+        # Create notification for customer if not internal message
+        if not message_data.is_internal:
+            customer_notification = Notification(
+                user_id=ticket.customer_id,
+                title="New Response on Your Ticket",
+                message=f"Agent {current_user.full_name} replied to your support ticket #{ticket.id}",
+                type=NotificationType.TICKET,
+                read=False
+            )
+            db.add(customer_notification)
+            
+            # Notify vendor if ticket is related to their product
+            if ticket.related_order_id:
+                from app.models.order import OrderItem
+                from app.models.product import Product
+                order_items = db.query(OrderItem).filter(OrderItem.order_id == ticket.related_order_id).all()
+                if order_items:
+                    vendor_id = db.query(Product).filter(Product.id == order_items[0].product_id).first().vendor_id
+                    if vendor_id:
+                        vendor_notification = Notification(
+                            user_id=vendor_id,
+                            title="Agent Response on Product Issue",
+                            message=f"Agent responded to customer complaint about your product (Ticket #{ticket.id})",
+                            type=NotificationType.TICKET,
+                            read=False
+                        )
+                        db.add(vendor_notification)
+        
+        db.add(message)
+        db.commit()
+        
+        logger.info(f"Message successfully added to ticket {ticket_id} by agent ID: {current_user.id}")
+        return {"message": "Message added successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error adding message to ticket: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to add message")
 
 # Customer Profile APIs
 @router.get("/customers")

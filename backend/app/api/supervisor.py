@@ -1,3 +1,16 @@
+"""Supervisor API endpoints for the Intellica Customer Support System.
+
+This module provides comprehensive supervisor-facing API endpoints including:
+- Dashboard with system-wide statistics and team performance
+- Ticket management and reassignment capabilities
+- Agent and customer management with status controls
+- Analytics and reporting for operational insights
+- Team oversight and performance monitoring
+
+All endpoints include proper authentication, validation, error handling,
+and logging for security and maintainability.
+"""
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
@@ -6,6 +19,8 @@ from app.services.auth import get_current_user
 from app.models.user import User, Agent, Customer, Supervisor
 from app.models.ticket import Ticket, TicketStatus, Message
 from app.models.order import Order, OrderItem
+from app.core.logging import logger
+from app.core.validation import sanitize_string, sanitize_search_query
 from typing import Optional
 from datetime import datetime, timedelta
 import uuid
@@ -17,100 +32,119 @@ def get_supervisor_dashboard(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get supervisor dashboard statistics"""
+    """
+    Retrieve comprehensive dashboard data for supervisor oversight.
+    
+    This endpoint provides system-wide statistics and team performance metrics including:
+    - Total ticket counts and status distribution
+    - Active agent counts and workload distribution
+    - Recent ticket activity across all agents
+    - Team performance metrics and analytics
+    - Chart data for visualization
+    
+    Args:
+        current_user: Authenticated supervisor user from JWT token
+        db: Database session dependency
+        
+    Returns:
+        dict: Dashboard data with stats, recent tickets, and team performance
+        
+    Raises:
+        HTTPException: 500 if database operation fails
+    """
+    logger.info(f"Supervisor dashboard requested by user ID: {current_user.id}")
+    
     try:
         # Total tickets across all agents
         total_tickets = db.query(Ticket).count()
-    except Exception:
+        
+        # Active agents count (only agents that are actually active)
+        active_agents = db.query(User).filter(
+            User.role == "AGENT",
+            User.is_active == True
+        ).count()
+        
+        # Tickets by status (using enum values)
+        open_tickets_count = db.query(Ticket).filter(Ticket.status == TicketStatus.OPEN).count()
+        in_progress_tickets_count = db.query(Ticket).filter(Ticket.status == TicketStatus.IN_PROGRESS).count() 
+        resolved_tickets_count = db.query(Ticket).filter(Ticket.status == TicketStatus.RESOLVED).count()
+        closed_tickets_count = db.query(Ticket).filter(Ticket.status == TicketStatus.CLOSED).count()
+        
+        # Show in_progress as "assigned" tickets
+        assigned_tickets = in_progress_tickets_count
+        
+        # Recent tickets (last 5) - using correct relationships
+        recent_tickets = db.query(Ticket).order_by(Ticket.created_at.desc()).limit(5).all()
+        recent_tickets_data = []
+        for ticket in recent_tickets:
+            # Get customer using correct foreign key
+            customer = db.query(User).join(Customer).filter(Customer.user_id == ticket.customer_id).first()
+            agent = None
+            if ticket.agent_id:
+                # Get agent using correct foreign key
+                agent = db.query(User).join(Agent).filter(Agent.user_id == ticket.agent_id).first()
+            
+            recent_tickets_data.append({
+                "id": ticket.id,
+                "subject": ticket.subject,
+                "status": ticket.status.value,
+                "priority": ticket.priority.value,
+                "customer_name": customer.full_name if customer else "Unknown",
+                "agent_name": agent.full_name if agent else "Unassigned",
+                "created_at": ticket.created_at
+            })
+        
+        # Team performance (real data only)
+        agents_query = db.query(User).filter(
+            User.role == "AGENT",
+            User.is_active == True
+        ).limit(5).all()
+        team_performance = []
+        for agent_user in agents_query:
+            # Count real assigned tickets
+            assigned_tickets_count = db.query(Ticket).filter(
+                Ticket.agent_id == agent_user.id,
+                Ticket.status.in_([TicketStatus.OPEN, TicketStatus.IN_PROGRESS])
+            ).count()
+            
+            # Count real resolved tickets
+            resolved_tickets_count = db.query(Ticket).filter(
+                Ticket.agent_id == agent_user.id,
+                Ticket.status.in_([TicketStatus.RESOLVED, TicketStatus.CLOSED])
+            ).count()
+            
+            team_performance.append({
+                "id": agent_user.id,
+                "name": agent_user.full_name,
+                "assigned_tickets": assigned_tickets_count,
+                "resolved_tickets": resolved_tickets_count
+            })
+        
+        dashboard_data = {
+            "stats": {
+                "total_tickets": total_tickets,
+                "active_agents": active_agents,
+                "open_tickets": open_tickets_count,
+                "assigned_tickets": assigned_tickets,
+                "resolved_tickets": resolved_tickets_count,
+                "closed_tickets": closed_tickets_count
+            },
+            "recent_tickets": recent_tickets_data,
+            "team_performance": team_performance,
+            "chart_data": [
+                {"name": "Open", "value": open_tickets_count},
+                {"name": "In Progress", "value": in_progress_tickets_count},
+                {"name": "Resolved", "value": resolved_tickets_count},
+                {"name": "Closed", "value": closed_tickets_count}
+            ]
+        }
+        
+        logger.info(f"Dashboard data successfully retrieved for supervisor ID: {current_user.id}")
+        return dashboard_data
+        
+    except Exception as e:
+        logger.error(f"Error retrieving supervisor dashboard data: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to retrieve dashboard data")
-    
-    # Active agents count (only agents that are actually active)
-    active_agents = db.query(User).filter(
-        User.role == "AGENT",
-        User.is_active == True
-    ).count()
-    
-    # Tickets by status (using enum values)
-    open_tickets_count = db.query(Ticket).filter(Ticket.status == TicketStatus.OPEN).count()
-    in_progress_tickets_count = db.query(Ticket).filter(Ticket.status == TicketStatus.IN_PROGRESS).count() 
-    resolved_tickets_count = db.query(Ticket).filter(Ticket.status == TicketStatus.RESOLVED).count()
-    closed_tickets_count = db.query(Ticket).filter(Ticket.status == TicketStatus.CLOSED).count()
-    
-    # Tickets resolved today
-    today = datetime.now().date()
-    resolved_today = db.query(Ticket).filter(
-        Ticket.status == TicketStatus.RESOLVED,
-        func.date(Ticket.updated_at) == today
-    ).count()
-    
-    # Show in_progress as "assigned" tickets
-    assigned_tickets = in_progress_tickets_count
-    
-    # Recent tickets (last 5) - using correct relationships
-    recent_tickets = db.query(Ticket).order_by(Ticket.created_at.desc()).limit(5).all()
-    recent_tickets_data = []
-    for ticket in recent_tickets:
-        # Get customer using correct foreign key
-        customer = db.query(User).join(Customer).filter(Customer.user_id == ticket.customer_id).first()
-        agent = None
-        if ticket.agent_id:
-            # Get agent using correct foreign key
-            agent = db.query(User).join(Agent).filter(Agent.user_id == ticket.agent_id).first()
-        
-        recent_tickets_data.append({
-            "id": ticket.id,
-            "subject": ticket.subject,
-            "status": ticket.status.value,
-            "priority": ticket.priority.value,
-            "customer_name": customer.full_name if customer else "Unknown",
-            "agent_name": agent.full_name if agent else "Unassigned",
-            "created_at": ticket.created_at
-        })
-    
-    # Team performance (real data only)
-    agents_query = db.query(User).filter(
-        User.role == "AGENT",
-        User.is_active == True
-    ).limit(5).all()
-    team_performance = []
-    for agent_user in agents_query:
-        # Count real assigned tickets
-        assigned_tickets = db.query(Ticket).filter(
-            Ticket.agent_id == agent_user.id,
-            Ticket.status.in_([TicketStatus.OPEN, TicketStatus.IN_PROGRESS])
-        ).count()
-        
-        # Count real resolved tickets
-        resolved_tickets = db.query(Ticket).filter(
-            Ticket.agent_id == agent_user.id,
-            Ticket.status.in_([TicketStatus.RESOLVED, TicketStatus.CLOSED])
-        ).count()
-        
-        team_performance.append({
-            "id": agent_user.id,
-            "name": agent_user.full_name,
-            "assigned_tickets": assigned_tickets,
-            "resolved_tickets": resolved_tickets
-        })
-    
-    return {
-        "stats": {
-            "total_tickets": total_tickets,
-            "active_agents": active_agents,
-            "open_tickets": open_tickets_count,
-            "assigned_tickets": assigned_tickets,
-            "resolved_tickets": resolved_tickets_count,
-            "closed_tickets": closed_tickets_count
-        },
-        "recent_tickets": recent_tickets_data,
-        "team_performance": team_performance,
-        "chart_data": [
-            {"name": "Open", "value": open_tickets_count},
-            {"name": "In Progress", "value": in_progress_tickets_count},
-            {"name": "Resolved", "value": resolved_tickets_count},
-            {"name": "Closed", "value": closed_tickets_count}
-        ]
-    }
 
 @router.get("/tickets")
 def get_all_tickets(
