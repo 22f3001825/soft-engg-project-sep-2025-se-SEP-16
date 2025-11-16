@@ -153,14 +153,7 @@ export const TicketDetails = () => {
     });
   };
 
-  const handleOpenCommunicationTools = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (onNavigate) {
-      onNavigate('comm');
-    }
-  };
+
 
   return (
     <AgentLayout>
@@ -183,12 +176,10 @@ export const TicketDetails = () => {
                 </div>
               </div>
             </div>
-            {onBack && (
-              <Button variant="outline" onClick={onBack} className="ml-auto hover:bg-primary/10 hover:border-primary/50 hover:text-primary">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Button>
-            )}
+            <Button variant="outline" onClick={() => navigate('/agent/dashboard')} className="ml-auto hover:bg-primary/10 hover:border-primary/50 hover:text-primary">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Button>
           </div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
@@ -278,7 +269,11 @@ export const TicketDetails = () => {
               </CardHeader>
               <CardContent className="space-y-4 pt-6">
                 <div className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 rounded-lg border-2 border-purple-500/20 p-4 text-sm leading-relaxed shadow-inner">
-                  Customer report indicates issue related to order {ticket.related_order?.id || 'N/A'}. Recommended next steps: verify payment, confirm shipment status, and follow up with the customer.
+                  {order ? (
+                    `Customer report indicates issue related to order ${order.id}. Recommended next steps: verify payment, confirm shipment status, and follow up with the customer.`
+                  ) : (
+                    'Customer report indicates general support inquiry. Recommended next steps: gather more information, understand the issue, and provide appropriate assistance.'
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <Button 
@@ -287,7 +282,7 @@ export const TicketDetails = () => {
                       type: 'approve',
                       data: {
                         title: 'Approve Refund',
-                        message: `Are you sure you want to approve the refund for ticket ${ticket.id}? The customer will be notified of this decision.`,
+                        message: `Are you sure you want to approve the refund of $${ticket.related_order?.total || '0.00'} for ticket ${ticket.id}? The customer will be notified of this decision.`,
                         action: handleApproveRefund
                       }
                     })}
@@ -369,11 +364,7 @@ export const TicketDetails = () => {
                 )}
                 <Button 
                   className="w-full justify-center bg-gradient-to-r from-primary to-accent text-white font-bold text-base py-6 text-lg shadow-lg hover:from-primary/90 hover:to-accent/90 transition-all"
-                  onClick={e => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (onNavigate && ticket) onNavigate('comm', { ticketId: ticket.id });
-                  }}
+                  onClick={() => navigate(`/agent/communication/${ticket.id}`)}
                 >
                   <MessageSquare className="h-5 w-5 mr-2" />
                   Open Communication Tools

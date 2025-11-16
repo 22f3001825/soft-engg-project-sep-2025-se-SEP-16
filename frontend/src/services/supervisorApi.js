@@ -2,7 +2,7 @@ const API_BASE_URL = 'http://localhost:8000/api/v1';
 
 class SupervisorApiService {
   getToken() {
-    return localStorage.getItem('intellica_token');
+    return localStorage.getItem('intellica_token_supervisor');
   }
 
   getHeaders() {
@@ -28,8 +28,8 @@ class SupervisorApiService {
     if (!response.ok) {
       if (response.status === 401) {
         // Token expired or invalid - redirect to login
-        localStorage.removeItem('intellica_token');
-        localStorage.removeItem('intellica_user');
+        localStorage.removeItem('intellica_token_supervisor');
+        localStorage.removeItem('intellica_user_supervisor');
         window.location.href = '/login';
         throw new Error('Unauthorized');
       }

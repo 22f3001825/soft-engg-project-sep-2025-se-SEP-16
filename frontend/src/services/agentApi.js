@@ -2,7 +2,8 @@ const API_BASE_URL = 'http://localhost:8000/api/v1';
 
 class AgentApiService {
   getToken() {
-    return localStorage.getItem('intellica_token');
+    // For agent API, specifically use agent token
+    return localStorage.getItem('intellica_token_agent');
   }
 
   getHeaders() {
@@ -28,8 +29,11 @@ class AgentApiService {
     if (!response.ok) {
       if (response.status === 401) {
         // Token expired or invalid - redirect to login
-        localStorage.removeItem('intellica_token');
-        localStorage.removeItem('intellica_user');
+        const roles = ['customer', 'agent', 'supervisor', 'vendor'];
+        roles.forEach(role => {
+          localStorage.removeItem(`intellica_token_${role}`);
+          localStorage.removeItem(`intellica_user_${role}`);
+        });
         window.location.href = '/login';
         return;
       }

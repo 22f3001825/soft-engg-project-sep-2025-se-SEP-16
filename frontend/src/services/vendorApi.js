@@ -2,7 +2,7 @@ const API_BASE_URL = 'http://localhost:8000/api/vendor';
 
 class VendorApiService {
   getToken() {
-    return localStorage.getItem('intellica_token');
+    return localStorage.getItem('intellica_token_vendor');
   }
 
   getHeaders() {
@@ -28,8 +28,8 @@ class VendorApiService {
     if (!response.ok) {
       if (response.status === 401) {
         // Token expired or invalid - redirect to login
-        localStorage.removeItem('intellica_token');
-        localStorage.removeItem('intellica_user');
+        localStorage.removeItem('intellica_token_vendor');
+        localStorage.removeItem('intellica_user_vendor');
         window.location.href = '/login';
         return;
       }
