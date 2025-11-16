@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from app.api import auth, customer, agent, supervisor, vendor
+from app.api import auth, customer, agent, supervisor, vendor, copilot, chat
 import os
 
 app = FastAPI(
@@ -13,7 +13,7 @@ app = FastAPI(
 # Set up CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -29,7 +29,8 @@ app.include_router(customer.router, prefix="/api/v1/customer", tags=["Customer"]
 app.include_router(agent.router, prefix="/api/v1/agent", tags=["Agent"])
 app.include_router(supervisor.router, prefix="/api/v1/supervisor", tags=["Supervisor"])
 app.include_router(vendor.router, prefix="/api/vendor", tags=["Vendor"])
-
+app.include_router(copilot.router, prefix="/api/v1", tags=["AI Copilot"])
+app.include_router(chat.router, prefix="/api/v1", tags=["Chat"])
 
 @app.get("/")
 async def root():
@@ -38,3 +39,5 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+
