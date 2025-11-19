@@ -34,7 +34,7 @@ export const AgentLayout = ({ actions, children }) => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 relative overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-custom relative overflow-hidden flex flex-col app-background">
       <header className="border-b border-sky-200/50 bg-gradient-to-r from-sky-50 via-blue-50 to-cyan-50 backdrop-blur supports-[backdrop-filter]:bg-sky-50/95 shadow-md flex-shrink-0">
         <div className="max-w-full mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">

@@ -62,7 +62,7 @@ export const AgentDashboard = () => {
       {active === 'dashboard' && (
         <div className="space-y-8 animate-slide-in-up">
           {/* Header */}
-          <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary via-primary/90 to-accent p-1 shadow-lg">
+          <div className="relative overflow-hidden rounded-xl p-1 shadow-lg" style={{background: 'white'}}>
             <div className="rounded-lg bg-background/95 backdrop-blur px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-md">
@@ -98,7 +98,7 @@ export const AgentDashboard = () => {
       )}
       {active === 'ticket' && (
         <div className="space-y-6 animate-slide-in-up">
-          <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary via-primary/90 to-accent p-1 shadow-lg">
+          <div className="relative overflow-hidden rounded-xl p-1 shadow-lg" style={{background: 'white'}}>
             <div className="rounded-lg bg-background/95 backdrop-blur px-6 py-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-md">

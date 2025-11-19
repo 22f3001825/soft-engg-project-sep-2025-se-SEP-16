@@ -47,7 +47,7 @@ export const SettingsPage = () => {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 relative overflow-hidden">
+    <div className="min-h-screen bg-custom relative overflow-hidden">
       {/* Animated Background Pattern */}
       <div className="absolute inset-0 opacity-8 pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-violet-400/25 via-fuchsia-400/20 to-rose-400/25 animate-pulse"></div>

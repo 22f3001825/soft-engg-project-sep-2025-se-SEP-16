@@ -116,7 +116,7 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-primary/5 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{backgroundColor: '#F4F9E9'}}>
       <div className="w-full max-w-6xl grid md:grid-cols-2 gap-8 items-center">
         {/* Left Side - Branding */}
         <div className="hidden md:flex flex-col space-y-6 text-left">
@@ -166,7 +166,7 @@ export const LoginPage = () => {
         </div>
 
         {/* Right Side - Login/Signup Form */}
-        <Card className="w-full shadow-xl">
+        <Card className="w-full shadow-xl border-2 border-slate-300">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <CardHeader>
               <div className="flex justify-center mb-4 md:hidden">

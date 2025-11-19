@@ -88,7 +88,7 @@ export const ResponseTemplates = () => {
     <AgentLayout>
       <div className="space-y-8">
       {/*Header */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary via-primary/90 to-accent p-1 shadow-lg">
+      <div className="relative overflow-hidden rounded-xl p-1 shadow-lg" style={{background: 'white'}}>
         <div className="rounded-lg bg-background/95 backdrop-blur px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-md">
@@ -106,7 +106,7 @@ export const ResponseTemplates = () => {
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr_320px] gap-8 animate-slide-in-up">
         {/* Left column: quick insert */}
-        <Card className="shadow-lg border-2 border-primary/10 bg-gradient-to-br from-background to-primary/5">
+        <Card className="shadow-lg border-2 border-primary/10">
           <CardHeader className="bg-gradient-to-r from-primary/10 to-accent/10 border-b">
             <CardTitle className="flex items-center gap-2 text-primary">
               <Zap className="h-5 w-5" />
@@ -205,7 +205,7 @@ export const ResponseTemplates = () => {
           </CardContent>
         </Card>
         {/* Right: Template filter, search, and list */}
-        <Card className="shadow-lg border-2 border-accent/10 bg-gradient-to-br from-background to-accent/5">
+        <Card className="shadow-lg border-2 border-accent/10">
           <CardHeader className="bg-gradient-to-r from-accent/10 to-transparent border-b">
             <CardTitle className="flex justify-between items-center">
               <span className="flex items-center gap-2 text-accent">

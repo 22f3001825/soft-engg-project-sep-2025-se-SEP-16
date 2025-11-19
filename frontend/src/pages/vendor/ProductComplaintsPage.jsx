@@ -33,7 +33,7 @@ const ProductComplaintsPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 flex items-center justify-center">
+      <div className="min-h-screen bg-custom flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading complaints...</p>
@@ -43,7 +43,7 @@ const ProductComplaintsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 relative overflow-hidden">
+    <div className="min-h-screen bg-custom relative overflow-hidden">
       {/* Animated Background Pattern */}
       <div className="absolute inset-0 opacity-8 pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-violet-400/25 via-fuchsia-400/20 to-rose-400/25 animate-pulse"></div>

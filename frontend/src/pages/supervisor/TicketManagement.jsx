@@ -160,7 +160,7 @@ export const TicketManagement = () => {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className="min-h-screen relative overflow-hidden" style={{backgroundColor: '#F4F9E9'}}>
       {/* 🌤️ Matching Background (same as SupervisorDashboard & TeamManagement) */}
       <div className="absolute inset-0 opacity-8 pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-violet-400/25 via-fuchsia-400/20 to-rose-400/25 animate-pulse"></div>
@@ -212,7 +212,7 @@ export const TicketManagement = () => {
               
               <Button
                 className="bg-gradient-to-r from-gray-100 via-white to-gray-200 text-gray-800 font-semibold border border-gray-300 shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all duration-300 whitespace-nowrap"
-                onClick={() => navigate("/supervisor/supervisor_customers")}
+                onClick={() => navigate("/supervisor/all_customers")}
               >
                 View All Customers
               </Button>
