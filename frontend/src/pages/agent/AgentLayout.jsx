@@ -18,7 +18,6 @@ export const AgentLayout = ({ actions, children }) => {
     if (path === '/agent/ticket') return 'ticket';
     if (path === '/agent/response_templates') return 'templates';
     if (path === '/agent/active_customers') return 'customer';
-    if (path === '/agent/settings') return 'settings';
     if (path === '/agent/profile') return 'profile';
     if (path.startsWith('/agent/tickets/')) return 'ticket';
     if (path.startsWith('/agent/ticket/') && path.includes('/communication')) return 'communication';
@@ -31,8 +30,7 @@ export const AgentLayout = ({ actions, children }) => {
     { key: 'dashboard', label: 'Dashboard', icon: LayoutGrid, path: '/agent/dashboard' },
     { key: 'ticket', label: 'Tickets', icon: FileText, path: '/agent/ticket' },
     { key: 'templates', label: 'Response Templates', icon: FileText, path: '/agent/response_templates' },
-    { key: 'customer', label: 'Active Customers', icon: IdCard, path: '/agent/active_customers' },
-    { key: 'settings', label: 'Settings', icon: Settings, path: '/agent/settings' }
+    { key: 'customer', label: 'Active Customers', icon: IdCard, path: '/agent/active_customers' }
   ];
 
   return (

@@ -11,9 +11,12 @@ All endpoints include proper authentication, validation, error handling,
 and logging for security and maintainability.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
+import uuid
+import os
+import shutil
 from app.database import get_db
 from app.models.user import User, Vendor, UserRole
 from app.models.product import Product, ProductComplaint
@@ -430,6 +433,69 @@ def get_vendor_profile(current_user: User = Depends(get_current_user), db: Sessi
     except Exception as e:
         logger.error(f"Error retrieving vendor profile: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to retrieve profile")
+
+@router.post("/profile/avatar")
+def upload_vendor_avatar(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Upload vendor profile avatar with validation.
+    
+    Args:
+        file: Avatar image file (multipart/form-data)
+        current_user: Authenticated vendor user from JWT token
+        db: Database session dependency
+        
+    Returns:
+        dict: Success confirmation with avatar URL
+    """
+    logger.info(f"Avatar upload requested by vendor ID: {current_user.id}")
+    
+    if current_user.role != UserRole.VENDOR:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    try:
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="File must have a filename")
+        
+        allowed_types = ['.png', '.jpg', '.jpeg']
+        file_ext = os.path.splitext(file.filename)[1].lower()
+        
+        if file_ext not in allowed_types:
+            raise HTTPException(status_code=400, detail=f"File type {file_ext} not allowed. Allowed: {', '.join(allowed_types)}")
+        
+        if file.size and file.size > 5 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="File size too large (max 5MB)")
+        
+        avatar_dir = "uploads/avatars"
+        os.makedirs(avatar_dir, exist_ok=True)
+        
+        filename = f"{current_user.id}_{uuid.uuid4().hex}{file_ext}"
+        file_path = os.path.join(avatar_dir, filename)
+        
+        try:
+            with open(file_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+        except (OSError, IOError) as e:
+            logger.error(f"Failed to save avatar file: {str(e)}")
+            raise HTTPException(status_code=500, detail="Failed to save avatar")
+        
+        avatar_url = f"/uploads/avatars/{filename}"
+        current_user.avatar = avatar_url
+        
+        db.commit()
+        
+        logger.info(f"Avatar successfully uploaded for vendor ID: {current_user.id}")
+        return {"message": "Avatar uploaded successfully", "avatar_url": avatar_url}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error uploading avatar: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to upload avatar")
 
 @router.put("/profile")
 def update_vendor_profile(

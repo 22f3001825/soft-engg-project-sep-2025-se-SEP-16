@@ -29,7 +29,7 @@ from app.core.logging import logger
 from app.core.validation import sanitize_string, sanitize_search_query, validate_uuid
 from app.schemas.agent import (
     TicketAssign, TicketStatusUpdate, MessageCreate, CustomerNote, 
-    CommunicationSend, TemplateCreate, TemplateUpdate, SettingsUpdate
+    CommunicationSend, TemplateCreate, TemplateUpdate
 )
 
 router = APIRouter()
@@ -513,38 +513,7 @@ def get_customer_details(
         "preferences": customer_profile.preferences if customer_profile else {}
     }
 
-# Settings APIs
-@router.get("/settings")
-def get_settings(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Get agent settings"""
-    agent = db.query(Agent).filter(Agent.user_id == current_user.id).first()
-    if not agent:
-        raise HTTPException(status_code=404, detail="Agent profile not found")
-    
-    # Return basic settings using existing fields
-    return {
-        "notifications": True,
-        "email_signature": f"Best regards,\n{current_user.full_name}\nIntellica Customer Support"
-    }
 
-@router.put("/settings")
-def update_settings(
-    settings_data: SettingsUpdate,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Update agent settings"""
-    agent = db.query(Agent).filter(Agent.user_id == current_user.id).first()
-    if not agent:
-        raise HTTPException(status_code=404, detail="Agent profile not found")
-    
-    # For now, just return success since we can't store preferences
-    # In a real implementation, we'd store these in a separate settings table
-    db.commit()
-    return {"message": "Settings updated successfully"}
 
 @router.put("/tickets/{ticket_id}/resolve")
 def resolve_ticket(

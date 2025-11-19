@@ -26,7 +26,7 @@ import { ResponseTemplates } from './pages/agent/ResponseTemplates';
 import { CustomerProfile } from './pages/agent/CustomerProfile';
 import { TicketDetails } from './pages/agent/TicketDetails';
 import { CommunicationTools } from './pages/agent/CommunicationTools';
-import { Settings as AgentSettings } from './pages/agent/Settings';
+
 
 // Other Portals
 
@@ -36,7 +36,7 @@ import { TeamManagement } from './pages/supervisor/TeamManagement';
 import { TicketManagement } from './pages/supervisor/TicketManagement';
 import { SupervisorCustomers } from './pages/supervisor/SupervisorCustomers';
 import { SupervisorProfile } from './pages/supervisor/SupervisorProfile';
-import { Settings } from './pages/supervisor/Settings';
+
 
 
 import { VendorDashboard } from './pages/vendor/VendorDashboard';
@@ -186,14 +186,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/agent/settings"
-              element={
-                <ProtectedRoute allowedRoles={['agent']}>
-                  <AgentSettings />
-                </ProtectedRoute>
-              }
-            />
+
 
 
             {/* Other Portal Routes */}
@@ -237,14 +230,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/supervisor/settings"
-              element={
-                <ProtectedRoute allowedRoles={['supervisor']}>
-                  <Settings />
-                </ProtectedRoute>
-              }
-            />
+
             <Route
               path="/vendor/dashboard"
               element={

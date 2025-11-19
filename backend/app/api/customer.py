@@ -1019,6 +1019,83 @@ def get_profile(
         logger.error(f"Error retrieving customer profile: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to retrieve profile")
 
+@router.post("/profile/avatar")
+def upload_avatar(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Upload customer profile avatar with validation.
+    
+    This endpoint allows customers to upload and update their profile picture:
+    - Validates file type (PNG, JPG, JPEG only)
+    - Limits file size to 5MB
+    - Creates secure file storage
+    - Updates user avatar URL in database
+    
+    Args:
+        file: Avatar image file (multipart/form-data)
+        current_user: Authenticated customer user from JWT token
+        db: Database session dependency
+        
+    Returns:
+        dict: Success confirmation with avatar URL
+        
+    Raises:
+        HTTPException: 400 if file validation fails
+        HTTPException: 500 if file storage operation fails
+    """
+    logger.info(f"Avatar upload requested by customer ID: {current_user.id}")
+    
+    try:
+        # Validate file has a name
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="File must have a filename")
+        
+        # Validate file type
+        allowed_types = ['.png', '.jpg', '.jpeg']
+        file_ext = os.path.splitext(file.filename)[1].lower()
+        
+        if file_ext not in allowed_types:
+            raise HTTPException(status_code=400, detail=f"File type {file_ext} not allowed. Allowed: {', '.join(allowed_types)}")
+        
+        # Validate file size (5MB max)
+        if file.size and file.size > 5 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="File size too large (max 5MB)")
+        
+        # Create avatars directory if it doesn't exist
+        avatar_dir = "uploads/avatars"
+        os.makedirs(avatar_dir, exist_ok=True)
+        
+        # Generate unique filename
+        filename = f"{current_user.id}_{uuid.uuid4().hex}{file_ext}"
+        file_path = os.path.join(avatar_dir, filename)
+        
+        # Save file
+        try:
+            with open(file_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+        except (OSError, IOError) as e:
+            logger.error(f"Failed to save avatar file: {str(e)}")
+            raise HTTPException(status_code=500, detail="Failed to save avatar")
+        
+        # Update user avatar URL
+        avatar_url = f"/uploads/avatars/{filename}"
+        current_user.avatar = avatar_url
+        
+        db.commit()
+        
+        logger.info(f"Avatar successfully uploaded for customer ID: {current_user.id}")
+        return {"message": "Avatar uploaded successfully", "avatar_url": avatar_url}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error uploading avatar: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to upload avatar")
+
 @router.put("/profile")
 def update_profile(
     profile_data: ProfileUpdate,
