@@ -8,7 +8,7 @@ import { ScrollArea } from '../../components/ui/scroll-area';
 import { storage } from './utils';
 import { Badge } from '../../components/ui/badge';
 import { Textarea } from '../../components/ui/textarea';
-import { Mail, MessageCircle, Send, Save, Copy, Clock, Activity, Link2, Zap, CheckCircle2, User, ExternalLink } from 'lucide-react';
+import { Mail, MessageCircle, Send, Save, Copy, Clock, Activity, Link2, Zap, CheckCircle2, User, ExternalLink, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import agentApi from '../../services/agentApi';
 
@@ -224,13 +224,13 @@ export const CommunicationTools = () => {
                     ) : (
                       <div className="space-y-4">
                         {ticketChat.messages.map((msg, index) => (
-                          <div key={msg.id} className={`flex gap-3 ${msg.sender_type === 'agent' ? 'justify-end' : 'justify-start'}`}>
+                          <div key={msg.id} className={`flex gap-3 ${msg.sender_type === 'agent' ? 'justify-end' : 'justify-start'} group`}>
                             {msg.sender_type !== 'agent' && (
                               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
                                 {selectedTicket?.customer?.name?.charAt(0) || 'C'}
                               </div>
                             )}
-                            <div className={`flex flex-col ${msg.sender_type === 'agent' ? 'items-end' : 'items-start'} max-w-[75%]`}>
+                            <div className={`flex flex-col ${msg.sender_type === 'agent' ? 'items-end' : 'items-start'} max-w-[75%] relative`}>
                               <div className={`rounded-2xl px-4 py-3 shadow-sm border ${
                                 msg.sender_type === 'agent'
                                   ? 'bg-gradient-to-r from-primary to-primary/90 text-white border-primary/20'
@@ -238,29 +238,50 @@ export const CommunicationTools = () => {
                               }`}>
                                 <p className="text-sm leading-relaxed">{msg.content}</p>
                                 {/* Display image attachments */}
-                                {msg.content.includes('Uploaded') && (msg.content.includes('.jpg') || msg.content.includes('.jpeg') || msg.content.includes('.png') || msg.content.includes('.webp')) ? (
+                                {(msg.content.includes('.jpg') || msg.content.includes('.jpeg') || msg.content.includes('.png') || msg.content.includes('.webp')) ? (
                                   <div className="mt-3">
-                                    {msg.content.match(/([^\s]+\.(jpg|jpeg|png|webp))/gi)?.map((filename, idx) => (
+                                    {msg.content.split(', ').filter(filename => filename.match(/\.(jpg|jpeg|png|webp)$/i)).map((filename, idx) => (
                                       <img 
                                         key={idx}
-                                        src={`http://localhost:8000/uploads/tickets/${ticketId}/${filename}`}
+                                        src={`http://localhost:8000/uploads/tickets/${ticketId}/${encodeURIComponent(filename)}`}
                                         alt={filename}
                                         className="max-w-xs rounded-lg border shadow-sm mt-2 cursor-pointer hover:shadow-lg transition-shadow"
                                         onError={(e) => {
                                           e.target.style.display = 'none';
                                         }}
-                                        onClick={() => window.open(`http://localhost:8000/uploads/tickets/${ticketId}/${filename}`, '_blank')}
+                                        onClick={() => window.open(`http://localhost:8000/uploads/tickets/${ticketId}/${encodeURIComponent(filename)}`, '_blank')}
                                       />
                                     ))}
                                   </div>
                                 ) : null}
                               </div>
-                              <p className="text-xs text-muted-foreground mt-1 px-1">
-                                {new Date(msg.created_at).toLocaleTimeString([], {
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </p>
+                              <div className={`flex items-center gap-2 mt-1 px-1 ${msg.sender_type === 'agent' ? 'justify-end' : 'justify-start'}`}>
+                                <p className="text-xs text-muted-foreground">
+                                  {new Date(msg.created_at).toLocaleTimeString([], {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </p>
+                                {msg.sender_type === 'agent' && (
+                                  <button
+                                    onClick={async () => {
+                                      if (window.confirm('Delete this message?')) {
+                                        try {
+                                          await agentApi.deleteTicketMessage(ticketId, msg.id);
+                                          await fetchTicketDetails(ticketId);
+                                          toast.success('Message deleted');
+                                        } catch (error) {
+                                          toast.error('Failed to delete message');
+                                        }
+                                      }
+                                    }}
+                                    className="w-5 h-5 bg-red-500/90 backdrop-blur-sm text-white rounded-full flex items-center justify-center transition-all duration-200 hover:bg-red-600 hover:scale-110 shadow-lg"
+                                    title="Delete message"
+                                  >
+                                    <Trash2 className="h-2.5 w-2.5" />
+                                  </button>
+                                )}
+                              </div>
                             </div>
                             {msg.sender_type === 'agent' && (
                               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">

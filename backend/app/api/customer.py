@@ -18,6 +18,7 @@ from typing import List, Optional
 from datetime import datetime, timedelta
 import uuid
 import os
+import re
 import shutil
 from sqlalchemy import func, extract
 
@@ -735,6 +736,28 @@ def get_ticket_details(
         logger.error(f"Error retrieving ticket details: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to retrieve ticket details")
 
+@router.delete("/tickets/{ticket_id}/messages/{message_id}")
+def delete_ticket_message(
+    ticket_id: str,
+    message_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a customer message from a ticket"""
+    message = db.query(Message).filter(
+        Message.id == message_id,
+        Message.ticket_id == ticket_id,
+        Message.sender_id == current_user.id  # Only allow customers to delete their own messages
+    ).first()
+    
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found or not authorized")
+    
+    db.delete(message)
+    db.commit()
+    
+    return {"message": "Message deleted successfully"}
+
 @router.post("/tickets/{ticket_id}/messages")
 def add_ticket_message(
     ticket_id: str,
@@ -872,12 +895,21 @@ def upload_ticket_attachment(
             if not file.filename:
                 raise HTTPException(status_code=400, detail="File must have a filename")
             
-            # Sanitize filename
-            filename_sanitized = sanitize_string(file.filename, 255)
+            # Clean filename and handle duplicates with counter
+            name, ext = os.path.splitext(file.filename)
+            # Remove dangerous characters but keep safe ones like parentheses
+            original_name = re.sub(r'[<>:"/\\|?*]', '', name.strip())[:200]
+            filename_clean = f"{original_name}{ext}"
+            
+            # Check for duplicates and add counter
+            counter = 1
+            while os.path.exists(os.path.join(upload_dir, filename_clean)):
+                filename_clean = f"{original_name} ({counter}){ext}"
+                counter += 1
             
             # Validate file type
             allowed_types = ['.png', '.jpg', '.jpeg', '.pdf', '.doc', '.docx', '.txt']
-            file_ext = os.path.splitext(filename_sanitized)[1].lower()
+            file_ext = os.path.splitext(filename_clean)[1].lower()
             
             if file_ext not in allowed_types:
                 raise HTTPException(status_code=400, detail=f"File type {file_ext} not allowed. Allowed: {', '.join(allowed_types)}")
@@ -886,17 +918,17 @@ def upload_ticket_attachment(
             if file.size and file.size > 10 * 1024 * 1024:
                 raise HTTPException(status_code=400, detail="File size too large (max 10MB)")
             
-            # Save file with sanitized name
-            file_path = os.path.join(upload_dir, filename_sanitized)
+            # Save file with clean name
+            file_path = os.path.join(upload_dir, filename_clean)
             try:
                 with open(file_path, "wb") as buffer:
                     shutil.copyfileobj(file.file, buffer)
             except (OSError, IOError) as e:
-                logger.error(f"Failed to save file {filename_sanitized}: {str(e)}")
+                logger.error(f"Failed to save file {filename_clean}: {str(e)}")
                 raise HTTPException(status_code=500, detail="Failed to save file")
             
             uploaded_files.append({
-                "filename": filename_sanitized,
+                "filename": filename_clean,
                 "size": file.size or 0,
                 "path": file_path
             })
@@ -907,7 +939,7 @@ def upload_ticket_attachment(
             ticket_id=ticket.id,
             sender_id=current_user.id,
             sender_name=current_user.full_name,
-            content=f"Uploaded {len(uploaded_files)} attachment(s): {', '.join([f['filename'] for f in uploaded_files])}"
+            content=', '.join([f['filename'] for f in uploaded_files])
         )
         
         db.add(message)

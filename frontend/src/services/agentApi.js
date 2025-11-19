@@ -83,6 +83,12 @@ class AgentApiService {
     });
   }
 
+  async deleteTicketMessage(ticketId, messageId) {
+    return this.request(`/agent/tickets/${ticketId}/messages/${messageId}`, {
+      method: 'DELETE'
+    });
+  }
+
   // Customers
   async getCustomers(search = null) {
     const params = new URLSearchParams();

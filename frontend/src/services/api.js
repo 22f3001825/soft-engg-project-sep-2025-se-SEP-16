@@ -103,6 +103,12 @@ class ApiService {
     });
   }
 
+  async deleteTicketMessage(ticketId, messageId) {
+    return this.request(`/customer/tickets/${ticketId}/messages/${messageId}`, {
+      method: 'DELETE'
+    });
+  }
+
   // Profile
   async getProfile() {
     return this.request('/customer/profile');
