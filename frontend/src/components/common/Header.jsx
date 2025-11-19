@@ -261,9 +261,14 @@ export const Header = () => {
           <div className="flex items-center space-x-3">
             {/* Enhanced Vendor Badge */}
             {user?.role === 'vendor' && (
-              <div className={`hidden md:flex items-center px-4 py-2 ${roleColors.bg} rounded-full ${roleColors.border} border shadow-sm hover:shadow-md transition-all duration-200`}>
-                <div className={`w-2 h-2 rounded-full ${roleColors.text.replace('text-', 'bg-')} mr-2 animate-pulse`} />
-                <span className={`text-sm font-semibold ${roleColors.text}`}>{user?.company_name || 'Vendor'}</span>
+              <div className={`hidden md:flex items-center space-x-2 px-4 py-2 ${roleColors.bg} rounded-full ${roleColors.border} border shadow-sm hover:shadow-md transition-all duration-200 group cursor-pointer`}>
+                <Avatar className="h-7 w-7 ring-2 ring-white shadow-sm group-hover:ring-blue-300 transition-all">
+                  <AvatarImage src={user?.avatar} alt={user?.name} />
+                  <AvatarFallback className={`text-xs ${roleColors.avatar} font-semibold`}>
+                    {user?.name?.charAt(0)?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <span className={`text-sm font-semibold ${roleColors.text}`}>{user?.company_name || user?.name}</span>
               </div>
             )}
 

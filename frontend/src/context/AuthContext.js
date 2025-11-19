@@ -94,7 +94,9 @@ export const AuthProvider = ({ children }) => {
           name: data.user.full_name,
           full_name: data.user.full_name,
           role: data.user.role.toLowerCase(),
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.user.full_name}`,
+          avatar: data.user.avatar 
+            ? (data.user.avatar.startsWith('http') ? data.user.avatar : `http://localhost:8000${data.user.avatar}`)
+            : `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.user.full_name}`,
           company_name: companyName
         };
 
@@ -135,7 +137,9 @@ export const AuthProvider = ({ children }) => {
           name: data.user.full_name,
           full_name: data.user.full_name,
           role: data.user.role.toLowerCase(),
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.user.full_name}`
+          avatar: data.user.avatar 
+            ? (data.user.avatar.startsWith('http') ? data.user.avatar : `http://localhost:8000${data.user.avatar}`)
+            : `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.user.full_name}`
         };
 
         setUser(userData);
@@ -159,6 +163,13 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  const updateUser = (updatedUser) => {
+    setUser(updatedUser);
+    if (updatedUser && updatedUser.role) {
+      localStorage.setItem(`intellica_user_${updatedUser.role}`, JSON.stringify(updatedUser));
+    }
+  };
+
 
 
   const value = {
@@ -166,6 +177,7 @@ export const AuthProvider = ({ children }) => {
     login,
     signup,
     logout,
+    updateUser,
     loading,
     isAuthenticated: !!user
   };

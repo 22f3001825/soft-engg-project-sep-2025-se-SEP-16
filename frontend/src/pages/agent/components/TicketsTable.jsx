@@ -52,7 +52,7 @@ export const TicketsTable = ({ tickets = [], onOpen }) => {
               <TableHead className="font-semibold">Status</TableHead>
               <TableHead className="font-semibold">Priority</TableHead>
               <TableHead className="font-semibold">Created</TableHead>
-              <TableHead className="font-semibold">AI Summary</TableHead>
+
               <TableHead className="text-right font-semibold">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -69,9 +69,7 @@ export const TicketsTable = ({ tickets = [], onOpen }) => {
                   <Badge className={getPriorityColor(t.priority)}>{t.priority}</Badge>
                 </TableCell>
                 <TableCell>{new Date(t.created_at).toLocaleString()}</TableCell>
-                <TableCell className="max-w-xs truncate text-sm text-muted-foreground">
-                  Customer sees issue related to order {t.related_order_id || 'N/A'}
-                </TableCell>
+
                 <TableCell className="text-right">
                   <Button size="sm" variant="outline" onClick={() => onOpen?.(t)} className="hover:bg-primary hover:text-primary-foreground transition-colors">
                     Open <ArrowUpRight className="h-4 w-4 ml-1" />

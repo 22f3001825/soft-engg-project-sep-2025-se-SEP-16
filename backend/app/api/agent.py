@@ -29,7 +29,7 @@ from app.core.logging import logger
 from app.core.validation import sanitize_string, sanitize_search_query, validate_uuid
 from app.schemas.agent import (
     TicketAssign, TicketStatusUpdate, MessageCreate, CustomerNote, 
-    CommunicationSend, TemplateCreate, TemplateUpdate, SettingsUpdate
+    CommunicationSend, TemplateCreate, TemplateUpdate
 )
 
 router = APIRouter()
@@ -302,6 +302,32 @@ def update_ticket_status(
         db.rollback()
         raise HTTPException(status_code=500, detail="Failed to update ticket status")
 
+@router.delete("/tickets/{ticket_id}/messages/{message_id}")
+def delete_ticket_message(
+    ticket_id: str,
+    message_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a message from a ticket"""
+    message = db.query(Message).filter(
+        Message.id == message_id,
+        Message.ticket_id == ticket_id
+    ).first()
+    
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+    
+    # Only allow deletion of own messages or if agent is assigned to ticket
+    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+    if message.sender_id != current_user.id and ticket.agent_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this message")
+    
+    db.delete(message)
+    db.commit()
+    
+    return {"message": "Message deleted successfully"}
+
 @router.post("/tickets/{ticket_id}/messages")
 def add_ticket_message(
     ticket_id: str,
@@ -487,38 +513,7 @@ def get_customer_details(
         "preferences": customer_profile.preferences if customer_profile else {}
     }
 
-# Settings APIs
-@router.get("/settings")
-def get_settings(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Get agent settings"""
-    agent = db.query(Agent).filter(Agent.user_id == current_user.id).first()
-    if not agent:
-        raise HTTPException(status_code=404, detail="Agent profile not found")
-    
-    # Return basic settings using existing fields
-    return {
-        "notifications": True,
-        "email_signature": f"Best regards,\n{current_user.full_name}\nIntellica Customer Support"
-    }
 
-@router.put("/settings")
-def update_settings(
-    settings_data: SettingsUpdate,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Update agent settings"""
-    agent = db.query(Agent).filter(Agent.user_id == current_user.id).first()
-    if not agent:
-        raise HTTPException(status_code=404, detail="Agent profile not found")
-    
-    # For now, just return success since we can't store preferences
-    # In a real implementation, we'd store these in a separate settings table
-    db.commit()
-    return {"message": "Settings updated successfully"}
 
 @router.put("/tickets/{ticket_id}/resolve")
 def resolve_ticket(

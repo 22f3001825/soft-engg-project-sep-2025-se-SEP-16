@@ -66,6 +66,32 @@ class VendorApiService {
     });
   }
 
+  async uploadAvatar(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const token = this.getToken();
+    const response = await fetch(`${API_BASE_URL}/profile/avatar`, {
+      method: 'POST',
+      headers: {
+        ...(token && { 'Authorization': `Bearer ${token}` })
+      },
+      body: formData
+    });
+    
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('intellica_token_vendor');
+        localStorage.removeItem('intellica_user_vendor');
+        window.location.href = '/login';
+        return;
+      }
+      throw new Error(`Avatar upload failed: ${response.status}`);
+    }
+    
+    return response.json();
+  }
+
   // Settings
   async getSettings() {
     return this.request('/settings');

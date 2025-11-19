@@ -83,6 +83,12 @@ class AgentApiService {
     });
   }
 
+  async deleteTicketMessage(ticketId, messageId) {
+    return this.request(`/agent/tickets/${ticketId}/messages/${messageId}`, {
+      method: 'DELETE'
+    });
+  }
+
   // Customers
   async getCustomers(search = null) {
     const params = new URLSearchParams();
@@ -95,17 +101,7 @@ class AgentApiService {
     return this.request(`/agent/customers/${customerId}`);
   }
 
-  // Settings
-  async getSettings() {
-    return this.request('/agent/settings');
-  }
 
-  async updateSettings(settingsData) {
-    return this.request('/agent/settings', {
-      method: 'PUT',
-      body: JSON.stringify(settingsData)
-    });
-  }
 
   async resolveTicket(ticketId) {
     return this.request(`/agent/tickets/${ticketId}/resolve`, {

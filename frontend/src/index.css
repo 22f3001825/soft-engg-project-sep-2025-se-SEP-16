@@ -21,7 +21,7 @@ code {
 @layer base {
     :root {
         /* Professional Blue-Gray Color System for Customer Service Platform */
-        --background: 0 0% 98%;
+        --background: #F4F9E9;
         --foreground: 210 29% 24%;
         
         /* Card backgrounds */
@@ -117,8 +117,60 @@ code {
         @apply border-border;
     }
     body {
-        @apply bg-background text-foreground;
+        @apply text-foreground;
     }
+    
+    .app-background {
+        background-color: #F4F9E9 !important;
+    }
+    
+    /* Remove animated background overlays */
+    .absolute.inset-0, .absolute.top-0.left-0, .animate-pulse {
+        display: none !important;
+    }
+    
+    /* Navbar color only */
+    header {
+        background: #153243 !important;
+        background-color: #153243 !important;
+        border-color: #153243 !important;
+    }
+    
+    header span, header a, header p {
+        color: white !important;
+    }
+    
+    header svg, header .lucide {
+        color: white !important;
+        fill: white !important;
+    }
+    
+    header button, header .button {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        color: white !important;
+        backdrop-filter: blur(4px) !important;
+    }
+    
+    header button:hover, header .button:hover {
+        background: rgba(255, 255, 255, 0.1) !important;
+        border-color: rgba(255, 255, 255, 0.25) !important;
+    }
+    
+    header .bg-gradient-to-r {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+    
+    /* Notification badge visibility */
+    header .badge, header [class*="badge"], header .absolute {
+        background: #ff4444 !important;
+        color: white !important;
+        z-index: 999 !important;
+        display: block !important;
+    }
+    
+
 }
 
 @layer utilities {
@@ -136,6 +188,10 @@ code {
     
     .text-balance {
         text-wrap: balance;
+    }
+    
+    .bg-custom {
+        background-color: #F4F9E9;
     }
 }
 

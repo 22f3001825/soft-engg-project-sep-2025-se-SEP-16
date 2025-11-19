@@ -18,7 +18,6 @@ export const AgentLayout = ({ actions, children }) => {
     if (path === '/agent/ticket') return 'ticket';
     if (path === '/agent/response_templates') return 'templates';
     if (path === '/agent/active_customers') return 'customer';
-    if (path === '/agent/settings') return 'settings';
     if (path === '/agent/profile') return 'profile';
     if (path.startsWith('/agent/tickets/')) return 'ticket';
     if (path.startsWith('/agent/ticket/') && path.includes('/communication')) return 'communication';
@@ -31,12 +30,11 @@ export const AgentLayout = ({ actions, children }) => {
     { key: 'dashboard', label: 'Dashboard', icon: LayoutGrid, path: '/agent/dashboard' },
     { key: 'ticket', label: 'Tickets', icon: FileText, path: '/agent/ticket' },
     { key: 'templates', label: 'Response Templates', icon: FileText, path: '/agent/response_templates' },
-    { key: 'customer', label: 'Active Customers', icon: IdCard, path: '/agent/active_customers' },
-    { key: 'settings', label: 'Settings', icon: Settings, path: '/agent/settings' }
+    { key: 'customer', label: 'Active Customers', icon: IdCard, path: '/agent/active_customers' }
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 relative overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-custom relative overflow-hidden flex flex-col app-background">
       <header className="border-b border-sky-200/50 bg-gradient-to-r from-sky-50 via-blue-50 to-cyan-50 backdrop-blur supports-[backdrop-filter]:bg-sky-50/95 shadow-md flex-shrink-0">
         <div className="max-w-full mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">

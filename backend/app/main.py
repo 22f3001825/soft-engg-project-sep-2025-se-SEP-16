@@ -20,8 +20,9 @@ app.add_middleware(
 )
 
 # Mount static files for uploads
-if os.path.exists("uploads"):
-    app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+if not os.path.exists("uploads"):
+    os.makedirs("uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Include routers
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
@@ -39,5 +40,26 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+@app.get("/test-uploads")
+async def test_uploads():
+    """Test endpoint to check if uploads directory is accessible"""
+    uploads_path = "uploads"
+    if os.path.exists(uploads_path):
+        files = []
+        for root, dirs, filenames in os.walk(uploads_path):
+            for filename in filenames[:5]:
+                relative_path = os.path.relpath(os.path.join(root, filename), uploads_path)
+                files.append(relative_path)
+        return {
+            "uploads_exists": True,
+            "sample_files": files,
+            "uploads_path": os.path.abspath(uploads_path)
+        }
+    else:
+        return {
+            "uploads_exists": False,
+            "uploads_path": os.path.abspath(uploads_path)
+        }
 
 

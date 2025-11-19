@@ -8,7 +8,7 @@ import { Badge } from '../../components/ui/badge';
 import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
-import { ArrowLeft, Send, Paperclip, Calendar, Package, MessageSquare, Clock, User } from 'lucide-react';
+import { ArrowLeft, Send, Paperclip, Calendar, Package, MessageSquare, Clock, User, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 import apiService from '../../services/api';
@@ -112,7 +112,7 @@ export const TicketDetailsPage = () => {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 relative overflow-hidden">
+    <div className="min-h-screen bg-custom relative overflow-hidden">
       {/* Animated Background Pattern */}
       <div className="absolute inset-0 opacity-8 pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-violet-400/25 via-fuchsia-400/20 to-rose-400/25 animate-pulse"></div>
@@ -157,7 +157,7 @@ export const TicketDetailsPage = () => {
                 <div className="space-y-6">
                   {/* Messages */}
                   {ticketData.messages.map((message, index) => (
-                    <div key={message.id} className={`flex gap-4 animate-slide-in-up ${message.sender_type === 'customer' ? 'justify-end' : 'justify-start'}`}>
+                    <div key={message.id} className={`flex gap-4 animate-slide-in-up ${message.sender_type === 'customer' ? 'justify-end' : 'justify-start'} group`}>
                       {message.sender_type !== 'customer' && (
                         <Avatar className="h-10 w-10 flex-shrink-0">
                           <AvatarImage src={undefined} />
@@ -166,27 +166,47 @@ export const TicketDetailsPage = () => {
                           </AvatarFallback>
                         </Avatar>
                       )}
-                      <div className={`flex-1 space-y-2 max-w-[70%] ${message.sender_type === 'customer' ? 'flex flex-col items-end' : ''}`}>
+                      <div className={`flex-1 space-y-2 max-w-[70%] ${message.sender_type === 'customer' ? 'flex flex-col items-end' : ''} relative`}>
                         <div className={`flex items-center gap-2 ${message.sender_type === 'customer' ? 'flex-row-reverse' : ''}`}>
                           <span className="font-semibold text-foreground">{message.sender_name}</span>
                           <span className="text-xs text-muted-foreground">
                             {new Date(message.timestamp).toLocaleString()}
                           </span>
+                          {message.sender_type === 'customer' && (
+                            <button
+                              onClick={async () => {
+                                if (window.confirm('Delete this message?')) {
+                                  try {
+                                    await apiService.deleteTicketMessage(ticketId, message.id);
+                                    fetchTicketDetails();
+                                    toast.success('Message deleted');
+                                  } catch (error) {
+                                    toast.error('Failed to delete message');
+                                  }
+                                }
+                              }}
+                              className="w-6 h-6 bg-red-500/90 backdrop-blur-sm text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-red-600 hover:scale-110 shadow-lg"
+                              title="Delete message"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          )}
                         </div>
                         <div className={`rounded-2xl p-4 shadow-sm ${message.sender_type === 'customer' ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : 'bg-gradient-to-r from-gray-50 to-slate-100 text-gray-900'}`}>
                           <p className="leading-relaxed">{message.content}</p>
                           {/* Display image attachments */}
-                          {message.content.includes('Uploaded') && (message.content.includes('.jpg') || message.content.includes('.jpeg') || message.content.includes('.png') || message.content.includes('.webp')) ? (
+                          {(message.content.includes('.jpg') || message.content.includes('.jpeg') || message.content.includes('.png') || message.content.includes('.webp')) ? (
                             <div className="mt-3">
-                              {message.content.match(/([^\s]+\.(jpg|jpeg|png|webp))/gi)?.map((filename, idx) => (
+                              {message.content.split(', ').filter(filename => filename.match(/\.(jpg|jpeg|png|webp)$/i)).map((filename, idx) => (
                                 <img 
                                   key={idx}
-                                  src={`http://localhost:8000/uploads/tickets/${ticketData.id}/${filename}`}
+                                  src={`http://localhost:8000/uploads/tickets/${ticketData.id}/${encodeURIComponent(filename)}`}
                                   alt={filename}
-                                  className="max-w-xs rounded-lg border shadow-sm"
+                                  className="max-w-xs rounded-lg border shadow-sm cursor-pointer hover:shadow-lg transition-shadow"
                                   onError={(e) => {
                                     e.target.style.display = 'none';
                                   }}
+                                  onClick={() => window.open(`http://localhost:8000/uploads/tickets/${ticketData.id}/${encodeURIComponent(filename)}`, '_blank')}
                                 />
                               ))}
                             </div>
@@ -250,6 +270,7 @@ export const TicketDetailsPage = () => {
                               toast.error('Failed to upload files');
                             }
                           }
+                          e.target.value = ''; // Reset file input
                         }}
                       />
                       <Button onClick={handleSendMessage} disabled={!newMessage.trim()} className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white shadow-lg hover:shadow-xl transition-all duration-300">
@@ -304,24 +325,7 @@ export const TicketDetailsPage = () => {
               </CardContent>
             </Card>
 
-            <Card className="group relative overflow-hidden bg-white/95 backdrop-blur-sm border-2 border-white/20 shadow-xl hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-300 hover:-translate-y-1">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <CardHeader className="relative">
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <Paperclip className="h-5 w-5 text-purple-600" />
-                  Attachments
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative">
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 mx-auto bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center mb-3">
-                    <Paperclip className="h-8 w-8 text-purple-600" />
-                  </div>
-                  <p className="text-sm text-gray-600 font-medium">No attachments yet</p>
-                  <p className="text-xs text-gray-500 mt-1">You can attach files when replying</p>
-                </div>
-              </CardContent>
-            </Card>
+
           </div>
         </div>
       </main>

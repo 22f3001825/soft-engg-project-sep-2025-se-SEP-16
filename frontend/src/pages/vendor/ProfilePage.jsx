@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import vendorApi from '../../services/vendorApi';
 import { Header } from '../../components/common/Header';
@@ -10,12 +10,15 @@ import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import { Camera, Upload, Save, Edit, Phone, Mail, MessageSquare, User, MapPin, Calendar, Award } from 'lucide-react';
+import { toast } from 'sonner';
 
 export const ProfilePage = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
+  const fileInputRef = useRef(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingContact, setIsEditingContact] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const [profileData, setProfileData] = useState({
     businessName: '',
     vendorId: '',
@@ -84,12 +87,48 @@ export const ProfilePage = () => {
     }
   };
 
-  const handleLogoUpload = (event) => {
+  const handleAvatarUpload = async (event) => {
     const file = event.target.files[0];
-    if (file) {
-      // Handle logo upload logic
-      setProfileData({...profileData, logo: URL.createObjectURL(file)});
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/png', 'image/jpg', 'image/jpeg'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Please select a PNG, JPG, or JPEG image');
+      return;
     }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size must be less than 5MB');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const response = await vendorApi.uploadAvatar(file);
+      
+      // Update user context with new avatar
+      const avatarUrl = response.avatar_url.startsWith('http') 
+        ? response.avatar_url 
+        : `http://localhost:8000${response.avatar_url}`;
+      const updatedUser = { ...user, avatar: avatarUrl };
+      updateUser(updatedUser);
+      
+      // Update profile data
+      setProfileData({...profileData, logo: avatarUrl});
+      
+      toast.success('Avatar updated successfully!');
+    } catch (error) {
+      console.error('Avatar upload failed:', error);
+      toast.error('Failed to upload avatar. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
   };
 
   if (loading) {
@@ -104,7 +143,7 @@ export const ProfilePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/40 to-pink-50/60 relative overflow-hidden">
+    <div className="min-h-screen bg-custom relative overflow-hidden">
       {/* Animated Background Pattern */}
       <div className="absolute inset-0 opacity-8 pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-violet-400/25 via-fuchsia-400/20 to-rose-400/25 animate-pulse"></div>
@@ -326,47 +365,50 @@ export const ProfilePage = () => {
             <CardHeader className="relative">
               <CardTitle className="flex items-center gap-2">
                 <Camera className="h-5 w-5 text-purple-600" />
-                Company Logo
+Profile Avatar
               </CardTitle>
             </CardHeader>
             <CardContent className="relative">
               <div className="flex flex-col items-center space-y-4">
-                <div className="relative">
+                <div className="relative group">
                   <Avatar className="h-32 w-32 ring-4 ring-purple-100 hover:ring-purple-200 transition-all duration-300">
-                    <AvatarImage src={profileData.logo} alt="Company Logo" />
+                    <AvatarImage src={user?.avatar} alt="Profile Avatar" />
                     <AvatarFallback className="text-4xl bg-gradient-to-br from-purple-500 to-pink-500 text-white">
-                      A
+                      {user?.name?.charAt(0) || 'V'}
                     </AvatarFallback>
                   </Avatar>
-                  <label htmlFor="logo-upload" className="absolute -bottom-2 -right-2">
-                    <Button
-                      size="sm"
-                      className="h-10 w-10 rounded-full p-0 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl transition-all duration-300 group/btn"
-                      variant="secondary"
-                      asChild
-                    >
-                      <span>
-                        <Camera className="h-5 w-5 group-hover/btn:scale-110 transition-transform duration-300" />
-                      </span>
-                    </Button>
-                  </label>
+                  <Button
+                    onClick={triggerFileInput}
+                    disabled={uploading}
+                    size="sm"
+                    className="absolute -bottom-2 -right-2 h-10 w-10 rounded-full p-0 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl transition-all duration-300"
+                  >
+                    {uploading ? (
+                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    ) : (
+                      <Camera className="h-5 w-5" />
+                    )}
+                  </Button>
                   <input
-                    id="logo-upload"
+                    ref={fileInputRef}
                     type="file"
-                    accept="image/*"
-                    onChange={handleLogoUpload}
+                    accept="image/png,image/jpg,image/jpeg"
+                    onChange={handleAvatarUpload}
                     className="hidden"
                   />
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground mb-2">
-                    Upload your company logo (PNG, JPG up to 5MB)
+                    Upload your profile avatar (PNG, JPG up to 5MB)
                   </p>
-                  <Button variant="outline" className="hover:bg-purple-50 hover:border-purple-300 transition-colors duration-200" asChild>
-                    <label htmlFor="logo-upload" className="cursor-pointer">
-                      <Upload className="h-4 w-4 mr-2" />
-                      Choose File
-                    </label>
+                  <Button 
+                    onClick={triggerFileInput}
+                    disabled={uploading}
+                    variant="outline" 
+                    className="hover:bg-purple-50 hover:border-purple-300 transition-colors duration-200"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {uploading ? 'Uploading...' : 'Change Avatar'}
                   </Button>
                 </div>
               </div>

@@ -103,6 +103,12 @@ class ApiService {
     });
   }
 
+  async deleteTicketMessage(ticketId, messageId) {
+    return this.request(`/customer/tickets/${ticketId}/messages/${messageId}`, {
+      method: 'DELETE'
+    });
+  }
+
   // Profile
   async getProfile() {
     return this.request('/customer/profile');
@@ -113,6 +119,35 @@ class ApiService {
       method: 'PUT',
       body: JSON.stringify(profileData)
     });
+  }
+
+  async uploadAvatar(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const token = this.getToken();
+    const response = await fetch(`${API_BASE_URL}/customer/profile/avatar`, {
+      method: 'POST',
+      headers: {
+        ...(token && { 'Authorization': `Bearer ${token}` })
+      },
+      body: formData
+    });
+    
+    if (!response.ok) {
+      if (response.status === 401) {
+        const roles = ['customer', 'agent', 'supervisor', 'vendor'];
+        roles.forEach(role => {
+          localStorage.removeItem(`intellica_token_${role}`);
+          localStorage.removeItem(`intellica_user_${role}`);
+        });
+        window.location.href = '/login';
+        return;
+      }
+      throw new Error(`Avatar upload failed: ${response.status}`);
+    }
+    
+    return response.json();
   }
 
   // Settings

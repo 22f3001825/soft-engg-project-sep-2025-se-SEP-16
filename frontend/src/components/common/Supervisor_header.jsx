@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell, User, LogOut, Settings, Menu } from 'lucide-react';
+import { Bell, User, LogOut, Menu } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { notifications } from '../../data/dummyData';
 import { Button } from '../ui/button';
@@ -99,14 +99,7 @@ export const Header = () => {
                   <span>Profile</span>
                 </DropdownMenuItem>
 
-                {/* Settings */}
-                <DropdownMenuItem
-                  onClick={() => navigate('/supervisor/settings')}
-                  className="cursor-pointer"
-                >
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </DropdownMenuItem>
+
 
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -152,18 +145,7 @@ export const Header = () => {
                     <span>Profile</span>
                   </Button>
 
-                  {/* Settings (Mobile) */}
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      navigate('/supervisor/settings');
-                      setMobileMenuOpen(false);
-                    }}
-                    className="flex items-center space-x-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md"
-                  >
-                    <Settings className="h-4 w-4" />
-                    <span>Settings</span>
-                  </Button>
+
                 </nav>
               </SheetContent>
             </Sheet>
