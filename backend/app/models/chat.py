@@ -2,7 +2,11 @@ from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import enum
+import uuid
 from app.models.base import Base
+
+def generate_uuid():
+    return str(uuid.uuid4())
 
 class ConversationStatus(str, enum.Enum):
     ACTIVE = "ACTIVE"
@@ -19,7 +23,7 @@ class MessageSender(str, enum.Enum):
 class ChatConversation(Base):
     __tablename__ = "chat_conversations"
 
-    id = Column(String, primary_key=True, default=str(func.gen_random_uuid()))
+    id = Column(String, primary_key=True, default=generate_uuid)
     customer_id = Column(Integer, ForeignKey("customers.user_id"), nullable=False)
     session_id = Column(String(200), nullable=True)  # Browser session tracking
     
@@ -50,7 +54,7 @@ class ChatConversation(Base):
 class ChatMessage(Base):
     __tablename__ = "chat_messages"
 
-    id = Column(String, primary_key=True, default=str(func.gen_random_uuid()))
+    id = Column(String, primary_key=True, default=generate_uuid)
     conversation_id = Column(String, ForeignKey("chat_conversations.id"), nullable=False)
     sender_type = Column(Enum(MessageSender), nullable=False)
     sender_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # NULL for AI/SYSTEM
