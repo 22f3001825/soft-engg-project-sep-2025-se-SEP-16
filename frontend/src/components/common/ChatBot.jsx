@@ -1,17 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
+import { MessageCircle, X, Send, Loader2, ThumbsUp, ThumbsDown, AlertCircle, ExternalLink } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card } from '../ui/card';
 import { Avatar, AvatarFallback } from '../ui/avatar';
-import { aiChatHistory } from '../../data/dummyData';
 import { useAuth } from '../../context/AuthContext';
+import chatApi from '../../services/chatApi';
+import { toast } from 'react-hot-toast';
 
 export const ChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState(aiChatHistory);
+  const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [conversationId, setConversationId] = useState(null);
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [serviceAvailable, setServiceAvailable] = useState(true);
   const messagesEndRef = useRef(null);
   const { user } = useAuth();
 
@@ -23,55 +27,126 @@ export const ChatBot = () => {
     scrollToBottom();
   }, [messages]);
 
-  const getAIResponse = (userMessage) => {
-    const lowerMessage = userMessage.toLowerCase();
-    
-    // Simple keyword-based responses
-    if (lowerMessage.includes('order') || lowerMessage.includes('track')) {
-      return "I can help you track your orders! Please visit the 'My Orders' section where you can see all your order details and tracking information.";
-    } else if (lowerMessage.includes('refund') || lowerMessage.includes('return')) {
-      return "To initiate a refund or return, please go to 'My Orders', select the order you want to return, and click on 'Return/Refund'. Our team will process your request within 2-3 business days.";
-    } else if (lowerMessage.includes('ticket') || lowerMessage.includes('support')) {
-      return "You can create a support ticket from the 'My Tickets' page. Our support team typically responds within 24 hours. You can also track all your existing tickets there.";
-    } else if (lowerMessage.includes('delivery') || lowerMessage.includes('shipping')) {
-      return "Standard delivery takes 5-7 business days. You can track your shipment in real-time from the 'Track Order' page. We also offer express shipping options at checkout.";
-    } else if (lowerMessage.includes('payment') || lowerMessage.includes('pay')) {
-      return "We accept all major credit cards, debit cards, PayPal, and digital wallets. All transactions are secured with 256-bit encryption.";
-    } else if (lowerMessage.includes('hi') || lowerMessage.includes('hello') || lowerMessage.includes('hey')) {
-      return `Hello ${user?.name}! How can I assist you today? I can help you with orders, refunds, tracking, support tickets, and general inquiries.`;
-    } else if (lowerMessage.includes('thank')) {
-      return "You're welcome! Is there anything else I can help you with today?";
-    } else {
-      return "I understand you need help. For specific issues, I recommend creating a support ticket in the 'My Tickets' section where our team can provide detailed assistance. You can also check our FAQ section for common questions.";
+  // Initialize conversation when chat is opened
+  useEffect(() => {
+    if (isOpen && !conversationId && !isInitializing) {
+      initializeChat();
+    }
+  }, [isOpen]);
+
+  const initializeChat = async () => {
+    setIsInitializing(true);
+    try {
+      // Check service health first
+      const health = await chatApi.checkHealth();
+      setServiceAvailable(health.rag_available);
+
+      // Start conversation with greeting
+      const greeting = `Hello! I'm here to help you with orders, returns, refunds, and any questions you have.`;
+      const conversation = await chatApi.startChat(greeting);
+      
+      setConversationId(conversation.id);
+      
+      // Load chat history
+      const history = await chatApi.getChatHistory(conversation.id);
+      setMessages(history.map(msg => ({
+        id: msg.id,
+        sender: msg.sender_type.toLowerCase(),
+        message: msg.content,
+        timestamp: msg.created_at,
+        sources: msg.rag_sources,
+        messageId: msg.id
+      })));
+    } catch (error) {
+      console.error('Failed to initialize chat:', error);
+      setServiceAvailable(false);
+      // Add fallback message
+      setMessages([{
+        id: 'fallback-1',
+        sender: 'ai',
+        message: "Hello! I'm currently experiencing technical difficulties. You can still create a support ticket for assistance.",
+        timestamp: new Date().toISOString()
+      }]);
+    } finally {
+      setIsInitializing(false);
     }
   };
 
-  const handleSendMessage = () => {
-    if (!inputMessage.trim()) return;
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || !conversationId) return;
 
-    // Add user message
-    const userMessage = {
-      id: messages.length + 1,
+    const userMessageText = inputMessage;
+    setInputMessage('');
+
+    // Add user message to UI immediately
+    const tempUserMsg = {
+      id: `temp-user-${Date.now()}`,
       sender: 'customer',
-      message: inputMessage,
+      message: userMessageText,
       timestamp: new Date().toISOString()
     };
-
-    setMessages(prev => [...prev, userMessage]);
-    setInputMessage('');
+    setMessages(prev => [...prev, tempUserMsg]);
     setIsTyping(true);
 
-    // Simulate AI typing and response
-    setTimeout(() => {
-      const aiResponse = {
-        id: messages.length + 2,
+    try {
+      // Send message to backend RAG service
+      const response = await chatApi.sendMessage(conversationId, userMessageText);
+      
+      // Add AI response
+      const aiMessage = {
+        id: response.id,
         sender: 'ai',
-        message: getAIResponse(inputMessage),
-        timestamp: new Date().toISOString()
+        message: response.content,
+        timestamp: response.created_at,
+        sources: response.rag_sources,
+        messageId: response.id
       };
-      setMessages(prev => [...prev, aiResponse]);
+      
+      setMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      toast.error('Failed to send message. Please try again.');
+      
+      // Add error message
+      setMessages(prev => [...prev, {
+        id: `error-${Date.now()}`,
+        sender: 'ai',
+        message: "I'm sorry, I'm having trouble processing your request right now. Please try again or create a support ticket.",
+        timestamp: new Date().toISOString(),
+        isError: true
+      }]);
+    } finally {
       setIsTyping(false);
-    }, 1000 + Math.random() * 1000);
+    }
+  };
+
+  const handleFeedback = async (messageId, isPositive) => {
+    try {
+      await chatApi.submitFeedback(messageId, isPositive ? 5 : 1);
+      toast.success('Thank you for your feedback!');
+      
+      // Update message to show feedback was given
+      setMessages(prev => prev.map(msg => 
+        msg.messageId === messageId 
+          ? { ...msg, feedbackGiven: true }
+          : msg
+      ));
+    } catch (error) {
+      console.error('Failed to submit feedback:', error);
+    }
+  };
+
+  const handleEscalate = async () => {
+    if (!conversationId) return;
+    
+    try {
+      await chatApi.escalateToAgent(conversationId, 'Customer requested human assistance');
+      toast.success('Your conversation has been escalated to our support team. They will contact you shortly.');
+      setIsOpen(false);
+    } catch (error) {
+      console.error('Failed to escalate:', error);
+      toast.error('Failed to escalate. Please create a support ticket instead.');
+    }
   };
 
   const handleKeyPress = (e) => {
@@ -122,42 +197,119 @@ export const ChatBot = () => {
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex ${msg.sender === 'customer' ? 'justify-end' : 'justify-start'} animate-slide-in-up`}
-              >
-                <div
-                  className={`max-w-[80%] rounded-lg p-3 ${
-                    msg.sender === 'customer'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary text-secondary-foreground'
-                  }`}
-                >
-                  <p className="text-sm">{msg.message}</p>
-                  <p className="text-xs mt-1 opacity-70">
-                    {new Date(msg.timestamp).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </p>
+            {isInitializing ? (
+              <div className="flex justify-center items-center h-full">
+                <div className="text-center">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-primary" />
+                  <p className="text-sm text-muted-foreground">Connecting to AI assistant...</p>
                 </div>
               </div>
-            ))}
-            
-            {isTyping && (
-              <div className="flex justify-start">
-                <div className="bg-secondary rounded-lg p-3 flex items-center space-x-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="text-sm text-muted-foreground">AI is typing...</span>
-                </div>
-              </div>
+            ) : (
+              <>
+                {messages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`flex ${msg.sender === 'customer' ? 'justify-end' : 'justify-start'} animate-slide-in-up`}
+                  >
+                    <div
+                      className={`max-w-[80%] rounded-lg p-3 ${
+                        msg.sender === 'customer'
+                          ? 'bg-primary text-primary-foreground'
+                          : msg.isError
+                          ? 'bg-red-50 text-red-900 border border-red-200'
+                          : 'bg-secondary text-secondary-foreground'
+                      }`}
+                    >
+                      <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                      
+                      {/* Show sources if available */}
+                      {msg.sources && msg.sources.length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-gray-300">
+                          <p className="text-xs opacity-70 flex items-center gap-1">
+                            <ExternalLink className="h-3 w-3" />
+                            Sources: {msg.sources.length} knowledge base article(s)
+                          </p>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center justify-between mt-1">
+                        <p className="text-xs opacity-70">
+                          {new Date(msg.timestamp).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                        
+                        {/* Feedback buttons for AI messages */}
+                        {msg.sender === 'ai' && msg.messageId && !msg.feedbackGiven && !msg.isError && (
+                          <div className="flex gap-1 ml-2">
+                            <button
+                              onClick={() => handleFeedback(msg.messageId, true)}
+                              className="p-1 hover:bg-white/20 rounded transition-colors"
+                              title="Helpful"
+                            >
+                              <ThumbsUp className="h-3 w-3" />
+                            </button>
+                            <button
+                              onClick={() => handleFeedback(msg.messageId, false)}
+                              className="p-1 hover:bg-white/20 rounded transition-colors"
+                              title="Not helpful"
+                            >
+                              <ThumbsDown className="h-3 w-3" />
+                            </button>
+                          </div>
+                        )}
+                        
+                        {msg.feedbackGiven && (
+                          <span className="text-xs opacity-50 ml-2">✓ Feedback sent</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {isTyping && (
+                  <div className="flex justify-start">
+                    <div className="bg-secondary rounded-lg p-3 flex items-center space-x-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="text-sm text-muted-foreground">AI is typing...</span>
+                    </div>
+                  </div>
+                )}
+                
+                {!serviceAvailable && messages.length > 0 && (
+                  <div className="flex justify-center">
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start gap-2 max-w-[90%]">
+                      <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                      <div className="text-xs text-yellow-800">
+                        <p className="font-medium">Limited functionality</p>
+                        <p>AI service is currently unavailable. You can still create a support ticket.</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
             <div ref={messagesEndRef} />
           </div>
 
           {/* Input */}
-          <div className="p-4 border-t">
+          <div className="p-4 border-t bg-gray-50">
+            {/* Escalate button */}
+            {conversationId && messages.length > 2 && (
+              <div className="mb-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleEscalate}
+                  className="w-full text-xs"
+                >
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  Need human help? Escalate to agent
+                </Button>
+              </div>
+            )}
+            
             <div className="flex space-x-2">
               <Input
                 value={inputMessage}
@@ -165,15 +317,20 @@ export const ChatBot = () => {
                 onKeyPress={handleKeyPress}
                 placeholder="Type your message..."
                 className="flex-1"
+                disabled={isInitializing || !conversationId}
               />
               <Button
                 onClick={handleSendMessage}
                 size="icon"
-                disabled={!inputMessage.trim()}
+                disabled={!inputMessage.trim() || isInitializing || !conversationId}
               >
                 <Send className="h-4 w-4" />
               </Button>
             </div>
+            
+            <p className="text-xs text-muted-foreground mt-2 text-center">
+              Powered by RAG AI • Press Enter to send
+            </p>
           </div>
         </Card>
       )}

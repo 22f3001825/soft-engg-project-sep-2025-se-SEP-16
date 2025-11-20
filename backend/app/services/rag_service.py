@@ -287,13 +287,17 @@ class RAGService:
 Your role is to help customers with returns, refunds, and general support questions.
 Always be professional, friendly, and customer-focused."""
 
+        # Build conversation section
+        conversation_section = ""
+        if history_text:
+            conversation_section = f"Previous Conversation:\n{history_text}\n\n"
+        
         prompt = f"""Answer the customer's question using the provided knowledge base information.
 
 Knowledge Base Context:
 {context_text}
 
-{("Previous Conversation:\n" + history_text + "\n") if history_text else ""}
-Customer Question: {query}
+{conversation_section}Customer Question: {query}
 
 Instructions:
 - Provide a clear, helpful, and professional response
