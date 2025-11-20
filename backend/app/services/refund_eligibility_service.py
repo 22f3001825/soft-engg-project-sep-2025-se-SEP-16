@@ -47,6 +47,9 @@ class RefundEligibilityService:
         # Calculate days since purchase
         days_since_purchase = (datetime.now() - purchase_date).days
         
+        # Build additional info line for query
+        query_additional_info = f"- Additional info: {additional_info}" if additional_info else ""
+        
         # Build eligibility query
         query = f"""
 I need to check if I'm eligible for a refund:
@@ -56,7 +59,7 @@ I need to check if I'm eligible for a refund:
 - Product condition: {condition}
 - Original packaging: {'Yes' if has_packaging else 'No'}
 - Receipt available: {'Yes' if has_receipt else 'No'}
-{f'- Additional info: {additional_info}' if additional_info else ''}
+{query_additional_info}
 
 Am I eligible for a refund?
 """
@@ -89,6 +92,9 @@ Am I eligible for a refund?
 Analyze the customer's situation against company policies and provide a clear eligibility decision.
 Be fair, accurate, and customer-friendly in your assessment."""
         
+        # Build additional info line
+        additional_info_line = f"- Additional info: {additional_info}" if additional_info else ""
+        
         prompt = f"""Based on the company's return and refund policies, determine if this customer is eligible for a refund.
 
 Company Policies:
@@ -101,7 +107,7 @@ Customer Situation:
 - Condition: {condition}
 - Original packaging: {'Yes' if has_packaging else 'No'}
 - Receipt: {'Yes' if has_receipt else 'No'}
-{f'- Additional info: {additional_info}' if additional_info else ''}
+{additional_info_line}
 
 Provide your assessment in the following format:
 

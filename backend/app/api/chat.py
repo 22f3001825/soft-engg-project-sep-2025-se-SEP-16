@@ -27,19 +27,19 @@ class StartChatRequest(BaseModel):
 
 
 class ChatMessageRequest(BaseModel):
-    conversation_id: int
+    conversation_id: str
     message: str
     category_filter: Optional[str] = None
 
 
 class ChatFeedbackRequest(BaseModel):
-    message_id: int
+    message_id: str
     rating: int  # 1-5
     feedback_text: Optional[str] = None
 
 
 class EscalateRequest(BaseModel):
-    conversation_id: int
+    conversation_id: str
     reason: str
 
 
@@ -217,7 +217,7 @@ async def send_message(
 
 @router.get("/history/{conversation_id}", response_model=List[ChatMessageResponse])
 async def get_chat_history(
-    conversation_id: int,
+    conversation_id: str,
     limit: int = 50,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
