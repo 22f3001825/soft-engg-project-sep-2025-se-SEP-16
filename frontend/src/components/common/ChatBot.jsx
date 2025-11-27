@@ -37,26 +37,21 @@ export const ChatBot = () => {
   const initializeChat = async () => {
     setIsInitializing(true);
     try {
-      // Check service health first
-      const health = await chatApi.checkHealth();
-      setServiceAvailable(health.rag_available);
+      // Assume service is available and start conversation directly
+      setServiceAvailable(true);
 
-      // Start conversation with greeting
-      const greeting = `Hello! I'm here to help you with orders, returns, refunds, and any questions you have.`;
-      const conversation = await chatApi.startChat(greeting);
+      // Start conversation WITHOUT initial message (no greeting parameter)
+      const conversation = await chatApi.startChat();
       
       setConversationId(conversation.id);
       
-      // Load chat history
-      const history = await chatApi.getChatHistory(conversation.id);
-      setMessages(history.map(msg => ({
-        id: msg.id,
-        sender: msg.sender_type.toLowerCase(),
-        message: msg.content,
-        timestamp: msg.created_at,
-        sources: msg.rag_sources,
-        messageId: msg.id
-      })));
+      // Add only the AI greeting message (don't send it to backend)
+      setMessages([{
+        id: 'greeting-1',
+        sender: 'ai',
+        message: "Hello! I'm here to help you with orders, returns, refunds, and any questions you have.",
+        timestamp: new Date().toISOString()
+      }]);
     } catch (error) {
       console.error('Failed to initialize chat:', error);
       setServiceAvailable(false);
@@ -97,7 +92,7 @@ export const ChatBot = () => {
         id: response.id,
         sender: 'ai',
         message: response.content,
-        timestamp: response.created_at,
+        timestamp: new Date().toISOString(), // Use current time
         sources: response.rag_sources,
         messageId: response.id
       };
@@ -209,15 +204,15 @@ export const ChatBot = () => {
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
-                    className={`flex ${msg.sender === 'customer' ? 'justify-end' : 'justify-start'} animate-slide-in-up`}
+                    className={`flex w-full ${msg.sender === 'ai' ? 'justify-start' : 'justify-end'} animate-slide-in-up`}
                   >
                     <div
                       className={`max-w-[80%] rounded-lg p-3 ${
-                        msg.sender === 'customer'
-                          ? 'bg-primary text-primary-foreground'
-                          : msg.isError
-                          ? 'bg-red-50 text-red-900 border border-red-200'
-                          : 'bg-secondary text-secondary-foreground'
+                        msg.sender === 'ai'
+                          ? msg.isError
+                            ? 'bg-red-50 text-red-900 border border-red-200'
+                            : 'bg-blue-500 text-white'
+                          : 'bg-gray-200 text-gray-900'
                       }`}
                     >
                       <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
@@ -270,9 +265,14 @@ export const ChatBot = () => {
                 
                 {isTyping && (
                   <div className="flex justify-start">
-                    <div className="bg-secondary rounded-lg p-3 flex items-center space-x-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span className="text-sm text-muted-foreground">AI is typing...</span>
+                    <div className="bg-secondary rounded-lg p-3">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="text-sm text-muted-foreground">AI is thinking...</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground opacity-70">
+                        This may take 20-30 seconds
+                      </p>
                     </div>
                   </div>
                 )}
