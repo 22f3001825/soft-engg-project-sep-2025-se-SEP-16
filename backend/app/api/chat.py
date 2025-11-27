@@ -125,6 +125,12 @@ class EscalateRequest(BaseModel):
     reason: str
 
 
+class CloseConversationRequest(BaseModel):
+    conversation_id: str
+    satisfaction_rating: Optional[int] = None  # 1-5
+    feedback: Optional[str] = None
+
+
 class ImageVerificationRequest(BaseModel):
     product_description: str
     order_id: Optional[int] = None
@@ -356,7 +362,7 @@ async def escalate_to_agent(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Escalate conversation to human agent
+    Escalate conversation to human agent and generate summary
     """
     conversation = db.query(ChatConversation).filter(
         ChatConversation.id == request.conversation_id,
@@ -365,6 +371,31 @@ async def escalate_to_agent(
     
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    # Generate conversation summary before escalating
+    messages = db.query(ChatMessage).filter(
+        ChatMessage.conversation_id == conversation.id
+    ).order_by(ChatMessage.created_at.asc()).all()
+    
+    if messages:
+        rag_service = get_rag_service()
+        customer_context = _load_customer_context(current_user.id, db)
+        
+        message_list = [
+            {"role": msg.sender_type, "content": msg.content}
+            for msg in messages
+        ]
+        
+        summary_result = rag_service.generate_conversation_summary(
+            message_list,
+            customer_context
+        )
+        
+        if summary_result.get('success'):
+            conversation.summary = summary_result.get('summary', '')
+            conversation.summary_generated_at = datetime.utcnow()
+            if summary_result.get('main_issue'):
+                conversation.topic = summary_result.get('main_issue')
     
     conversation.status = "ESCALATED"
     conversation.escalation_reason = request.reason
@@ -379,7 +410,7 @@ async def escalate_to_agent(
     db.add(system_msg)
     db.commit()
     
-    return {"success": True, "message": "Conversation escalated to agent"}
+    return {"success": True, "message": "Conversation escalated to agent", "summary": conversation.summary}
 
 
 @router.post("/feedback")
@@ -412,6 +443,180 @@ async def submit_feedback(
     db.commit()
     
     return {"success": True, "message": "Feedback submitted"}
+
+
+@router.post("/conversations/{conversation_id}/generate-summary")
+async def generate_conversation_summary(
+    conversation_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Generate AI summary for a conversation
+    """
+    try:
+        # Verify conversation belongs to user
+        conversation = db.query(ChatConversation).filter(
+            ChatConversation.id == conversation_id,
+            ChatConversation.customer_id == current_user.id
+        ).first()
+        
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        
+        # Get all messages
+        messages = db.query(ChatMessage).filter(
+            ChatMessage.conversation_id == conversation_id
+        ).order_by(ChatMessage.created_at.asc()).all()
+        
+        if not messages:
+            raise HTTPException(status_code=400, detail="No messages to summarize")
+        
+        # Load customer context
+        customer_context = _load_customer_context(current_user.id, db)
+        
+        # Generate summary
+        rag_service = get_rag_service()
+        
+        message_list = [
+            {"role": msg.sender_type, "content": msg.content}
+            for msg in messages
+        ]
+        
+        summary_result = rag_service.generate_conversation_summary(
+            message_list,
+            customer_context
+        )
+        
+        if summary_result.get('success'):
+            # Store summary in database
+            conversation.summary = summary_result.get('summary', '')
+            conversation.summary_generated_at = datetime.utcnow()
+            
+            # Update topic if detected
+            if summary_result.get('main_issue'):
+                conversation.topic = summary_result.get('main_issue')
+            
+            db.commit()
+            
+            return {
+                "success": True,
+                "conversation_id": conversation_id,
+                "summary": summary_result.get('summary'),
+                "key_points": summary_result.get('key_points', []),
+                "main_issue": summary_result.get('main_issue'),
+                "resolution_status": summary_result.get('resolution_status'),
+                "action_items": summary_result.get('action_items', []),
+                "topics": summary_result.get('topics', [])
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to generate summary")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating summary: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate summary")
+
+
+@router.get("/conversations/{conversation_id}/summary")
+async def get_conversation_summary(
+    conversation_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get existing summary for a conversation
+    """
+    conversation = db.query(ChatConversation).filter(
+        ChatConversation.id == conversation_id,
+        ChatConversation.customer_id == current_user.id
+    ).first()
+    
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    if not conversation.summary:
+        raise HTTPException(status_code=404, detail="No summary available for this conversation")
+    
+    return {
+        "conversation_id": conversation_id,
+        "summary": conversation.summary,
+        "topic": conversation.topic,
+        "generated_at": conversation.summary_generated_at,
+        "status": conversation.status
+    }
+
+
+@router.post("/conversations/{conversation_id}/close")
+async def close_conversation(
+    conversation_id: str,
+    request: CloseConversationRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Close/resolve a conversation and generate summary
+    """
+    try:
+        conversation = db.query(ChatConversation).filter(
+            ChatConversation.id == conversation_id,
+            ChatConversation.customer_id == current_user.id
+        ).first()
+        
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        
+        # Generate summary if not already generated
+        if not conversation.summary:
+            messages = db.query(ChatMessage).filter(
+                ChatMessage.conversation_id == conversation_id
+            ).order_by(ChatMessage.created_at.asc()).all()
+            
+            if messages:
+                rag_service = get_rag_service()
+                customer_context = _load_customer_context(current_user.id, db)
+                
+                message_list = [
+                    {"role": msg.sender_type, "content": msg.content}
+                    for msg in messages
+                ]
+                
+                summary_result = rag_service.generate_conversation_summary(
+                    message_list,
+                    customer_context
+                )
+                
+                if summary_result.get('success'):
+                    conversation.summary = summary_result.get('summary', '')
+                    conversation.summary_generated_at = datetime.utcnow()
+                    if summary_result.get('main_issue'):
+                        conversation.topic = summary_result.get('main_issue')
+        
+        # Update conversation status
+        conversation.status = "RESOLVED"
+        conversation.ended_at = datetime.utcnow()
+        
+        # Store satisfaction rating if provided
+        if request.satisfaction_rating:
+            conversation.satisfaction_rating = request.satisfaction_rating
+        if request.feedback:
+            conversation.feedback = request.feedback
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": "Conversation closed successfully",
+            "summary": conversation.summary,
+            "topic": conversation.topic
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error closing conversation: {e}")
+        raise HTTPException(status_code=500, detail="Failed to close conversation")
 
 
 @router.post("/verify-image")
@@ -533,7 +738,7 @@ async def check_refund_eligibility(
 ):
     """
     Check if customer is eligible for refund based on policies
-    Uses RAG to analyze against company policies
+    Uses RAG to analyze against company policies and generates customer-friendly summary
     """
     try:
         eligibility_service = get_eligibility_service()
@@ -552,9 +757,18 @@ async def check_refund_eligibility(
             additional_info=request.additional_info
         )
         
+        # Generate customer-friendly summary
+        rag_service = get_rag_service()
+        summary = rag_service.generate_refund_eligibility_summary(
+            result,
+            request.product_category,
+            request.reason
+        )
+        
         return {
             "success": True,
-            "eligibility": result
+            "eligibility": result,
+            "summary": summary
         }
         
     except Exception as e:

@@ -436,6 +436,207 @@ Response:"""
             "timestamp": datetime.utcnow().isoformat()
         }
     
+    def generate_conversation_summary(
+        self,
+        messages: List[Dict[str, str]],
+        customer_context: Optional[Dict] = None
+    ) -> Dict[str, any]:
+        """
+        Generate AI summary of a conversation
+        
+        Args:
+            messages: List of conversation messages
+            customer_context: Customer's order and refund data
+            
+        Returns:
+            Dictionary with summary and metadata
+        """
+        if not self.llm_service.check_health():
+            return {
+                "success": False,
+                "summary": "Unable to generate summary - AI service unavailable",
+                "key_points": [],
+                "resolution_status": "UNKNOWN"
+            }
+        
+        # Build conversation text
+        conversation_text = ""
+        for msg in messages:
+            role = msg.get('role', msg.get('sender_type', 'unknown'))
+            content = msg.get('content', '')
+            conversation_text += f"{role}: {content}\n"
+        
+        # Build customer context summary
+        context_summary = ""
+        if customer_context and customer_context.get('has_orders'):
+            if customer_context.get('pending_refunds'):
+                context_summary += f"\nCustomer has {len(customer_context['pending_refunds'])} pending refund(s)."
+            if customer_context.get('pending_returns'):
+                context_summary += f"\nCustomer has {len(customer_context['pending_returns'])} pending return(s)."
+        
+        system_prompt = """You are an AI assistant that summarizes customer support conversations.
+Create concise, informative summaries that capture the main issue, actions taken, and resolution status."""
+        
+        prompt = f"""Summarize this customer support conversation.
+
+Conversation:
+{conversation_text}
+{context_summary}
+
+Provide a JSON response with:
+1. summary: A 2-3 sentence summary of the conversation
+2. key_points: Array of 3-5 key points from the conversation
+3. main_issue: The primary issue or question (one phrase)
+4. resolution_status: RESOLVED, PENDING, or ESCALATED
+5. action_items: Array of any action items for the customer (if any)
+6. topics: Array of main topics discussed (e.g., "refund", "order_status", "return_policy")
+
+Format as valid JSON only."""
+        
+        result = self.llm_service.generate(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            temperature=0.3,
+            max_tokens=600
+        )
+        
+        if not result['success']:
+            return {
+                "success": False,
+                "summary": "Unable to generate summary",
+                "key_points": [],
+                "resolution_status": "UNKNOWN"
+            }
+        
+        try:
+            import json
+            summary_data = json.loads(result['text'])
+            summary_data['success'] = True
+            summary_data['model_used'] = result.get('model', 'unknown')
+            return summary_data
+        except:
+            # Fallback if JSON parsing fails
+            return {
+                "success": True,
+                "summary": result['text'][:500],
+                "key_points": ["Conversation summary generated"],
+                "main_issue": "Customer inquiry",
+                "resolution_status": "PENDING",
+                "action_items": [],
+                "topics": ["general"],
+                "model_used": result.get('model', 'unknown')
+            }
+    
+    def generate_refund_eligibility_summary(
+        self,
+        eligibility_result: Dict,
+        product_category: str,
+        reason: str
+    ) -> Dict[str, any]:
+        """
+        Generate customer-friendly summary of refund eligibility check
+        
+        Args:
+            eligibility_result: Result from eligibility check
+            product_category: Product category
+            reason: Reason for return
+            
+        Returns:
+            Dictionary with summary and action items
+        """
+        if not self.llm_service.check_health():
+            return {
+                "success": False,
+                "summary": "Unable to generate summary",
+                "action_items": []
+            }
+        
+        eligible = eligibility_result.get('eligible', False)
+        status = eligibility_result.get('eligibility_status', 'UNKNOWN')
+        reasoning = eligibility_result.get('reasoning', '')
+        refund_amount = eligibility_result.get('refund_amount', 'NONE')
+        
+        system_prompt = """You are a customer support assistant explaining refund eligibility in a friendly, clear way.
+Be empathetic and provide actionable next steps."""
+        
+        prompt = f"""Create a customer-friendly summary of this refund eligibility check.
+
+Product Category: {product_category}
+Return Reason: {reason}
+Eligibility Status: {status}
+Eligible: {eligible}
+Refund Amount: {refund_amount}
+Reasoning: {reasoning}
+
+Provide a JSON response with:
+1. summary: A friendly 2-3 sentence explanation of the eligibility decision
+2. action_items: Array of 2-4 specific next steps the customer should take
+3. estimated_timeline: Estimated time for refund processing (if eligible)
+4. helpful_tips: Array of 1-2 helpful tips for the customer
+
+Format as valid JSON only."""
+        
+        result = self.llm_service.generate(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            temperature=0.5,
+            max_tokens=400
+        )
+        
+        if not result['success']:
+            # Fallback summary
+            if eligible:
+                return {
+                    "success": True,
+                    "summary": f"Good news! Your {product_category} return is eligible for a {refund_amount.lower()} refund.",
+                    "action_items": [
+                        "Submit your return request through your account",
+                        "Package the item securely with original packaging if possible",
+                        "Wait for return shipping label via email"
+                    ],
+                    "estimated_timeline": "5-7 business days after we receive the item",
+                    "helpful_tips": ["Keep your tracking number for reference"]
+                }
+            else:
+                return {
+                    "success": True,
+                    "summary": f"Unfortunately, your {product_category} return may not be eligible based on our policy.",
+                    "action_items": [
+                        "Review our return policy for specific requirements",
+                        "Contact customer support for special circumstances",
+                        "Consider alternative solutions like exchange or store credit"
+                    ],
+                    "estimated_timeline": "N/A",
+                    "helpful_tips": ["Our support team can help explore other options"]
+                }
+        
+        try:
+            import json
+            summary_data = json.loads(result['text'])
+            summary_data['success'] = True
+            summary_data['model_used'] = result.get('model', 'unknown')
+            return summary_data
+        except:
+            # Use fallback
+            if eligible:
+                return {
+                    "success": True,
+                    "summary": result['text'][:300],
+                    "action_items": ["Submit return request", "Package item securely"],
+                    "estimated_timeline": "5-7 business days",
+                    "helpful_tips": ["Keep tracking number"],
+                    "model_used": result.get('model', 'unknown')
+                }
+            else:
+                return {
+                    "success": True,
+                    "summary": result['text'][:300],
+                    "action_items": ["Review return policy", "Contact support"],
+                    "estimated_timeline": "N/A",
+                    "helpful_tips": ["Support team can help"],
+                    "model_used": result.get('model', 'unknown')
+                }
+    
     def is_available(self) -> bool:
         """Check if RAG service is fully available"""
         return (
