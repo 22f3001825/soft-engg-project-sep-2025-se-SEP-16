@@ -1,12 +1,14 @@
 """
 RAG (Retrieval-Augmented Generation) Service
-Handles knowledge base retrieval and response generation
+Handles knowledge base retrieval and response generation using FAISS
 """
 from typing import List, Dict, Optional, Tuple
-import chromadb
-from chromadb.config import Settings
+import faiss
+import numpy as np
+import pickle
 import logging
 from datetime import datetime
+from pathlib import Path
 
 from app.services.embedding_service import get_embedding_service
 from app.services.llm_service import llm_service
@@ -18,45 +20,56 @@ logger = logging.getLogger(__name__)
 
 
 class RAGService:
-    """Service for RAG-based question answering"""
+    """Service for RAG-based question answering using FAISS"""
     
-    def __init__(self, collection_name: str = "knowledge_base"):
+    def __init__(self, index_path: str = "faiss_index"):
         """
-        Initialize RAG service
+        Initialize RAG service with FAISS
         
         Args:
-            collection_name: Name of ChromaDB collection
+            index_path: Directory path to store FAISS index files
         """
-        self.collection_name = collection_name
+        self.index_path = Path(index_path)
+        self.index_path.mkdir(exist_ok=True)
         self.embedding_service = get_embedding_service()
         self.llm_service = llm_service
-        self.client: Optional[chromadb.Client] = None
-        self.collection = None
+        self.index: Optional[faiss.Index] = None
+        self.documents: List[Dict] = []
+        self.metadatas: List[Dict] = []
         self._initialize_vector_db()
     
     def _initialize_vector_db(self):
-        """Initialize ChromaDB client and collection"""
+        """Initialize FAISS index"""
         try:
-            logger.info("Initializing ChromaDB")
-            self.client = chromadb.Client(Settings(
-                anonymized_telemetry=False,
-                allow_reset=True
-            ))
+            logger.info("Initializing FAISS vector database")
             
-            # Get or create collection
-            self.collection = self.client.get_or_create_collection(
-                name=self.collection_name,
-                metadata={"description": "Knowledge base for customer support"}
-            )
-            logger.info(f"ChromaDB collection '{self.collection_name}' ready")
+            # Try to load existing index
+            index_file = self.index_path / "faiss.index"
+            metadata_file = self.index_path / "metadata.pkl"
+            documents_file = self.index_path / "documents.pkl"
+            
+            if index_file.exists() and metadata_file.exists() and documents_file.exists():
+                logger.info("Loading existing FAISS index")
+                self.index = faiss.read_index(str(index_file))
+                
+                with open(metadata_file, 'rb') as f:
+                    self.metadatas = pickle.load(f)
+                
+                with open(documents_file, 'rb') as f:
+                    self.documents = pickle.load(f)
+                
+                logger.info(f"FAISS index loaded with {self.index.ntotal} vectors")
+            else:
+                logger.info("No existing FAISS index found, will create on first indexing")
+                self.index = None
+                
         except Exception as e:
-            logger.error(f"Failed to initialize ChromaDB: {e}")
-            self.client = None
-            self.collection = None
+            logger.error(f"Failed to initialize FAISS: {e}")
+            self.index = None
     
     def index_knowledge_base(self, use_file_kb: bool = True) -> Dict[str, any]:
         """
-        Index all knowledge base articles into vector store
+        Index all knowledge base articles into FAISS vector store
         
         Args:
             use_file_kb: If True, use file-based knowledge loader (default)
@@ -65,12 +78,12 @@ class RAGService:
         Returns:
             Dictionary with indexing results
         """
-        if not self.collection or not self.embedding_service.is_available():
-            return {"success": False, "error": "Services not available"}
+        if not self.embedding_service.is_available():
+            return {"success": False, "error": "Embedding service not available"}
         
         try:
             if use_file_kb:
-                # Use file-based knowledge loader (46 documents)
+                # Use file-based knowledge loader
                 documents = knowledge_loader.documents
                 if not documents:
                     # Try to load if not already loaded
@@ -82,7 +95,6 @@ class RAGService:
                 # Prepare texts and metadata
                 texts = []
                 metadatas = []
-                ids = []
                 
                 for i, doc in enumerate(documents):
                     # Use full content for embedding
@@ -96,10 +108,9 @@ class RAGService:
                         "subcategory": doc['subcategory'],
                         "file_name": doc['file_name'],
                         "tags": ','.join(doc['tags']) if doc['tags'] else "",
-                        "keywords": ','.join(doc['keywords']) if doc['keywords'] else ""
+                        "keywords": ','.join(doc['keywords']) if doc['keywords'] else "",
+                        "content": text
                     })
-                    
-                    ids.append(f"doc_{i}")
                 
                 # Generate embeddings in batches
                 logger.info(f"Generating embeddings for {len(texts)} documents...")
@@ -107,34 +118,44 @@ class RAGService:
                 if embeddings is None:
                     return {"success": False, "error": "Failed to generate embeddings"}
                 
-                # Clear existing collection and add new documents
-                try:
-                    self.client.delete_collection(self.collection_name)
-                    self.collection = self.client.create_collection(
-                        name=self.collection_name,
-                        metadata={"description": "Knowledge base for customer support"}
-                    )
-                except:
-                    pass
+                # Create FAISS index
+                dimension = embeddings.shape[1]
+                logger.info(f"Creating FAISS index with dimension {dimension}")
                 
-                # Add to ChromaDB
-                self.collection.add(
-                    embeddings=embeddings.tolist(),
-                    documents=texts,
-                    metadatas=metadatas,
-                    ids=ids
-                )
+                # Use IndexFlatL2 for exact search (can be changed to IndexIVFFlat for larger datasets)
+                self.index = faiss.IndexFlatL2(dimension)
                 
-                logger.info(f"Indexed {len(documents)} knowledge base documents")
+                # Add vectors to index
+                self.index.add(embeddings.astype('float32'))
+                
+                # Store documents and metadata
+                self.documents = texts
+                self.metadatas = metadatas
+                
+                # Save index to disk
+                index_file = self.index_path / "faiss.index"
+                metadata_file = self.index_path / "metadata.pkl"
+                documents_file = self.index_path / "documents.pkl"
+                
+                faiss.write_index(self.index, str(index_file))
+                
+                with open(metadata_file, 'wb') as f:
+                    pickle.dump(self.metadatas, f)
+                
+                with open(documents_file, 'wb') as f:
+                    pickle.dump(self.documents, f)
+                
+                logger.info(f"Indexed {len(documents)} knowledge base documents into FAISS")
                 return {
                     "success": True,
                     "indexed": len(documents),
-                    "message": f"Successfully indexed {len(documents)} documents",
-                    "categories": list(set(doc['category'] for doc in documents))
+                    "message": f"Successfully indexed {len(documents)} documents into FAISS",
+                    "categories": list(set(doc['category'] for doc in documents)),
+                    "dimension": dimension
                 }
             
             else:
-                # Use database KnowledgeBase table (original implementation)
+                # Use database KnowledgeBase table
                 db = SessionLocal()
                 try:
                     articles = db.query(KnowledgeBase).filter(
@@ -146,7 +167,6 @@ class RAGService:
                     
                     texts = []
                     metadatas = []
-                    ids = []
                     
                     for article in articles:
                         text = f"{article.title}\n\n{article.content}"
@@ -157,34 +177,47 @@ class RAGService:
                             "title": article.title,
                             "category": article.category or "general",
                             "tags": article.tags or "",
-                            "created_at": article.created_at.isoformat() if article.created_at else ""
+                            "created_at": article.created_at.isoformat() if article.created_at else "",
+                            "content": text
                         })
-                        
-                        ids.append(f"kb_{article.id}")
                     
                     embeddings = self.embedding_service.encode(texts)
                     if embeddings is None:
                         return {"success": False, "error": "Failed to generate embeddings"}
                     
-                    self.collection.add(
-                        embeddings=embeddings.tolist(),
-                        documents=texts,
-                        metadatas=metadatas,
-                        ids=ids
-                    )
+                    # Create FAISS index
+                    dimension = embeddings.shape[1]
+                    self.index = faiss.IndexFlatL2(dimension)
+                    self.index.add(embeddings.astype('float32'))
                     
-                    logger.info(f"Indexed {len(articles)} knowledge base articles")
+                    self.documents = texts
+                    self.metadatas = metadatas
+                    
+                    # Save to disk
+                    index_file = self.index_path / "faiss.index"
+                    metadata_file = self.index_path / "metadata.pkl"
+                    documents_file = self.index_path / "documents.pkl"
+                    
+                    faiss.write_index(self.index, str(index_file))
+                    
+                    with open(metadata_file, 'wb') as f:
+                        pickle.dump(self.metadatas, f)
+                    
+                    with open(documents_file, 'wb') as f:
+                        pickle.dump(self.documents, f)
+                
+                    logger.info(f"Indexed {len(articles)} knowledge base articles into FAISS")
                     return {
                         "success": True,
                         "indexed": len(articles),
-                        "message": f"Successfully indexed {len(articles)} articles"
+                        "message": f"Successfully indexed {len(articles)} articles into FAISS"
                     }
                 finally:
                     db.close()
             
         except Exception as e:
             logger.error(f"Error indexing knowledge base: {e}")
-            return {"success": False, "error": str(e)}
+            return {"success": False, "error": str(e)}          
     
     def retrieve_relevant_docs(
         self,
@@ -193,7 +226,7 @@ class RAGService:
         category_filter: Optional[str] = None
     ) -> List[Dict[str, any]]:
         """
-        Retrieve relevant documents for a query
+        Retrieve relevant documents for a query using FAISS
         
         Args:
             query: User query
@@ -203,8 +236,8 @@ class RAGService:
         Returns:
             List of relevant documents with metadata
         """
-        if not self.collection or not self.embedding_service.is_available():
-            logger.error("RAG services not available")
+        if not self.index or not self.embedding_service.is_available():
+            logger.error("FAISS index or embedding service not available")
             return []
         
         try:
@@ -213,32 +246,40 @@ class RAGService:
             if query_embedding is None:
                 return []
             
-            # Build where filter if category specified
-            where_filter = None
-            if category_filter:
-                where_filter = {"category": category_filter}
+            # Search FAISS index
+            query_vector = query_embedding.astype('float32').reshape(1, -1)
             
-            # Query ChromaDB
-            results = self.collection.query(
-                query_embeddings=[query_embedding.tolist()],
-                n_results=top_k,
-                where=where_filter
-            )
+            # Get more results if filtering by category
+            search_k = top_k * 3 if category_filter else top_k
+            distances, indices = self.index.search(query_vector, min(search_k, self.index.ntotal))
             
             # Format results
             documents = []
-            if results and results['documents'] and results['documents'][0]:
-                for i, doc in enumerate(results['documents'][0]):
-                    documents.append({
-                        "content": doc,
-                        "metadata": results['metadatas'][0][i] if results['metadatas'] else {},
-                        "distance": results['distances'][0][i] if results['distances'] else 0.0
-                    })
+            for i, idx in enumerate(indices[0]):
+                if idx == -1:  # FAISS returns -1 for empty results
+                    continue
+                
+                metadata = self.metadatas[idx]
+                
+                # Apply category filter if specified
+                if category_filter and metadata.get('category') != category_filter:
+                    continue
+                
+                documents.append({
+                    "content": metadata.get('content', self.documents[idx]),
+                    "metadata": metadata,
+                    "distance": float(distances[0][i]),
+                    "similarity": 1.0 / (1.0 + float(distances[0][i]))  # Convert distance to similarity
+                })
+                
+                # Stop if we have enough results
+                if len(documents) >= top_k:
+                    break
             
             return documents
             
         except Exception as e:
-            logger.error(f"Error retrieving documents: {e}")
+            logger.error(f"Error retrieving documents from FAISS: {e}")
             return []
     
     def generate_response(
@@ -356,7 +397,7 @@ Response:"""
     def is_available(self) -> bool:
         """Check if RAG service is fully available"""
         return (
-            self.collection is not None and
+            self.index is not None and
             self.embedding_service.is_available() and
             self.llm_service.check_health()
         )
