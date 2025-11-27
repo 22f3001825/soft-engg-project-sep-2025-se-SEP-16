@@ -116,14 +116,15 @@ def get_vendor_dashboard(current_user: User = Depends(get_current_user), db: Ses
         total_products = len(vendor_products)
         
         if product_ids:
-            # Calculate metrics with optimized queries
-            total_orders = db.query(OrderItem).filter(OrderItem.product_id.in_(product_ids)).count()
-            
-            # Get order IDs safely
+            # Get unique order IDs for vendor products
             order_ids_result = db.query(OrderItem.order_id).filter(OrderItem.product_id.in_(product_ids)).distinct().all()
             order_ids = [row[0] for row in order_ids_result] if order_ids_result else []
             
+            # Count total order items (not unique orders)
+            total_orders = db.query(OrderItem).filter(OrderItem.product_id.in_(product_ids)).count()
+            
             if order_ids:
+                # Count unique tickets (no duplicates)
                 total_complaints = db.query(Ticket).filter(Ticket.related_order_id.in_(order_ids)).count()
             else:
                 total_complaints = 0
@@ -250,25 +251,48 @@ def get_vendor_analytics(
                 
                 if total_tickets > 0:
                     # Count categories based on ticket subjects
-                    categories = {}
+                    categories = {
+                        'Delivery Issues': 0,
+                        'Quality Issues': 0,
+                        'Refund Requests': 0,
+                        'Other Issues': 0
+                    }
+                    
                     for ticket in tickets:
                         subject = ticket.subject.lower()
                         if 'delivery' in subject or 'delay' in subject:
-                            categories['Delivery Issues'] = categories.get('Delivery Issues', 0) + 1
+                            categories['Delivery Issues'] += 1
                         elif 'quality' in subject or 'defect' in subject:
-                            categories['Quality Issues'] = categories.get('Quality Issues', 0) + 1
+                            categories['Quality Issues'] += 1
                         elif 'refund' in subject or 'return' in subject:
-                            categories['Refund Requests'] = categories.get('Refund Requests', 0) + 1
+                            categories['Refund Requests'] += 1
                         else:
-                            categories['Other Issues'] = categories.get('Other Issues', 0) + 1
+                            categories['Other Issues'] += 1
                     
                     for category, count in categories.items():
-                        percentage = round((count / total_tickets) * 100)
+                        percentage = round((count / total_tickets) * 100) if total_tickets > 0 else 0
                         issue_categories.append({
                             "category": category,
                             "count": count,
                             "percentage": percentage
                         })
+                else:
+                    # Return empty categories with 0 values
+                    for category in ['Delivery Issues', 'Quality Issues', 'Refund Requests', 'Other Issues']:
+                        issue_categories.append({
+                            "category": category,
+                            "count": 0,
+                            "percentage": 0
+                        })
+        
+        # Ensure we always return issue categories even if empty
+        if not issue_categories:
+            for category in ['Delivery Issues', 'Quality Issues', 'Refund Requests', 'Other Issues']:
+                issue_categories.append({
+                    "category": category,
+                    "count": 0,
+                    "percentage": 0
+                })
         
         analytics_data = {
             "complaintsTrend": complaints_by_month,
@@ -278,6 +302,8 @@ def get_vendor_analytics(
         logger.info(f"Analytics data successfully retrieved for vendor ID: {current_user.id}")
         return analytics_data
         
+    except HTTPException:
+        raise
     except ValueError:
         logger.error(f"Invalid date range provided: {date_range}")
         raise HTTPException(status_code=400, detail="Invalid date range format")
@@ -333,9 +359,29 @@ def get_vendor_complaints(current_user: User = Depends(get_current_user), db: Se
                     product_orders = db.query(OrderItem).filter(OrderItem.product_id == product.id).all()
                     product_order_ids = [order.order_id for order in product_orders]
                     
-                    # Filter tickets for this product
+                    # Filter tickets for this product's orders
                     product_tickets = [t for t in all_tickets if t.related_order_id in product_order_ids]
-                    complaint_count = len(product_tickets)
+                    
+                    # For orders with multiple vendor products, only count tickets once per product
+                    # by checking if the ticket subject relates to this specific product
+                    relevant_tickets = []
+                    for ticket in product_tickets:
+                        # Check if ticket is already counted for another product in same order
+                        order_items = db.query(OrderItem).filter(OrderItem.order_id == ticket.related_order_id).all()
+                        vendor_items_in_order = [item for item in order_items if item.product_id in product_ids]
+                        
+                        # If order has only one vendor product, count the ticket
+                        if len(vendor_items_in_order) == 1 and vendor_items_in_order[0].product_id == product.id:
+                            relevant_tickets.append(ticket)
+                        # If order has multiple vendor products, distribute tickets evenly
+                        elif len(vendor_items_in_order) > 1:
+                            # Use ticket ID hash to consistently assign to one product
+                            ticket_hash = hash(ticket.id) % len(vendor_items_in_order)
+                            assigned_product = vendor_items_in_order[ticket_hash].product_id
+                            if assigned_product == product.id:
+                                relevant_tickets.append(ticket)
+                    
+                    complaint_count = len(relevant_tickets)
                     
                     # Calculate return rate
                     total_orders = len(product_orders)
@@ -343,7 +389,7 @@ def get_vendor_complaints(current_user: User = Depends(get_current_user), db: Se
                     
                     # Analyze issue categories
                     issue_counts = {}
-                    for ticket in product_tickets:
+                    for ticket in relevant_tickets:
                         subject = ticket.subject.lower()
                         if 'delivery' in subject:
                             issue_counts['Delivery'] = issue_counts.get('Delivery', 0) + 1

@@ -29,7 +29,7 @@ app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 app.include_router(customer.router, prefix="/api/v1/customer", tags=["Customer"])
 app.include_router(agent.router, prefix="/api/v1/agent", tags=["Agent"])
 app.include_router(supervisor.router, prefix="/api/v1/supervisor", tags=["Supervisor"])
-app.include_router(vendor.router, prefix="/api/vendor", tags=["Vendor"])
+app.include_router(vendor.router, prefix="/api/v1/vendor", tags=["Vendor"])
 app.include_router(copilot.router, prefix="/api/v1", tags=["AI Copilot"])
 app.include_router(chat.router, prefix="/api/v1", tags=["Chat"])
 

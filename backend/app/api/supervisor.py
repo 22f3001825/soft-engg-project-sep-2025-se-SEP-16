@@ -460,7 +460,7 @@ def get_supervisor_analytics(
     
     ticket_stats = {
         "open": len([t for t in tickets_in_range if t.status == TicketStatus.OPEN]),
-        "assigned": len([t for t in tickets_in_range if t.status == TicketStatus.ASSIGNED]),
+        "assigned": len([t for t in tickets_in_range if t.status == TicketStatus.IN_PROGRESS]),
         "resolved": len([t for t in tickets_in_range if t.status == TicketStatus.RESOLVED]),
         "closed": len([t for t in tickets_in_range if t.status == TicketStatus.CLOSED])
     }

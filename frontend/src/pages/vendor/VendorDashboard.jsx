@@ -117,6 +117,8 @@ const VendorDashboard = React.memo(() => {
     const loadAnalytics = async () => {
       try {
         const data = await vendorApi.getAnalytics('180');
+        console.log('Analytics data:', data);
+        console.log('Issue categories:', data?.issueCategories);
         setAnalyticsData(data);
       } catch (error) {
         console.error('Failed to load analytics:', error);
@@ -132,10 +134,11 @@ const VendorDashboard = React.memo(() => {
     { month: 'Dec', complaints: stats.totalComplaints || 0 }
   ];
 
-  const issueCategoriesData = analyticsData?.issueCategories?.map(cat => ({
+  const issueCategoriesData = analyticsData?.issueCategories?.map((cat, index) => ({
     name: cat.category,
     value: cat.count,
-    color: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'][analyticsData.issueCategories.indexOf(cat)] || '#6B7280'
+    percentage: cat.percentage,
+    color: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'][index] || '#6B7280'
   })) || [];
 
   if (loading) {
@@ -269,7 +272,7 @@ const VendorDashboard = React.memo(() => {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percentage }) => `${name} ${percentage}%`}
+                    label={({ name, percentage }) => `${name} ${percentage || 0}%`}
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
