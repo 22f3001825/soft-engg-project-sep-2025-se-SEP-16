@@ -174,7 +174,7 @@ class ApiService {
       }
     }
     if (user.role === 'vendor') {
-      const url = `http://localhost:8000/api/vendor/notifications?unread_only=${unreadOnly}`;
+      const url = `http://localhost:8000/api/v1/vendor/notifications?unread_only=${unreadOnly}`;
       const response = await fetch(url, {
         headers: this.getHeaders()
       });
@@ -207,7 +207,7 @@ class ApiService {
       }
     }
     if (user.role === 'vendor') {
-      const url = `http://localhost:8000/api/vendor/notifications/${notificationId}/read`;
+      const url = `http://localhost:8000/api/v1/vendor/notifications/${notificationId}/read`;
       const response = await fetch(url, {
         method: 'PUT',
         headers: this.getHeaders()
@@ -242,7 +242,7 @@ class ApiService {
       }
     }
     if (user.role === 'vendor') {
-      const url = `http://localhost:8000/api/vendor/notifications/${notificationId}`;
+      const url = `http://localhost:8000/api/v1/vendor/notifications/${notificationId}`;
       const response = await fetch(url, {
         method: 'DELETE',
         headers: this.getHeaders()
