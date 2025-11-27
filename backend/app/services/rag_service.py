@@ -286,15 +286,17 @@ class RAGService:
         self,
         query: str,
         context_docs: List[Dict[str, any]],
-        conversation_history: Optional[List[Dict[str, str]]] = None
+        conversation_history: Optional[List[Dict[str, str]]] = None,
+        customer_context: Optional[Dict] = None
     ) -> Tuple[str, List[str]]:
         """
-        Generate response using LLM with retrieved context
+        Generate response using LLM with retrieved context and customer data
         
         Args:
             query: User query
             context_docs: Retrieved relevant documents
             conversation_history: Previous conversation messages
+            customer_context: Customer's order and refund data
             
         Returns:
             Tuple of (response text, list of source article IDs)
@@ -323,26 +325,59 @@ class RAGService:
                 history_parts.append(f"{role.capitalize()}: {content}")
             history_text = "\n".join(history_parts)
         
+        # Build customer context section
+        customer_context_text = ""
+        if customer_context and customer_context.get('has_orders'):
+            customer_context_text = "\n\nCustomer's Account Information:\n"
+            
+            # Add recent orders
+            if customer_context.get('recent_orders'):
+                customer_context_text += "\nRecent Orders:\n"
+                for order in customer_context['recent_orders'][:3]:  # Show top 3
+                    items_text = ", ".join([f"{item['product_name']} (x{item['quantity']})" for item in order['items'][:2]])
+                    customer_context_text += f"- Order #{order['order_number']}: {order['status']}, ${order['total']:.2f}, Items: {items_text}\n"
+                    if order.get('tracking_number'):
+                        customer_context_text += f"  Tracking: {order['tracking_number']}\n"
+            
+            # Add pending refunds
+            if customer_context.get('pending_refunds'):
+                customer_context_text += "\nPending Refund Requests:\n"
+                for refund in customer_context['pending_refunds']:
+                    customer_context_text += f"- Refund for Order #{refund['order_number']}: {refund['status']}, ${refund['amount']:.2f}\n"
+                    customer_context_text += f"  Reason: {refund['reason']}\n"
+            
+            # Add pending returns
+            if customer_context.get('pending_returns'):
+                customer_context_text += "\nPending Return Requests:\n"
+                for return_req in customer_context['pending_returns']:
+                    customer_context_text += f"- Return for Order #{return_req['order_number']}: {return_req['status']}\n"
+                    if return_req.get('tracking_number'):
+                        customer_context_text += f"  Return Tracking: {return_req['tracking_number']}\n"
+        
         # Create prompt
         system_prompt = """You are a helpful and empathetic customer support assistant for Intellica, an e-commerce platform. 
 Your role is to help customers with returns, refunds, and general support questions.
-Always be professional, friendly, and customer-focused."""
+Always be professional, friendly, and customer-focused.
+When you have access to the customer's order information, use it to provide personalized, specific answers."""
 
         # Build conversation section
         conversation_section = ""
         if history_text:
             conversation_section = f"Previous Conversation:\n{history_text}\n\n"
         
-        prompt = f"""Answer the customer's question using the provided knowledge base information.
+        prompt = f"""Answer the customer's question using the provided knowledge base information and their account data.
 
 Knowledge Base Context:
 {context_text}
+{customer_context_text}
 
 {conversation_section}Customer Question: {query}
 
 Instructions:
 - Provide a clear, helpful, and professional response
 - Use information from the knowledge base when relevant
+- If you have the customer's order/refund information, reference it specifically in your answer
+- If the customer asks about "my order" or "my refund", use their actual order data
 - If the knowledge base doesn't contain the answer, politely say so and offer to connect them with a human agent
 - Be empathetic and understanding
 - Keep responses concise but complete (2-4 sentences)
@@ -367,16 +402,18 @@ Response:"""
         query: str,
         conversation_history: Optional[List[Dict[str, str]]] = None,
         category_filter: Optional[str] = None,
-        top_k: int = 5
+        top_k: int = 5,
+        customer_context: Optional[Dict] = None
     ) -> Dict[str, any]:
         """
-        Complete RAG pipeline: retrieve and generate answer
+        Complete RAG pipeline: retrieve and generate answer with customer context
         
         Args:
             query: User query
             conversation_history: Previous conversation messages
             category_filter: Optional category filter
             top_k: Number of documents to retrieve
+            customer_context: Customer's order and refund data
             
         Returns:
             Dictionary with response and metadata
@@ -384,8 +421,13 @@ Response:"""
         # Retrieve relevant documents
         docs = self.retrieve_relevant_docs(query, top_k, category_filter)
         
-        # Generate response
-        response, source_ids = self.generate_response(query, docs, conversation_history)
+        # Generate response with customer context
+        response, source_ids = self.generate_response(
+            query, 
+            docs, 
+            conversation_history,
+            customer_context
+        )
         
         return {
             "response": response,

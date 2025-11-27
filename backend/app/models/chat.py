@@ -41,6 +41,10 @@ class ChatConversation(Base):
     satisfaction_rating = Column(Integer, nullable=True)  # 1-5
     feedback = Column(Text, nullable=True)
     
+    # AI-Generated Summary
+    summary = Column(Text, nullable=True)  # AI-generated conversation summary
+    summary_generated_at = Column(DateTime, nullable=True)
+    
     # Metadata
     started_at = Column(DateTime, server_default=func.now())
     ended_at = Column(DateTime, nullable=True)

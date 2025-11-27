@@ -3,14 +3,15 @@ Chat API endpoints for RAG-based conversational support
 """
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Dict
 from pydantic import BaseModel
 from datetime import datetime
 
 from app.database import get_db
 from app.models.chat import ChatConversation, ChatMessage
 from app.models.user import User
-from app.models.refund import ImageAnalysis
+from app.models.refund import ImageAnalysis, RefundRequest, ReturnRequest
+from app.models.order import Order, OrderItem
 from app.services.rag_service import get_rag_service
 from app.services.vision_service import get_vision_service
 from app.services.refund_eligibility_service import get_eligibility_service
@@ -19,6 +20,87 @@ import logging
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/chat", tags=["chat"])
+
+
+# Helper Functions
+def _load_customer_context(customer_id: int, db: Session) -> Dict:
+    """
+    Load customer's order and refund context for personalized responses
+    """
+    try:
+        # Get recent orders (last 5)
+        recent_orders = db.query(Order).filter(
+            Order.customer_id == customer_id
+        ).order_by(Order.created_at.desc()).limit(5).all()
+        
+        # Get pending refund requests
+        pending_refunds = db.query(RefundRequest).filter(
+            RefundRequest.customer_id == customer_id,
+            RefundRequest.status.in_(['REQUESTED', 'UNDER_REVIEW'])
+        ).all()
+        
+        # Get pending return requests
+        pending_returns = db.query(ReturnRequest).filter(
+            ReturnRequest.customer_id == customer_id,
+            ReturnRequest.status.in_(['REQUESTED', 'APPROVED', 'IN_TRANSIT'])
+        ).all()
+        
+        # Format context
+        context = {
+            "has_orders": len(recent_orders) > 0,
+            "recent_orders": [],
+            "pending_refunds": [],
+            "pending_returns": []
+        }
+        
+        # Add order details
+        for order in recent_orders:
+            order_items = db.query(OrderItem).filter(OrderItem.order_id == order.id).all()
+            context["recent_orders"].append({
+                "order_id": order.id,
+                "order_number": order.order_number,
+                "status": order.status.value if hasattr(order.status, 'value') else str(order.status),
+                "total": order.total,
+                "created_at": order.created_at.isoformat() if order.created_at else None,
+                "items": [
+                    {
+                        "product_name": item.product_name,
+                        "quantity": item.quantity,
+                        "price": item.price
+                    } for item in order_items
+                ],
+                "tracking_number": order.tracking_number
+            })
+        
+        # Add refund details
+        for refund in pending_refunds:
+            order = db.query(Order).filter(Order.id == refund.order_id).first()
+            context["pending_refunds"].append({
+                "refund_id": refund.id,
+                "order_number": order.order_number if order else "Unknown",
+                "amount": refund.amount,
+                "status": refund.status.value if hasattr(refund.status, 'value') else str(refund.status),
+                "reason": refund.reason,
+                "created_at": refund.created_at.isoformat() if refund.created_at else None
+            })
+        
+        # Add return details
+        for return_req in pending_returns:
+            order = db.query(Order).filter(Order.id == return_req.order_id).first()
+            context["pending_returns"].append({
+                "return_id": return_req.id,
+                "order_number": order.order_number if order else "Unknown",
+                "status": return_req.status.value if hasattr(return_req.status, 'value') else str(return_req.status),
+                "reason": return_req.reason,
+                "tracking_number": return_req.tracking_number,
+                "created_at": return_req.created_at.isoformat() if return_req.created_at else None
+            })
+        
+        return context
+        
+    except Exception as e:
+        logger.error(f"Error loading customer context: {e}")
+        return {"has_orders": False, "recent_orders": [], "pending_refunds": [], "pending_returns": []}
 
 
 # Request/Response Models
@@ -78,7 +160,7 @@ async def start_chat(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Start a new chat conversation
+    Start a new chat conversation with automatic context loading
     """
     try:
         # Create new conversation
@@ -89,6 +171,9 @@ async def start_chat(
         db.add(conversation)
         db.commit()
         db.refresh(conversation)
+        
+        # Load customer context (orders and refunds)
+        customer_context = _load_customer_context(current_user.id, db)
         
         # If initial message provided, process it
         if request.initial_message:
@@ -103,9 +188,12 @@ async def start_chat(
             db.add(customer_msg)
             db.commit()
             
-            # Generate AI response
+            # Generate AI response with customer context
             if rag_service.is_available():
-                result = rag_service.answer_question(request.initial_message)
+                result = rag_service.answer_question(
+                    request.initial_message,
+                    customer_context=customer_context
+                )
                 
                 ai_msg = ChatMessage(
                     conversation_id=conversation.id,
@@ -140,7 +228,7 @@ async def send_message(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Send a message in an existing conversation
+    Send a message in an existing conversation with customer context
     """
     try:
         # Verify conversation exists and belongs to user
@@ -174,14 +262,18 @@ async def send_message(
             for msg in reversed(history)
         ]
         
-        # Generate AI response
+        # Load customer context (orders and refunds)
+        customer_context = _load_customer_context(current_user.id, db)
+        
+        # Generate AI response with customer context
         rag_service = get_rag_service()
         
         if rag_service.is_available():
             result = rag_service.answer_question(
                 request.message,
                 conversation_history=history_list,
-                category_filter=request.category_filter
+                category_filter=request.category_filter,
+                customer_context=customer_context
             )
             
             ai_msg = ChatMessage(
