@@ -637,6 +637,152 @@ Format as valid JSON only."""
                     "model_used": result.get('model', 'unknown')
                 }
     
+    def analyze_intent_and_sentiment(
+        self,
+        message: str,
+        customer_context: Optional[Dict] = None
+    ) -> Dict[str, any]:
+        """
+        Analyze intent and sentiment of a customer message
+        
+        Args:
+            message: Customer message text
+            customer_context: Customer's order and refund data
+            
+        Returns:
+            Dictionary with intent, sentiment, and confidence scores
+        """
+        if not self.llm_service.check_health():
+            return {
+                "success": False,
+                "intent": "unknown",
+                "intent_confidence": 0.0,
+                "sentiment": "neutral",
+                "sentiment_score": 0.5,
+                "entities": {}
+            }
+        
+        # Build context summary
+        context_info = ""
+        if customer_context and customer_context.get('has_orders'):
+            if customer_context.get('pending_refunds'):
+                context_info += "\nCustomer has pending refund requests."
+            if customer_context.get('pending_returns'):
+                context_info += "\nCustomer has pending return requests."
+        
+        system_prompt = """You are an AI assistant that analyzes customer support messages.
+Detect the customer's intent and sentiment accurately."""
+        
+        prompt = f"""Analyze this customer message for intent and sentiment.
+
+Customer Message: "{message}"
+{context_info}
+
+Provide a JSON response with:
+1. intent: One of these categories:
+   - refund_inquiry: Asking about refunds or refund status
+   - return_inquiry: Asking about returns or return process
+   - order_status: Asking about order status or tracking
+   - product_inquiry: Questions about products
+   - policy_question: Questions about policies
+   - complaint: Expressing dissatisfaction or complaint
+   - general_question: General inquiries
+   - greeting: Just saying hello or starting conversation
+   - other: Doesn't fit other categories
+
+2. intent_confidence: Confidence score 0.0-1.0
+
+3. sentiment: One of:
+   - positive: Happy, satisfied, grateful
+   - neutral: Factual, informational
+   - negative: Unhappy, frustrated, angry
+
+4. sentiment_score: Score 0.0-1.0 (0=very negative, 0.5=neutral, 1.0=very positive)
+
+5. entities: Object with extracted information:
+   - order_number: If mentioned (or null)
+   - product_name: If mentioned (or null)
+   - amount: If mentioned (or null)
+
+Format as valid JSON only."""
+        
+        result = self.llm_service.generate(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            temperature=0.2,  # Low temperature for consistent classification
+            max_tokens=300
+        )
+        
+        if not result['success']:
+            # Fallback: simple keyword-based detection
+            return self._fallback_intent_sentiment(message)
+        
+        try:
+            import json
+            analysis = json.loads(result['text'])
+            analysis['success'] = True
+            analysis['model_used'] = result.get('model', 'unknown')
+            return analysis
+        except:
+            # Use fallback
+            return self._fallback_intent_sentiment(message)
+    
+    def _fallback_intent_sentiment(self, message: str) -> Dict[str, any]:
+        """
+        Fallback intent and sentiment detection using keywords
+        """
+        message_lower = message.lower()
+        
+        # Intent detection
+        intent = "general_question"
+        intent_confidence = 0.6
+        
+        if any(word in message_lower for word in ['refund', 'money back', 'reimburse']):
+            intent = "refund_inquiry"
+            intent_confidence = 0.7
+        elif any(word in message_lower for word in ['return', 'send back', 'give back']):
+            intent = "return_inquiry"
+            intent_confidence = 0.7
+        elif any(word in message_lower for word in ['order', 'tracking', 'delivery', 'shipped']):
+            intent = "order_status"
+            intent_confidence = 0.7
+        elif any(word in message_lower for word in ['policy', 'rule', 'guideline']):
+            intent = "policy_question"
+            intent_confidence = 0.7
+        elif any(word in message_lower for word in ['hello', 'hi', 'hey', 'good morning', 'good afternoon']):
+            intent = "greeting"
+            intent_confidence = 0.8
+        elif any(word in message_lower for word in ['angry', 'frustrated', 'disappointed', 'terrible', 'awful']):
+            intent = "complaint"
+            intent_confidence = 0.7
+        
+        # Sentiment detection
+        sentiment = "neutral"
+        sentiment_score = 0.5
+        
+        positive_words = ['thank', 'thanks', 'great', 'excellent', 'good', 'happy', 'appreciate', 'perfect']
+        negative_words = ['bad', 'terrible', 'awful', 'angry', 'frustrated', 'disappointed', 'upset', 'horrible']
+        
+        positive_count = sum(1 for word in positive_words if word in message_lower)
+        negative_count = sum(1 for word in negative_words if word in message_lower)
+        
+        if positive_count > negative_count:
+            sentiment = "positive"
+            sentiment_score = min(0.7 + (positive_count * 0.1), 1.0)
+        elif negative_count > positive_count:
+            sentiment = "negative"
+            sentiment_score = max(0.3 - (negative_count * 0.1), 0.0)
+        
+        return {
+            "success": True,
+            "intent": intent,
+            "intent_confidence": intent_confidence,
+            "sentiment": sentiment,
+            "sentiment_score": sentiment_score,
+            "entities": {},
+            "model_used": "fallback"
+        }
+    
     def is_available(self) -> bool:
         """Check if RAG service is fully available"""
         return (

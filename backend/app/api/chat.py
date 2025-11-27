@@ -185,11 +185,22 @@ async def start_chat(
         if request.initial_message:
             rag_service = get_rag_service()
             
-            # Save customer message
+            # Analyze intent and sentiment
+            analysis = rag_service.analyze_intent_and_sentiment(
+                request.initial_message,
+                customer_context
+            )
+            
+            # Save customer message with intent and sentiment
             customer_msg = ChatMessage(
                 conversation_id=conversation.id,
                 content=request.initial_message,
-                sender_type="CUSTOMER"
+                sender_type="CUSTOMER",
+                intent=analysis.get('intent'),
+                intent_confidence=analysis.get('intent_confidence'),
+                sentiment=analysis.get('sentiment'),
+                sentiment_score=analysis.get('sentiment_score'),
+                entities=analysis.get('entities')
             )
             db.add(customer_msg)
             db.commit()
@@ -249,11 +260,26 @@ async def send_message(
         if conversation.status != "ACTIVE":
             raise HTTPException(status_code=400, detail="Conversation is not active")
         
-        # Save customer message
+        # Load customer context for intent analysis
+        customer_context = _load_customer_context(current_user.id, db)
+        
+        # Analyze intent and sentiment
+        rag_service = get_rag_service()
+        analysis = rag_service.analyze_intent_and_sentiment(
+            request.message,
+            customer_context
+        )
+        
+        # Save customer message with intent and sentiment
         customer_msg = ChatMessage(
             conversation_id=conversation.id,
             content=request.message,
-            sender_type="CUSTOMER"
+            sender_type="CUSTOMER",
+            intent=analysis.get('intent'),
+            intent_confidence=analysis.get('intent_confidence'),
+            sentiment=analysis.get('sentiment'),
+            sentiment_score=analysis.get('sentiment_score'),
+            entities=analysis.get('entities')
         )
         db.add(customer_msg)
         db.commit()
@@ -299,8 +325,13 @@ async def send_message(
         db.commit()
         db.refresh(ai_msg)
         
-        # Update conversation timestamp
+        # Update conversation timestamp and intent
         conversation.last_activity_at = datetime.utcnow()
+        
+        # Update conversation intent based on most recent customer message intent
+        if analysis.get('intent') and analysis.get('intent') != 'greeting':
+            conversation.intent = analysis.get('intent')
+        
         db.commit()
         
         return ai_msg
@@ -716,6 +747,71 @@ async def index_knowledge_base(
     result = rag_service.index_knowledge_base()
     
     return result
+
+
+@router.get("/analytics/intents")
+async def get_intent_analytics(
+    days: int = 7,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get analytics on message intents for the customer
+    """
+    try:
+        from datetime import timedelta
+        from sqlalchemy import func
+        
+        # Calculate date range
+        start_date = datetime.utcnow() - timedelta(days=days)
+        
+        # Get customer's messages with intents
+        messages = db.query(ChatMessage).join(ChatConversation).filter(
+            ChatConversation.customer_id == current_user.id,
+            ChatMessage.sender_type == "CUSTOMER",
+            ChatMessage.created_at >= start_date,
+            ChatMessage.intent.isnot(None)
+        ).all()
+        
+        # Count intents
+        intent_counts = {}
+        sentiment_counts = {"positive": 0, "neutral": 0, "negative": 0}
+        total_messages = len(messages)
+        
+        for msg in messages:
+            # Count intents
+            intent = msg.intent or "unknown"
+            intent_counts[intent] = intent_counts.get(intent, 0) + 1
+            
+            # Count sentiments
+            sentiment = msg.sentiment or "neutral"
+            if sentiment in sentiment_counts:
+                sentiment_counts[sentiment] += 1
+        
+        # Calculate percentages
+        intent_distribution = {
+            intent: {"count": count, "percentage": round(count / total_messages * 100, 1)}
+            for intent, count in intent_counts.items()
+        }
+        
+        sentiment_distribution = {
+            sentiment: {"count": count, "percentage": round(count / total_messages * 100, 1) if total_messages > 0 else 0}
+            for sentiment, count in sentiment_counts.items()
+        }
+        
+        return {
+            "success": True,
+            "period_days": days,
+            "total_messages": total_messages,
+            "intent_distribution": intent_distribution,
+            "sentiment_distribution": sentiment_distribution,
+            "most_common_intent": max(intent_counts.items(), key=lambda x: x[1])[0] if intent_counts else "none",
+            "overall_sentiment": max(sentiment_counts.items(), key=lambda x: x[1])[0] if total_messages > 0 else "neutral"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting intent analytics: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get analytics")
 
 
 # Refund Eligibility Endpoints
