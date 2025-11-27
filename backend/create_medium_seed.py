@@ -432,51 +432,135 @@ def seed_tickets(db, customers, agents, orders):
     print(f"Created {len(tickets)} tickets with realistic conversations")
     return tickets
 
+def seed_vendor_complaints(db, orders, products, users):
+    """Create vendor-related complaint tickets for existing orders"""
+    print("Seeding vendor complaints...")
+    
+    # Get vendor products
+    vendor_products = [p for p in products if p.vendor_id]
+    if not vendor_products:
+        print("No vendor products found")
+        return
+    
+    # Get orders that contain vendor products
+    product_ids = [p.id for p in vendor_products]
+    vendor_orders = []
+    for order in orders:
+        order_items = db.query(OrderItem).filter(OrderItem.order_id == order.id).all()
+        if any(item.product_id in product_ids for item in order_items):
+            vendor_orders.append(order)
+    
+    if not vendor_orders:
+        print("No orders with vendor products found")
+        return
+    
+    # Create realistic complaint scenarios with proper categorization
+    complaint_scenarios = [
+        {
+            "subject": "Product delivery delay - order not received",
+            "description": "My order was supposed to arrive 3 days ago but still hasn't been delivered. Need urgent update.",
+        },
+        {
+            "subject": "Quality issue with wireless headphones",
+            "description": "The left speaker stopped working after 2 weeks of use. Very disappointed with the quality.",
+        },
+        {
+            "subject": "Refund request for defective charging cable",
+            "description": "The USB-C cable doesn't charge my phone properly. Requesting full refund.",
+        },
+        {
+            "subject": "Wrong item delivered - need replacement",
+            "description": "Ordered a power bank but received a phone case instead. Please resolve this issue.",
+        },
+        {
+            "subject": "Bluetooth speaker quality defect",
+            "description": "The speaker pairs but audio doesn't play. Tried multiple devices with same issue.",
+        },
+        {
+            "subject": "Delivery damaged package",
+            "description": "Package arrived damaged and the product inside is broken. Need replacement.",
+        },
+        {
+            "subject": "Return request for wrong size",
+            "description": "Ordered medium size but received large. Need to return and get correct size.",
+        },
+        {
+            "subject": "Product not working as advertised",
+            "description": "The wireless charging pad doesn't work with my phone despite being advertised as compatible.",
+        }
+    ]
+    
+    # Get some agents for assignment
+    agent_users = [u for u in users if u.role == UserRole.AGENT]
+    
+    complaints_added = 0
+    # Create exactly 15 complaints to match dashboard count
+    selected_orders = sample(vendor_orders, min(15, len(vendor_orders)))
+    
+    for i, order in enumerate(selected_orders):
+        scenario = choice(complaint_scenarios)
+        
+        # Assign some tickets to agents (resolved/in progress)
+        assigned_agent = None
+        ticket_status = TicketStatus.OPEN
+        
+        if i < 8:  # First 8 tickets are resolved/in progress
+            assigned_agent = choice(agent_users)
+            ticket_status = choice([TicketStatus.RESOLVED, TicketStatus.IN_PROGRESS, TicketStatus.CLOSED])
+        
+        # Create complaint ticket
+        ticket = Ticket(
+            id=f"TKT{10000 + i}",
+            customer_id=order.customer_id,
+            agent_id=assigned_agent.id if assigned_agent else None,
+            subject=scenario["subject"],
+            status=ticket_status,
+            priority=choice([TicketPriority.LOW, TicketPriority.MEDIUM, TicketPriority.HIGH]),
+            related_order_id=order.id,
+            created_at=datetime.now() - timedelta(days=randint(1, 30))
+        )
+        db.add(ticket)
+        db.flush()
+        
+        # Add customer message
+        customer = next(u for u in users if u.id == order.customer_id)
+        customer_message = Message(
+            id=str(uuid.uuid4()),
+            ticket_id=ticket.id,
+            sender_id=order.customer_id,
+            sender_name=customer.full_name,
+            content=scenario["description"],
+            created_at=ticket.created_at
+        )
+        db.add(customer_message)
+        
+        # Add agent response for resolved tickets
+        if assigned_agent and ticket_status in [TicketStatus.RESOLVED, TicketStatus.CLOSED]:
+            agent_responses = [
+                "Thank you for contacting us. I've investigated your issue and have arranged for a replacement to be sent out.",
+                "I apologize for the inconvenience. Your refund has been processed and should appear in 3-5 business days.",
+                "I've contacted our shipping partner and your order is now being expedited. You should receive it within 2 days.",
+                "I understand your frustration. I've arranged for a return label to be sent to you and a full refund will be issued."
+            ]
+            
+            agent_message = Message(
+                id=str(uuid.uuid4()),
+                ticket_id=ticket.id,
+                sender_id=assigned_agent.id,
+                sender_name=assigned_agent.full_name,
+                content=choice(agent_responses),
+                created_at=ticket.created_at + timedelta(hours=randint(2, 24))
+            )
+            db.add(agent_message)
+        
+        complaints_added += 1
+    
+    db.commit()
+    print(f"Added {complaints_added} vendor complaint tickets")
+
 def seed_notifications(db, users):
     """Create realistic notifications"""
     print("Seeding notifications...")
-    
-    notification_templates = {
-        NotificationType.ORDER: [
-            "Your order has been confirmed and is being processed",
-            "Your order has been shipped and is on its way",
-            "Your order has been delivered successfully",
-            "Your return request has been approved"
-        ],
-        NotificationType.TICKET: [
-            "Your support ticket has been assigned to an agent",
-            "New response received on your support ticket",
-            "Your support ticket has been resolved",
-            "Your support ticket has been closed"
-        ],
-        NotificationType.SYSTEM: [
-            "Your account profile has been successfully updated",
-            "Password changed successfully for security",
-            "Email preferences have been saved",
-            "Account verification completed successfully"
-        ]
-    }
-    
-    vendor_notification_templates = {
-        NotificationType.ORDER: [
-            "New order received for your products",
-            "Order fulfillment deadline approaching",
-            "Customer requested order modification",
-            "Order cancellation request received"
-        ],
-        NotificationType.TICKET: [
-            "New support ticket created for your product",
-            "Customer complaint requires vendor response",
-            "Product quality issue reported by customer",
-            "Return request submitted for your product"
-        ],
-        NotificationType.SYSTEM: [
-            "Vendor dashboard analytics updated",
-            "Monthly performance report available",
-            "Product listing compliance check completed",
-            "Vendor account verification renewed"
-        ]
-    }
     
     for user in users:
         if user.role == UserRole.CUSTOMER:
@@ -498,10 +582,13 @@ def seed_notifications(db, users):
                 db.add(notification)
         
         elif user.role == UserRole.VENDOR:
-            # Create exactly 2 notifications for vendor
+            # Create vendor-specific notifications
             notifications_data = [
-                (NotificationType.TICKET, "New support ticket created for your product", False),
-                (NotificationType.ORDER, "New order received for your products", False)
+                (NotificationType.TICKET, "New product complaint reported by customer", False),
+                (NotificationType.ORDER, "New order received for your products", False),
+                (NotificationType.SYSTEM, "Monthly performance report available", False),
+                (NotificationType.TICKET, "Customer requested return for your product", False),
+                (NotificationType.ORDER, "Order fulfillment deadline approaching", False)
             ]
             
             for notif_type, message, read_status in notifications_data:
@@ -511,7 +598,7 @@ def seed_notifications(db, users):
                     message=message,
                     type=notif_type,
                     read=read_status,
-                    timestamp=datetime.now() - timedelta(hours=randint(1, 12))
+                    timestamp=datetime.now() - timedelta(hours=randint(1, 48))
                 )
                 db.add(notification)
     
@@ -529,7 +616,8 @@ def main():
         users = seed_users_and_profiles(db)
         products = seed_products(db, users)
         orders = seed_orders(db, users, products)
-        tickets = seed_tickets(db, users, users, orders)
+        # Only create vendor-related tickets, not general customer service tickets
+        seed_vendor_complaints(db, orders, products, users)
         seed_notifications(db, users)
         
         print("\n" + "="*60)
@@ -538,7 +626,7 @@ def main():
         print(f"Users: {len(users)} (10 customers, 5 agents, 1 supervisor, 1 vendor)")
         print(f"Products: {len(products)} (realistic catalog)")
         print(f"Orders: {len(orders)} (5-8 per customer with logical statuses)")
-        print(f"Tickets: {len(tickets)} (realistic support conversations)")
+        print("Tickets: 15 (vendor complaint tickets only)")
         print("Notifications: 2 per customer, 2 per vendor (all unread)")
         print("="*60)
         print("[OK] Logical order statuses based on order age")

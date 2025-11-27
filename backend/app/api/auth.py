@@ -23,7 +23,8 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.schemas.user import UserCreate, Token, UserResponse
-from app.services.auth import authenticate_user, create_user, create_access_token_for_user
+from app.services.auth import authenticate_user, create_user, create_access_token_for_user, get_current_user
+from app.models.user import User
 from app.core.logging import logger
 from app.core.validation import sanitize_string, validate_email
 
@@ -189,7 +190,9 @@ async def login(
         raise HTTPException(status_code=500, detail="Login failed")
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user_info(db: Session = Depends(get_db)):
+async def get_current_user_info(
+    current_user: User = Depends(get_current_user)
+):
     """
     Retrieve current authenticated user information.
     
@@ -199,7 +202,7 @@ async def get_current_user_info(db: Session = Depends(get_db)):
     - Ensures data privacy and security
     
     Args:
-        db: Database session dependency
+        current_user: Current authenticated user from JWT token
         
     Returns:
         UserResponse: Current user's email, full name, and role
@@ -210,22 +213,13 @@ async def get_current_user_info(db: Session = Depends(get_db)):
         HTTPException: 500 if retrieval process fails
     """
     try:
-        from app.services.auth import get_current_user
-        user = get_current_user(db=db)
-        
-        if not user:
-            logger.warning("Current user not found during /me request")
-            raise HTTPException(status_code=404, detail="User not found")
-        
-        logger.info(f"User info retrieved for user ID: {user.id}")
+        logger.info(f"User info retrieved for user ID: {current_user.id}")
         return {
-            "email": user.email, 
-            "full_name": user.full_name, 
-            "role": user.role.value
+            "email": current_user.email, 
+            "full_name": current_user.full_name, 
+            "role": current_user.role.value
         }
         
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"Error retrieving current user info: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to retrieve user information")
