@@ -40,7 +40,6 @@ import { SupervisorProfile } from './pages/supervisor/SupervisorProfile';
 
 
 import { VendorDashboard } from './pages/vendor/VendorDashboard';
-import AnalyticsDashboard from './pages/vendor/AnalyticsDashboard';
 import AICopilotPage from './pages/vendor/AICopilotPage';
 import { ProductComplaintsPage } from './pages/vendor/ProductComplaintsPage';
 import { ProductDetailsPage } from './pages/vendor/ProductDetailsPage';

@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8000/api/vendor';
+const API_BASE_URL = 'http://localhost:8000/api/v1/vendor';
 
 class VendorApiService {
   getToken() {
