@@ -10,7 +10,9 @@ import { ConfirmationDialog } from '../../components/ui/confirmation-dialog';
 import agentApi from '../../services/agentApi';
 import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
-import { ArrowLeft, MessageSquare, Package, Info, CheckCircle2, XCircle, Ticket, Clock, User, Sparkles, Zap } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Package, Info, CheckCircle2, XCircle, Ticket, Clock, User, Sparkles, Zap, RefreshCw, Loader2, AlertCircle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { KnowledgeBaseSearch } from './components/KnowledgeBaseSearch';
+import { FraudExplanation } from './components/FraudExplanation';
 
 export const TicketDetails = () => {
   const { user } = useAuth();
@@ -20,6 +22,11 @@ export const TicketDetails = () => {
   const [currentTicketId, setCurrentTicketId] = React.useState(ticket_id || '');
   const [findId, setFindId] = React.useState('');
   const [confirmDialog, setConfirmDialog] = React.useState({ isOpen: false, type: '', data: null });
+  
+  // AI Summary state
+  const [aiSummary, setAiSummary] = React.useState(null);
+  const [summaryLoading, setSummaryLoading] = React.useState(false);
+  const [summaryError, setSummaryError] = React.useState(null);
 
   React.useEffect(() => {
     if (!currentTicketId) {
@@ -33,11 +40,48 @@ export const TicketDetails = () => {
     try {
       const data = await agentApi.getTicketDetails(currentTicketId);
       setTicket(data);
+      // Fetch AI summary after ticket is loaded
+      fetchAISummary(false);
     } catch (error) {
       console.error('Failed to fetch ticket details:', error);
       setTicket(null);
       toast.error('Failed to load ticket details');
     }
+  };
+
+  const fetchAISummary = async (regenerate = false) => {
+    setSummaryLoading(true);
+    setSummaryError(null);
+    
+    try {
+      const summary = await agentApi.getTicketSummary(currentTicketId, regenerate);
+      setAiSummary(summary);
+      
+      if (regenerate) {
+        toast.success('Summary regenerated successfully');
+      }
+    } catch (error) {
+      console.error('Failed to fetch AI summary:', error);
+      setSummaryError('Unable to load AI summary');
+      
+      // Set fallback summary
+      setAiSummary({
+        summary: ticket?.related_order 
+          ? `Customer report indicates issue related to order ${ticket.related_order.id}. Recommended next steps: verify payment, confirm shipment status, and follow up with the customer.`
+          : 'Customer report indicates general support inquiry. Recommended next steps: gather more information, understand the issue, and provide appropriate assistance.',
+        key_points: ['Review ticket details', 'Contact customer if needed'],
+        customer_sentiment: 'neutral',
+        urgency_level: 'medium',
+        confidence_score: 0.5,
+        cached: false
+      });
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
+
+  const handleRegenerateSummary = () => {
+    fetchAISummary(true);
   };
 
   
@@ -262,19 +306,120 @@ export const TicketDetails = () => {
           <div className="space-y-4">
             <Card className="shadow-lg border-2 border-purple-500/20 bg-gradient-to-br from-background via-purple-500/5 to-accent/5">
               <CardHeader className="bg-gradient-to-r from-purple-500/10 to-transparent border-b">
-                <CardTitle className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
-                  <Sparkles className="h-5 w-5" />
-                  AI Summary
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
+                    <Sparkles className="h-5 w-5" />
+                    AI Summary
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRegenerateSummary}
+                    disabled={summaryLoading}
+                    className="text-purple-600 hover:text-purple-700 hover:bg-purple-100"
+                  >
+                    {summaryLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4" />
+                    )}
+                    <span className="ml-1 text-xs">Regenerate</span>
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4 pt-6">
-                <div className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 rounded-lg border-2 border-purple-500/20 p-4 text-sm leading-relaxed shadow-inner">
-                  {order ? (
-                    `Customer report indicates issue related to order ${order.id}. Recommended next steps: verify payment, confirm shipment status, and follow up with the customer.`
-                  ) : (
-                    'Customer report indicates general support inquiry. Recommended next steps: gather more information, understand the issue, and provide appropriate assistance.'
-                  )}
-                </div>
+                {summaryLoading && !aiSummary ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-purple-600" />
+                    <span className="ml-2 text-sm text-muted-foreground">Generating AI summary...</span>
+                  </div>
+                ) : summaryError && !aiSummary ? (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-2">
+                    <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm text-yellow-800">
+                      <p className="font-medium">AI Summary Unavailable</p>
+                      <p className="text-xs mt-1">{summaryError}</p>
+                    </div>
+                  </div>
+                ) : aiSummary ? (
+                  <>
+                    {/* Main Summary */}
+                    <div className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 rounded-lg border-2 border-purple-500/20 p-4 text-sm leading-relaxed shadow-inner">
+                      {aiSummary.summary}
+                    </div>
+
+                    {/* Badges Row */}
+                    <div className="flex flex-wrap gap-2">
+                      {/* Sentiment Badge */}
+                      {aiSummary.customer_sentiment && (
+                        <Badge 
+                          variant="outline" 
+                          className={`flex items-center gap-1 ${
+                            aiSummary.customer_sentiment === 'POSITIVE' ? 'bg-green-50 text-green-700 border-green-300' :
+                            aiSummary.customer_sentiment === 'NEGATIVE' ? 'bg-red-50 text-red-700 border-red-300' :
+                            'bg-gray-50 text-gray-700 border-gray-300'
+                          }`}
+                        >
+                          {aiSummary.customer_sentiment === 'POSITIVE' && <TrendingUp className="h-3 w-3" />}
+                          {aiSummary.customer_sentiment === 'NEGATIVE' && <TrendingDown className="h-3 w-3" />}
+                          {aiSummary.customer_sentiment === 'NEUTRAL' && <Minus className="h-3 w-3" />}
+                          {aiSummary.customer_sentiment}
+                        </Badge>
+                      )}
+
+                      {/* Urgency Badge */}
+                      {aiSummary.urgency_level && (
+                        <Badge 
+                          variant="outline"
+                          className={`${
+                            aiSummary.urgency_level === 'CRITICAL' || aiSummary.urgency_level === 'HIGH' ? 'bg-red-50 text-red-700 border-red-300' :
+                            aiSummary.urgency_level === 'MEDIUM' ? 'bg-yellow-50 text-yellow-700 border-yellow-300' :
+                            'bg-blue-50 text-blue-700 border-blue-300'
+                          }`}
+                        >
+                          {aiSummary.urgency_level} URGENCY
+                        </Badge>
+                      )}
+
+                      {/* Category Badge */}
+                      {aiSummary.detected_category && (
+                        <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-300">
+                          {aiSummary.detected_category}
+                        </Badge>
+                      )}
+
+                      {/* Confidence Score */}
+                      {aiSummary.confidence_score && (
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
+                          {Math.round(aiSummary.confidence_score * 100)}% Confidence
+                        </Badge>
+                      )}
+
+                      {/* Cached Indicator */}
+                      {aiSummary.cached && (
+                        <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-300 text-xs">
+                          Cached
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* Key Points */}
+                    {aiSummary.key_points && aiSummary.key_points.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-semibold text-purple-700 dark:text-purple-400">Key Points:</h4>
+                        <ul className="space-y-1.5">
+                          {aiSummary.key_points.map((point, index) => (
+                            <li key={index} className="flex items-start gap-2 text-sm">
+                              <span className="text-purple-600 mt-0.5">•</span>
+                              <span className="text-foreground">{point}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </>
+                ) : null}
+
                 <div className="flex gap-2">
                   <Button 
                     onClick={() => setConfirmDialog({
@@ -371,6 +516,14 @@ export const TicketDetails = () => {
                 </Button>
               </CardContent>
             </Card>
+
+            {/* Refund Analysis - Only show if ticket has related order */}
+            {ticket.related_order && (
+              <FraudExplanation orderId={ticket.related_order.id} />
+            )}
+
+            {/* Knowledge Base Search */}
+            <KnowledgeBaseSearch isCollapsible={true} defaultExpanded={false} />
           </div>
         </div>
       </>
