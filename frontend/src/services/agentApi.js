@@ -123,6 +123,37 @@ class AgentApiService {
       body: JSON.stringify({ reason: rejectionReason })
     });
   }
+
+  // AI Copilot Features
+  async getTicketSummary(ticketId, regenerate = false) {
+    const params = regenerate ? '?regenerate=true' : '';
+    return this.request(`/copilot/tickets/${ticketId}/summary${params}`);
+  }
+
+  async getResponseSuggestions(ticketId) {
+    return this.request(`/copilot/tickets/${ticketId}/suggestions`);
+  }
+
+  async useSuggestion(suggestionId, feedback) {
+    return this.request(`/copilot/suggestions/${suggestionId}/use`, {
+      method: 'POST',
+      body: JSON.stringify(feedback)
+    });
+  }
+
+  async searchKnowledgeBase(query, category = null) {
+    const params = new URLSearchParams({ query });
+    if (category) params.append('category', category);
+    return this.request(`/copilot/knowledge-base/search?${params}`);
+  }
+
+  async getKnowledgeCategories() {
+    return this.request('/copilot/knowledge-base/categories');
+  }
+
+  async getRefundExplanation(refundId) {
+    return this.request(`/copilot/refunds/${refundId}/explanation`);
+  }
 }
 
 export default new AgentApiService();

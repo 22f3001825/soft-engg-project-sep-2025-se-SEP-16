@@ -11,6 +11,8 @@ import { Textarea } from '../../components/ui/textarea';
 import { Mail, MessageCircle, Send, Save, Copy, Clock, Activity, Link2, Zap, CheckCircle2, User, ExternalLink, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import agentApi from '../../services/agentApi';
+import { ResponseSuggestions } from './components/ResponseSuggestions';
+import { KnowledgeBaseSearch } from './components/KnowledgeBaseSearch';
 
 const KEY = 'agent.activity';
 const cannedTemplates = [
@@ -59,6 +61,11 @@ export const CommunicationTools = () => {
   const insertChatCanned = text => {
     const processedText = substituteVariables(text);
     setTicketChat(c => ({ ...c, newMessage: c.newMessage ? c.newMessage + '\n' + processedText : processedText }));
+    setTimeout(() => chatBodyRef.current && chatBodyRef.current.focus(), 50);
+  };
+
+  const handleUseSuggestion = (suggestionText) => {
+    setTicketChat(c => ({ ...c, newMessage: suggestionText }));
     setTimeout(() => chatBodyRef.current && chatBodyRef.current.focus(), 50);
   };
 
@@ -168,8 +175,11 @@ export const CommunicationTools = () => {
           </Button>
         </div>
       </div>
-      {/* FULL WIDTH TICKET CHAT */}
-      <Card className="shadow-lg border-2 border-success/20 bg-gradient-to-br from-background to-success/5 hover:shadow-xl transition-shadow">
+      
+      {/* Two Column Layout: Chat + Right Sidebar */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
+        {/* TICKET CHAT */}
+        <Card className="shadow-lg border-2 border-success/20 bg-gradient-to-br from-background to-success/5 hover:shadow-xl transition-shadow">
           <CardHeader className="bg-gradient-to-r from-success/10 to-success/5 border-b">
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-success">
@@ -350,6 +360,19 @@ export const CommunicationTools = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* RIGHT SIDEBAR */}
+        <div className="space-y-4">
+          {/* AI RESPONSE SUGGESTIONS */}
+          <ResponseSuggestions 
+            ticketId={ticketId} 
+            onUseSuggestion={handleUseSuggestion}
+          />
+          
+          {/* KNOWLEDGE BASE SEARCH */}
+          <KnowledgeBaseSearch isCollapsible={true} defaultExpanded={false} />
+        </div>
+      </div>
 
       </div>
     </AgentLayout>

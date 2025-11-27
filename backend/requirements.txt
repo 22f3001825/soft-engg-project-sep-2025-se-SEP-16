@@ -1,29 +1,55 @@
 fastapi
+
 uvicorn[standard]
+
 sqlalchemy
+
 alembic
+
 python-jose[cryptography]
+
 passlib[bcrypt]
+
 python-multipart
+
 pydantic[email]
+
 pydantic-settings
+
 python-dotenv
+
 email-validator
+
 requests
+
 bcrypt
+
 faker
 
 # Testing Dependencies
+
 pytest>=7.0.0
+
 httpx>=0.24.0
+
 pytest-asyncio>=0.21.0
+
 pytest-mock>=3.10.0
 
 # AI/ML Dependencies
+
 transformers>=4.40.0
+
 sentence-transformers>=2.7.0
+
 chromadb>=0.4.24
+
+faiss-cpu>=1.7.4
+
 torch>=2.2.0
+
 pillow>=10.0.0
+
 accelerate>=0.29.0
+
 numpy>=1.24.0
