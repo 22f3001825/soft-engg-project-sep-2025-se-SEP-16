@@ -41,7 +41,7 @@ rag_service = get_rag_service()
 
 print(f"  Embedding Service: {'Available' if embedding_service.is_available() else 'Not available'}")
 print(f"  LLM Service: {'Available' if llm_service.check_health() else 'Not available (Ollama not running)'}")
-print(f"  Vector DB: {'Ready' if rag_service.collection else 'Not ready'}")
+print(f"  Vector DB (FAISS): {'Ready' if rag_service.index is not None else 'Not initialized yet'}")
 
 # Step 3: Load knowledge base
 print("\n[3/4] Loading knowledge base...")
