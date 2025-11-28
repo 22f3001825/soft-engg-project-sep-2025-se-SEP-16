@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class LLMService:
     def __init__(self, base_url: str = "http://localhost:11434"):
         self.base_url = base_url
-        self.model = "flan-t5-base"  # Good balance: 250M params, fast, quality responses
+        self.model = "tinyllama"  # TinyLlama 1.1B - chat optimized
         self.timeout = 60
         self.hf_model = None
         self.hf_tokenizer = None
@@ -23,19 +23,26 @@ class LLMService:
 
     
     def _initialize_hf_model(self):
-        """Initialize Hugging Face model (Flan-T5-base)"""
+        """Initialize Hugging Face model (TinyLlama-1.1B-Chat - optimized)"""
         try:
-            from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+            from transformers import AutoTokenizer, AutoModelForCausalLM
             import torch
             
-            logger.info("Loading Flan-T5-base model from Hugging Face...")
-            self.hf_tokenizer = AutoTokenizer.from_pretrained("google/flan-t5-base")
-            self.hf_model = AutoModelForSeq2SeqLM.from_pretrained("google/flan-t5-base")
+            logger.info("Loading TinyLlama-1.1B-Chat model from Hugging Face...")
+            model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+            
+            # Models will download automatically on first use
+            self.hf_tokenizer = AutoTokenizer.from_pretrained(model_name)
+            self.hf_model = AutoModelForCausalLM.from_pretrained(
+                model_name,
+                torch_dtype=torch.float32,  # Use float32 for CPU
+                low_cpu_mem_usage=True
+            )
             
             # Use CPU
             self.device = "cpu"
             self.hf_model = self.hf_model.to(self.device)
-            logger.info("Flan-T5-base model loaded successfully on CPU")
+            logger.info("TinyLlama-1.1B-Chat model loaded successfully on CPU")
             
         except Exception as e:
             logger.error(f"Failed to load Hugging Face model: {e}")
@@ -47,10 +54,10 @@ class LLMService:
         prompt: str, 
         system_prompt: Optional[str] = None,
         temperature: float = 0.7,
-        max_tokens: int = 200
+        max_tokens: int = 100
     ) -> Dict:
         """
-        Generate text using Hugging Face Flan-T5 (fast and reliable)
+        Generate text using Hugging Face TinyLlama-1.1B-Chat (fast and reliable)
         Returns dict with 'text', 'model', 'generation_time_ms'
         """
         start_time = time.time()
@@ -58,7 +65,7 @@ class LLMService:
         # Try Hugging Face model first (faster and more reliable)
         if self.hf_model and self.hf_tokenizer:
             try:
-                # Format prompt for TinyLlama chat format
+                # Format prompt for TinyLlama chat format (ChatML)
                 if system_prompt:
                     chat_prompt = f"<|system|>\n{system_prompt}</s>\n<|user|>\n{prompt}</s>\n<|assistant|>\n"
                 else:
@@ -68,15 +75,18 @@ class LLMService:
                 inputs = self.hf_tokenizer(chat_prompt, return_tensors="pt", max_length=1024, truncation=True)
                 inputs = inputs.to(self.device)
                 
+                # Generate with TinyLlama - OPTIMIZED for speed
                 outputs = self.hf_model.generate(
                     **inputs,
                     max_new_tokens=max_tokens,
                     temperature=temperature,
-                    do_sample=True,
+                    do_sample=temperature > 0,
                     top_p=0.9,
                     top_k=50,
                     repetition_penalty=1.1,
-                    pad_token_id=self.hf_tokenizer.eos_token_id
+                    pad_token_id=self.hf_tokenizer.eos_token_id,
+                    eos_token_id=self.hf_tokenizer.eos_token_id,
+                    use_cache=True  # Enable KV cache for faster generation
                 )
                 
                 # Decode only the new tokens (not the input prompt)
@@ -87,13 +97,15 @@ class LLMService:
                 
                 return {
                     "text": generated_text.strip(),
-                    "model": "tinyllama-1.1b",
+                    "model": "tinyllama-1.1b-chat",
                     "generation_time_ms": generation_time,
                     "success": True
                 }
                 
             except Exception as e:
                 logger.error(f"Hugging Face generation failed: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
                 # Fall through to Ollama fallback
         
         # Fallback to Ollama if HF fails
