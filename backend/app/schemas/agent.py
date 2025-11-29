@@ -8,6 +8,9 @@ class TicketAssign(BaseModel):
 class TicketStatusUpdate(BaseModel):
     status: str
 
+class TicketPriorityUpdate(BaseModel):
+    priority: str
+
 class MessageCreate(BaseModel):
     content: str
     is_internal: Optional[bool] = False

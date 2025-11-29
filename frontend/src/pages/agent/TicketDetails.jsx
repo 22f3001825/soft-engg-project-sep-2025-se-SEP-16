@@ -10,7 +10,8 @@ import { ConfirmationDialog } from '../../components/ui/confirmation-dialog';
 import agentApi from '../../services/agentApi';
 import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
-import { ArrowLeft, MessageSquare, Package, Info, CheckCircle2, XCircle, Ticket, Clock, User, Sparkles, Zap, RefreshCw, Loader2, AlertCircle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Package, Info, CheckCircle2, XCircle, Ticket, Clock, User, Sparkles, Zap, RefreshCw, Loader2, AlertCircle, TrendingUp, TrendingDown, Minus, ChevronDown } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { KnowledgeBaseSearch } from './components/KnowledgeBaseSearch';
 import { FraudExplanation } from './components/FraudExplanation';
 
@@ -260,7 +261,27 @@ export const TicketDetails = () => {
                     <Zap className="h-3 w-3" />
                     Priority
                   </div>
-                  <div className="font-bold text-lg capitalize text-warning">{ticket.priority}</div>
+                  <Select
+                    value={ticket.priority.toLowerCase()}
+                    onValueChange={async (newPriority) => {
+                      try {
+                        await agentApi.updateTicketPriority(ticket.id, newPriority.toUpperCase());
+                        setTicket(prev => ({ ...prev, priority: newPriority.toUpperCase() }));
+                        toast.success(`Priority updated to ${newPriority.toUpperCase()}`);
+                      } catch (error) {
+                        toast.error('Failed to update priority');
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-full border-0 bg-transparent p-0 h-auto font-bold text-lg capitalize text-warning hover:bg-warning/10 transition-colors">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="rounded-lg border-2 border-info/10 p-4 bg-gradient-to-br from-card to-info/5 shadow-sm hover:shadow-md transition-shadow">
                   <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">

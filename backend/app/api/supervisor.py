@@ -348,9 +348,32 @@ def reassign_ticket(
         if not agent.is_active:
             raise HTTPException(status_code=400, detail="Cannot assign to inactive agent")
         
+        old_agent_id = ticket.agent_id
         ticket.agent_id = reassign_data.agent_id
         ticket.status = TicketStatus.IN_PROGRESS
         ticket.updated_at = datetime.utcnow()
+        
+        # Notify new agent about reassignment
+        from app.models.analytics import Notification, NotificationType
+        agent_notification = Notification(
+            user_id=reassign_data.agent_id,
+            title="Ticket Reassigned to You",
+            message=f"Supervisor {current_user.full_name} reassigned ticket #{ticket.id} to you",
+            type=NotificationType.TICKET,
+            read=False
+        )
+        db.add(agent_notification)
+        
+        # Notify old agent if there was one
+        if old_agent_id and old_agent_id != reassign_data.agent_id:
+            old_agent_notification = Notification(
+                user_id=old_agent_id,
+                title="Ticket Reassigned",
+                message=f"Supervisor {current_user.full_name} reassigned ticket #{ticket.id} to another agent",
+                type=NotificationType.TICKET,
+                read=False
+            )
+            db.add(old_agent_notification)
         
         db.commit()
         
@@ -394,6 +417,18 @@ def close_ticket(
     
     ticket.status = TicketStatus.CLOSED
     ticket.updated_at = datetime.utcnow()
+    
+    # Notify agent if ticket was assigned
+    if ticket.agent_id:
+        from app.models.analytics import Notification, NotificationType
+        agent_notification = Notification(
+            user_id=ticket.agent_id,
+            title="Ticket Closed by Supervisor",
+            message=f"Supervisor {current_user.full_name} closed ticket #{ticket.id}",
+            type=NotificationType.TICKET,
+            read=False
+        )
+        db.add(agent_notification)
     
     db.commit()
     
@@ -487,4 +522,71 @@ def get_supervisor_analytics(
         "total_tickets": len(tickets_in_range),
         "agent_performance": agent_performance
     }
+
+# Notification APIs
+@router.get("/notifications")
+def get_notifications(
+    unread_only: bool = Query(False, description="Filter to show only unread notifications"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get supervisor notifications"""
+    from app.models.analytics import Notification
+    query = db.query(Notification).filter(Notification.user_id == current_user.id)
+    
+    if unread_only:
+        query = query.filter(Notification.read == False)
+    
+    notifications = query.order_by(Notification.timestamp.desc()).limit(50).all()
+    
+    return [{
+        "id": notif.id,
+        "title": notif.title,
+        "message": notif.message,
+        "type": notif.type,
+        "read": notif.read,
+        "timestamp": notif.timestamp
+    } for notif in notifications]
+
+@router.put("/notifications/{notification_id}/read")
+def mark_notification_read(
+    notification_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Mark notification as read"""
+    from app.models.analytics import Notification
+    notification = db.query(Notification).filter(
+        Notification.id == notification_id,
+        Notification.user_id == current_user.id
+    ).first()
+    
+    if not notification:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    
+    notification.read = True
+    db.commit()
+    
+    return {"message": "Notification marked as read"}
+
+@router.delete("/notifications/{notification_id}")
+def delete_notification(
+    notification_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete notification"""
+    from app.models.analytics import Notification
+    notification = db.query(Notification).filter(
+        Notification.id == notification_id,
+        Notification.user_id == current_user.id
+    ).first()
+    
+    if not notification:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    
+    db.delete(notification)
+    db.commit()
+    
+    return {"message": "Notification deleted successfully"}
 
