@@ -308,30 +308,20 @@ class RAGService:
             # If LLM unavailable, assume in-scope to allow fallback handling
             return {"in_scope": True, "confidence": 0.5, "reason": "LLM unavailable"}
         
-        system_prompt = """You are a classifier for an e-commerce customer support chatbot.
-Determine if a question is IN-SCOPE or OUT-OF-SCOPE."""
+        system_prompt = """You are a Intellica helpful assistant that categorizes e-commercecustomer questions. If the user ask any other question other than e-commerce customer support, respond with "I apologize, but I can only assist with Intellica e-commerce support questions (orders, returns, refunds, shipping, products). For other inquiries, please contact our general support team."""
         
-        prompt = f"""Classify this customer question as IN-SCOPE or OUT-OF-SCOPE.
-
-IN-SCOPE topics:
-- Returns and refunds
-- Order tracking and status
-- Shipping and delivery
-- Product information
-- Account and payment issues
-- Policies (return, shipping, refund)
-
-OUT-OF-SCOPE topics:
-- General knowledge (math, science, history, geography)
-- Personal advice (cooking, health, relationships)
-- Entertainment (jokes, stories, games)
-- Technical support for non-e-commerce products
-- Anything not related to e-commerce customer support
+        prompt = f"""Is this question about e-commerce customer support (orders, returns, shipping, refunds, products, accounts)?
 
 Question: "{query}"
 
-Respond with ONLY a JSON object:
-{{"in_scope": true/false, "confidence": 0.0-1.0, "reason": "brief explanation"}}"""
+Respond with only a JSON object:
+{{"in_scope": true/false, "confidence": 0.0-1.0, "reason": "brief explanation"}}
+
+Examples:
+- "What is your refund policy?" → {{"in_scope": true, "confidence": 0.95, "reason": "refund question"}}
+- "How do I track my order?" → {{"in_scope": true, "confidence": 0.95, "reason": "order tracking"}}
+- "What is 2+2?" → {{"in_scope": false, "confidence": 0.95, "reason": "math question"}}
+- "Tell me a joke" → {{"in_scope": false, "confidence": 0.95, "reason": "entertainment"}}"""
         
         result = self.llm_service.generate(
             prompt=prompt,
@@ -424,29 +414,26 @@ Respond with ONLY a JSON object:
                     if return_req.get('tracking_number'):
                         customer_context_text += f"  Return Tracking: {return_req['tracking_number']}\n"
         
-        # Create STRICT system prompt with few-shot examples
-        system_prompt = """You are a STRICT customer support assistant for Intellica e-commerce platform.
+        # Create natural, conversational prompt (Gemini-optimized)
+        system_prompt = """You are a friendly customer support assistant for Intellica, an e-commerce platform.
 
-CRITICAL RULES - YOU MUST FOLLOW THESE EXACTLY:
-1. You ONLY answer questions about: returns, refunds, order tracking, shipping, products, account issues
-2. If a question is NOT about these topics, respond EXACTLY: "I apologize, but I can only assist with Intellica e-commerce support questions (orders, returns, refunds, shipping, products). For other inquiries, please contact our general support team."
-3. ONLY use information from the Knowledge Base Context provided below
-4. If Knowledge Base Context is empty or irrelevant, respond EXACTLY: "I don't have information about that in my knowledge base. Would you like me to connect you with a human agent?"
-5. DO NOT make up information - only use provided context
-6. DO NOT answer general knowledge questions (math, science, history, etc.)
+Your expertise: Returns, refunds, order tracking, shipping, products, and account help.
 
-GOOD EXAMPLES:
-User: "What is your refund policy?"
-Assistant: "Our refund policy allows returns within 30 days of purchase for most items in original condition..."
+Guidelines:
+- Answer questions using the Knowledge Base information provided
+- If you don't have the information, say so and offer to connect them with a human agent
+- For questions outside e-commerce support, politely redirect: "I specialize in Intellica orders, returns, and shipping. For other questions, please contact our general support team."
+- Be helpful, friendly, and concise
 
-User: "How do I track my order?"
-Assistant: "You can track your order by visiting your account dashboard and clicking on 'Order History'..."
+Examples of good responses:
+Q: "What's your refund policy?"
+A: "We offer refunds within 30 days for items in original condition..."
 
-User: "What is the capital of France?"
-Assistant: "I apologize, but I can only assist with Intellica e-commerce support questions (orders, returns, refunds, shipping, products). For other inquiries, please contact our general support team."
+Q: "Where's my order?"
+A: "Let me help you track that. You can check your order status in your account dashboard..."
 
-User: "Tell me a joke"
-Assistant: "I apologize, but I can only assist with Intellica e-commerce support questions (orders, returns, refunds, shipping, products). For other inquiries, please contact our general support team."
+Q: "What's the weather today?"
+A: "I specialize in Intellica orders, returns, and shipping. For other questions, please contact our general support team."
 
 Now answer the customer's question following these rules strictly."""
 
