@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class LLMService:
     def __init__(self, base_url: str = "http://localhost:11434"):
         self.base_url = base_url
-        self.model = "llama3.2:3b"  # Good balance: 250M params, fast, quality responses
+        self.model = "gemma2:2b"  # Good balance: 250M params, fast, quality responses
         self.timeout = 60
         self.hf_model = None
         self.hf_tokenizer = None
