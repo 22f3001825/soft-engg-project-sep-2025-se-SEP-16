@@ -154,6 +154,32 @@ class AgentApiService {
   async getRefundExplanation(refundId) {
     return this.request(`/copilot/refunds/${refundId}/explanation`);
   }
+
+  // Priority Update
+  async updateTicketPriority(ticketId, priority) {
+    return this.request(`/agent/tickets/${ticketId}/priority`, {
+      method: 'PUT',
+      body: JSON.stringify({ priority })
+    });
+  }
+
+  // Notifications
+  async getNotifications(unreadOnly = false) {
+    const params = unreadOnly ? '?unread_only=true' : '';
+    return this.request(`/agent/notifications${params}`);
+  }
+
+  async markNotificationRead(notificationId) {
+    return this.request(`/agent/notifications/${notificationId}/read`, {
+      method: 'PUT'
+    });
+  }
+
+  async deleteNotification(notificationId) {
+    return this.request(`/agent/notifications/${notificationId}`, {
+      method: 'DELETE'
+    });
+  }
 }
 
 export default new AgentApiService();

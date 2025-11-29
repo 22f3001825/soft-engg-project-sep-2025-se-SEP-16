@@ -6,11 +6,37 @@ import { Separator } from '../../components/ui/separator';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../context/AuthContext';
 import { LogOut, User, Settings, MessageSquare, FileText, LayoutGrid, Mail, IdCard } from 'lucide-react';
+import { NotificationDropdown } from '../../components/ui/notifications';
+import agentApi from '../../services/agentApi';
 
 export const AgentLayout = ({ actions, children }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [notifications, setNotifications] = React.useState([]);
+
+  React.useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000); // Refresh every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      const data = await agentApi.getNotifications();
+      setNotifications(data);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    }
+  };
+
+  const handleMarkRead = async (notificationId) => {
+    await agentApi.markNotificationRead(notificationId);
+  };
+
+  const handleDeleteNotification = async (notificationId) => {
+    await agentApi.deleteNotification(notificationId);
+  };
   
   const getActiveTab = () => {
     const path = location.pathname;
@@ -48,6 +74,13 @@ export const AgentLayout = ({ actions, children }) => {
           </div>
           <div className="flex items-center gap-3">
             {actions}
+            <NotificationDropdown 
+              notifications={notifications}
+              onMarkRead={handleMarkRead}
+              onDelete={handleDeleteNotification}
+              onRefresh={fetchNotifications}
+              userType="agent"
+            />
             <Separator orientation="vertical" className="h-6" />
             <Avatar className="h-8 w-8">
               <AvatarImage src={user?.avatar} alt={user?.name} />
@@ -108,5 +141,4 @@ export const AgentLayout = ({ actions, children }) => {
     </div>
   );
 };
-
 
