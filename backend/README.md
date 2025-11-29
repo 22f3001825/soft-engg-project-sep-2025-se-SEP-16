@@ -39,8 +39,24 @@
    ```bash
    uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
    ```
+   The API will be available at `http://127.0.0.1:8000`
 
-The API will be available at `http://127.0.0.1:8000`
+
+6. **Run Ollama**
+   ```bash
+   ollama serve
+   ```
+
+7. **Pull ollama model(in another terminal)**
+   ```bash
+   ollama pull "model_name"
+   ```
+7. **Update the model name in the code**
+   ```bash
+   Update model name in llm_service.py
+   self.model = "model_name"
+   ```
+
 
 ## Login Credentials
 

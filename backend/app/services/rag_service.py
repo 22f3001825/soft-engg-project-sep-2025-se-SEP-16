@@ -253,13 +253,23 @@ class RAGService:
             search_k = top_k * 3 if category_filter else top_k
             distances, indices = self.index.search(query_vector, min(search_k, self.index.ntotal))
             
-            # Format results
+            # Format results with similarity threshold
             documents = []
+            SIMILARITY_THRESHOLD = 0.35  # Minimum similarity score (0-1 scale)
+            
             for i, idx in enumerate(indices[0]):
                 if idx == -1:  # FAISS returns -1 for empty results
                     continue
                 
                 metadata = self.metadatas[idx]
+                
+                # Calculate similarity score
+                similarity = 1.0 / (1.0 + float(distances[0][i]))
+                
+                # Apply similarity threshold - skip irrelevant documents
+                if similarity < SIMILARITY_THRESHOLD:
+                    logger.debug(f"Skipping document with low similarity: {similarity:.3f}")
+                    continue
                 
                 # Apply category filter if specified
                 if category_filter and metadata.get('category') != category_filter:
@@ -269,18 +279,68 @@ class RAGService:
                     "content": metadata.get('content', self.documents[idx]),
                     "metadata": metadata,
                     "distance": float(distances[0][i]),
-                    "similarity": 1.0 / (1.0 + float(distances[0][i]))  # Convert distance to similarity
+                    "similarity": similarity
                 })
                 
                 # Stop if we have enough results
                 if len(documents) >= top_k:
                     break
             
+            logger.info(f"Retrieved {len(documents)} relevant documents (threshold: {SIMILARITY_THRESHOLD})")
+            
             return documents
             
         except Exception as e:
             logger.error(f"Error retrieving documents from FAISS: {e}")
             return []
+    
+    def classify_intent(self, query: str) -> Dict[str, any]:
+        """
+        Classify if user query is in-scope for e-commerce support
+        
+        Args:
+            query: User question
+            
+        Returns:
+            Dict with 'in_scope' (bool), 'confidence' (float), 'reason' (str)
+        """
+        if not self.llm_service.check_health():
+            # If LLM unavailable, assume in-scope to allow fallback handling
+            return {"in_scope": True, "confidence": 0.5, "reason": "LLM unavailable"}
+        
+        system_prompt = """You are a Intellica helpful assistant that categorizes e-commercecustomer questions. If the user ask any other question other than e-commerce customer support, respond with "I apologize, but I can only assist with Intellica e-commerce support questions (orders, returns, refunds, shipping, products). For other inquiries, please contact our general support team."""
+        
+        prompt = f"""Is this question about e-commerce customer support (orders, returns, shipping, refunds, products, accounts)?
+
+Question: "{query}"
+
+Respond with only a JSON object:
+{{"in_scope": true/false, "confidence": 0.0-1.0, "reason": "brief explanation"}}
+
+Examples:
+- "What is your refund policy?" → {{"in_scope": true, "confidence": 0.95, "reason": "refund question"}}
+- "How do I track my order?" → {{"in_scope": true, "confidence": 0.95, "reason": "order tracking"}}
+- "What is 2+2?" → {{"in_scope": false, "confidence": 0.95, "reason": "math question"}}
+- "Tell me a joke" → {{"in_scope": false, "confidence": 0.95, "reason": "entertainment"}}"""
+        
+        result = self.llm_service.generate(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            temperature=0.1,  # Very low for consistent classification
+            max_tokens=100
+        )
+        
+        if not result['success']:
+            return {"in_scope": True, "confidence": 0.5, "reason": "Classification failed"}
+        
+        try:
+            import json
+            classification = json.loads(result['text'])
+            return classification
+        except:
+            # If parsing fails, assume in-scope to be safe
+            logger.warning(f"Failed to parse intent classification: {result['text']}")
+            return {"in_scope": True, "confidence": 0.5, "reason": "Parse error"}
     
     def generate_response(
         self,
@@ -354,11 +414,28 @@ class RAGService:
                     if return_req.get('tracking_number'):
                         customer_context_text += f"  Return Tracking: {return_req['tracking_number']}\n"
         
-        # Create prompt
-        system_prompt = """You are a helpful and empathetic customer support assistant for Intellica, an e-commerce platform. 
-Your role is to help customers with returns, refunds, and general support questions.
-Always be professional, friendly, and customer-focused.
-When you have access to the customer's order information, use it to provide personalized, specific answers."""
+        # Create natural, conversational prompt (Gemini-optimized)
+        system_prompt = """You are a friendly customer support assistant for Intellica, an e-commerce platform.
+
+Your expertise: Returns, refunds, order tracking, shipping, products, and account help.
+
+Guidelines:
+- Answer questions using the Knowledge Base information provided
+- If you don't have the information, say so and offer to connect them with a human agent
+- For questions outside e-commerce support, politely redirect: "I specialize in Intellica orders, returns, and shipping. For other questions, please contact our general support team."
+- Be helpful, friendly, and concise
+
+Examples of good responses:
+Q: "What's your refund policy?"
+A: "We offer refunds within 30 days for items in original condition..."
+
+Q: "Where's my order?"
+A: "Let me help you track that. You can check your order status in your account dashboard..."
+
+Q: "What's the weather today?"
+A: "I specialize in Intellica orders, returns, and shipping. For other questions, please contact our general support team."
+
+Now answer the customer's question following these rules strictly."""
 
         # Build conversation section
         conversation_section = ""
@@ -378,20 +455,19 @@ Instructions:
 - Use information from the knowledge base when relevant
 - If you have the customer's order/refund information, reference it specifically in your answer
 - If the customer asks about "my order" or "my refund", use their actual order data
-- If the knowledge base doesn't contain the answer, politely say so and offer to connect them with a human agent
+- If the knowledge base doesn't contain the answer, say you don't have that information and offer to connect them with a human agent
 - Be empathetic and understanding
-- Keep responses concise but complete (2-4 sentences)
+- Keep responses concise but complete (2-3 sentences)
 - Use a friendly, conversational tone
-- If discussing policies, explain them in simple terms
 
 Response:"""
         
-        # Generate response
+        # Generate response with optimized parameters
         result = self.llm_service.generate(
             prompt=prompt,
             system_prompt=system_prompt,
-            temperature=0.7,
-            max_tokens=500
+            temperature=0.3,  # Lower = more focused and consistent
+            max_tokens=300    # Shorter = faster responses
         )
         response = result.get('text', 'Unable to generate response')
         
@@ -406,7 +482,7 @@ Response:"""
         customer_context: Optional[Dict] = None
     ) -> Dict[str, any]:
         """
-        Complete RAG pipeline: retrieve and generate answer with customer context
+        Complete RAG pipeline with validation and intent classification
         
         Args:
             query: User query
@@ -418,8 +494,62 @@ Response:"""
         Returns:
             Dictionary with response and metadata
         """
+        # Validate query
+        query = query.strip()
+        
+        # Handle empty query
+        if not query:
+            return {
+                "response": "I didn't receive a question. How can I help you today?",
+                "sources": [],
+                "retrieved_docs": 0,
+                "timestamp": datetime.utcnow().isoformat(),
+                "intent_classification": {"in_scope": False, "reason": "empty_query"}
+            }
+        
+        # Handle very short query
+        if len(query) < 3:
+            return {
+                "response": "Could you please provide more details about what you need help with?",
+                "sources": [],
+                "retrieved_docs": 0,
+                "timestamp": datetime.utcnow().isoformat(),
+                "intent_classification": {"in_scope": False, "reason": "too_short"}
+            }
+        
+        # Handle very long query (truncate with warning)
+        MAX_QUERY_LENGTH = 500
+        if len(query) > MAX_QUERY_LENGTH:
+            logger.warning(f"Query too long ({len(query)} chars), truncating to {MAX_QUERY_LENGTH}")
+            query = query[:MAX_QUERY_LENGTH] + "..."
+        
+        # PHASE 2: Intent classification - check if question is in-scope
+        intent_result = self.classify_intent(query)
+        
+        if not intent_result.get('in_scope', True) and intent_result.get('confidence', 0) > 0.7:
+            # High confidence that question is out-of-scope - refuse immediately
+            logger.info(f"Refusing out-of-scope question: {query[:50]}... (confidence: {intent_result.get('confidence')})")
+            return {
+                "response": "I apologize, but I can only assist with Intellica e-commerce support questions (orders, returns, refunds, shipping, products). For other inquiries, please contact our general support team.",
+                "sources": [],
+                "retrieved_docs": 0,
+                "timestamp": datetime.utcnow().isoformat(),
+                "intent_classification": intent_result
+            }
+        
         # Retrieve relevant documents
         docs = self.retrieve_relevant_docs(query, top_k, category_filter)
+        
+        # If no relevant documents found, offer human agent
+        if not docs:
+            logger.info(f"No relevant documents found for query: {query[:50]}...")
+            return {
+                "response": "I don't have information about that in my knowledge base. Would you like me to connect you with a human agent who can better assist you?",
+                "sources": [],
+                "retrieved_docs": 0,
+                "timestamp": datetime.utcnow().isoformat(),
+                "intent_classification": intent_result
+            }
         
         # Generate response with customer context
         response, source_ids = self.generate_response(
@@ -433,7 +563,8 @@ Response:"""
             "response": response,
             "sources": source_ids,
             "retrieved_docs": len(docs),
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
+            "intent_classification": intent_result
         }
     
     def generate_conversation_summary(

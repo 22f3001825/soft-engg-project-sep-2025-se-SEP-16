@@ -9,18 +9,63 @@ import json
 from typing import List, Dict, Optional
 import time
 import logging
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
 class LLMService:
     def __init__(self, base_url: str = "http://localhost:11434"):
+        # Ollama configuration (fallback)
         self.base_url = base_url
-        self.model = "flan-t5-base"  # Good balance: 250M params, fast, quality responses
+        self.model = os.getenv("OLLAMA_MODEL", "gemma2:2b")
         self.timeout = 60
+        
+        # Gemini API configuration (primary)
+        self.gemini_api_key = os.getenv("GEMINI_API_KEY")
+        self.gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+        self.gemini_client = None
+        
+        # Initialize Gemini if API key is available
+        if self.gemini_api_key and self.gemini_api_key != "GEMINI_API_KEY":
+            self._initialize_gemini()
+        else:
+            logger.warning("Gemini API key not found. Using Ollama as primary LLM.")
+        
+        # Hugging Face models (disabled for now)
         self.hf_model = None
-        self.hf_tokenizer = None
-        self._initialize_hf_model()
+        self.hf_tokenizer = None    
+        # self._initialize_hf_model()
 
+    def _initialize_gemini(self):
+        """Initialize Google Gemini API"""
+        try:
+            import google.generativeai as genai
+            
+            logger.info(f"Initializing Gemini API with model: {self.gemini_model}")
+            genai.configure(api_key=self.gemini_api_key)
+            
+            # Create the model with configuration
+            generation_config = {
+                "temperature": 0.7,
+                "top_p": 0.95,
+                "top_k": 64,
+                "max_output_tokens": 8192,
+            }
+            
+            self.gemini_client = genai.GenerativeModel(
+                model_name=self.gemini_model,
+                generation_config=generation_config
+            )
+            
+            logger.info("Gemini API initialized successfully")
+            
+        except Exception as e:
+            logger.error(f"Failed to initialize Gemini API: {e}")
+            self.gemini_client = None
     
     def _initialize_hf_model(self):
         """Initialize Hugging Face model (Flan-T5-base)"""
@@ -50,53 +95,57 @@ class LLMService:
         max_tokens: int = 200
     ) -> Dict:
         """
-        Generate text using Hugging Face Flan-T5 (fast and reliable)
-        Returns dict with 'text', 'model', 'generation_time_ms'
+        Generate text using Gemini API (primary) or Ollama (fallback)
+        Returns dict with 'text', 'model', 'generation_time_ms', 'success'
         """
         start_time = time.time()
         
-        # Try Hugging Face model first (faster and more reliable)
-        if self.hf_model and self.hf_tokenizer:
+        # Try Gemini API first (fastest and most reliable)
+        if self.gemini_client:
             try:
-                # Format prompt for TinyLlama chat format
+                # Combine system prompt and user prompt
                 if system_prompt:
-                    chat_prompt = f"<|system|>\n{system_prompt}</s>\n<|user|>\n{prompt}</s>\n<|assistant|>\n"
+                    full_prompt = f"{system_prompt}\n\n{prompt}"
                 else:
-                    chat_prompt = f"<|user|>\n{prompt}</s>\n<|assistant|>\n"
+                    full_prompt = prompt
                 
-                # Tokenize and generate
-                inputs = self.hf_tokenizer(chat_prompt, return_tensors="pt", max_length=1024, truncation=True)
-                inputs = inputs.to(self.device)
-                
-                outputs = self.hf_model.generate(
-                    **inputs,
-                    max_new_tokens=max_tokens,
-                    temperature=temperature,
-                    do_sample=True,
-                    top_p=0.9,
-                    top_k=50,
-                    repetition_penalty=1.1,
-                    pad_token_id=self.hf_tokenizer.eos_token_id
+                # Generate with Gemini
+                response = self.gemini_client.generate_content(
+                    full_prompt,
+                    generation_config={
+                        "temperature": temperature,
+                        "max_output_tokens": max_tokens,
+                    }
                 )
                 
-                # Decode only the new tokens (not the input prompt)
-                generated_text = self.hf_tokenizer.decode(outputs[0][inputs['input_ids'].shape[1]:], skip_special_tokens=True)
                 generation_time = int((time.time() - start_time) * 1000)
                 
-                logger.info(f"Generated response in {generation_time}ms using TinyLlama")
+                # Check if response was blocked by safety filters
+                if not response.parts:
+                    logger.warning(f"Gemini response blocked by safety filters (finish_reason: {response.candidates[0].finish_reason})")
+                    # Return a safe fallback response instead of crashing
+                    return {
+                        "text": "I apologize, but I'm having trouble generating a response. Please rephrase your question or contact our support team.",
+                        "model": self.gemini_model,
+                        "generation_time_ms": generation_time,
+                        "success": False
+                    }
+                
+                logger.info(f"Generated response in {generation_time}ms using Gemini {self.gemini_model}")
                 
                 return {
-                    "text": generated_text.strip(),
-                    "model": "tinyllama-1.1b",
+                    "text": response.text.strip(),
+                    "model": self.gemini_model,
                     "generation_time_ms": generation_time,
                     "success": True
                 }
                 
             except Exception as e:
-                logger.error(f"Hugging Face generation failed: {e}")
+                logger.error(f"Gemini API generation failed: {e}")
+                logger.info("Falling back to Ollama...")
                 # Fall through to Ollama fallback
         
-        # Fallback to Ollama if HF fails
+        # Fallback to Ollama
         try:
             messages = []
             if system_prompt:
@@ -123,6 +172,8 @@ class LLMService:
                 result = response.json()
                 generation_time = int((time.time() - start_time) * 1000)
                 
+                logger.info(f"Generated response in {generation_time}ms using Ollama {self.model}")
+                
                 return {
                     "text": result.get("message", {}).get("content", ""),
                     "model": self.model,
@@ -148,7 +199,11 @@ class LLMService:
     
     def check_health(self) -> bool:
         """Check if LLM service is available"""
-        # Check Hugging Face model first
+        # Check Gemini API first
+        if self.gemini_client is not None:
+            return True
+        
+        # Check Hugging Face model
         if self.hf_model is not None:
             return True
         
