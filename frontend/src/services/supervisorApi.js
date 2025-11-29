@@ -108,6 +108,24 @@ class SupervisorApiService {
       body: JSON.stringify({ is_active: isActive })
     });
   }
+
+  // Notifications
+  async getNotifications(unreadOnly = false) {
+    const params = unreadOnly ? '?unread_only=true' : '';
+    return this.request(`/supervisor/notifications${params}`);
+  }
+
+  async markNotificationRead(notificationId) {
+    return this.request(`/supervisor/notifications/${notificationId}/read`, {
+      method: 'PUT'
+    });
+  }
+
+  async deleteNotification(notificationId) {
+    return this.request(`/supervisor/notifications/${notificationId}`, {
+      method: 'DELETE'
+    });
+  }
 }
 
 export default new SupervisorApiService();

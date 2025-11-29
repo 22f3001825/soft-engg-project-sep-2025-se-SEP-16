@@ -260,7 +260,27 @@ export const TicketDetails = () => {
                     <Zap className="h-3 w-3" />
                     Priority
                   </div>
-                  <div className="font-bold text-lg capitalize text-warning">{ticket.priority}</div>
+                  <select 
+                    value={ticket.priority?.toUpperCase()} 
+                    onChange={async (e) => {
+                      const newPriority = e.target.value;
+                      setTicket(prev => ({ ...prev, priority: newPriority }));
+                      try {
+                        await agentApi.updateTicketPriority(ticket.id, newPriority);
+                        toast.success('Priority updated successfully');
+                      } catch (error) {
+                        toast.error('Failed to update priority');
+                        // Revert on error
+                        fetchTicketDetails();
+                      }
+                    }}
+                    className="font-bold text-lg text-warning bg-transparent border-none outline-none cursor-pointer hover:bg-warning/10 rounded px-1"
+                  >
+                    <option value="LOW">Low</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="HIGH">High</option>
+                    <option value="CRITICAL">Critical</option>
+                  </select>
                 </div>
                 <div className="rounded-lg border-2 border-info/10 p-4 bg-gradient-to-br from-card to-info/5 shadow-sm hover:shadow-md transition-shadow">
                   <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">

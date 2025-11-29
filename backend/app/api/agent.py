@@ -28,7 +28,7 @@ from app.services.auth import get_current_user
 from app.core.logging import logger
 from app.core.validation import sanitize_string, sanitize_search_query, validate_uuid
 from app.schemas.agent import (
-    TicketAssign, TicketStatusUpdate, MessageCreate, CustomerNote, 
+    TicketAssign, TicketStatusUpdate, TicketPriorityUpdate, MessageCreate, CustomerNote, 
     CommunicationSend, TemplateCreate, TemplateUpdate
 )
 
@@ -263,6 +263,17 @@ def assign_ticket(
     ticket.agent_id = assign_data.agent_id or current_user.id
     ticket.updated_at = datetime.utcnow()
     
+    # Notify agent about assignment
+    if assign_data.agent_id and assign_data.agent_id != current_user.id:
+        agent_notification = Notification(
+            user_id=assign_data.agent_id,
+            title="New Ticket Assigned",
+            message=f"Ticket #{ticket.id} has been assigned to you by {current_user.full_name}",
+            type=NotificationType.TICKET,
+            read=False
+        )
+        db.add(agent_notification)
+    
     db.commit()
     return {"message": "Ticket assigned successfully"}
 
@@ -301,6 +312,42 @@ def update_ticket_status(
     except Exception:
         db.rollback()
         raise HTTPException(status_code=500, detail="Failed to update ticket status")
+
+@router.put("/tickets/{ticket_id}/priority")
+def update_ticket_priority(
+    ticket_id: str,
+    priority_data: TicketPriorityUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update ticket priority"""
+    try:
+        ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+        if not ticket:
+            raise HTTPException(status_code=404, detail="Ticket not found")
+        
+        old_priority = ticket.priority
+        ticket.priority = TicketPriority(priority_data.priority)
+        ticket.updated_at = datetime.utcnow()
+        
+        # Create notification for customer on priority change
+        if old_priority != ticket.priority:
+            customer_notification = Notification(
+                user_id=ticket.customer_id,
+                title="Ticket Priority Updated",
+                message=f"Your support ticket #{ticket.id} priority changed to {ticket.priority.value}",
+                type=NotificationType.TICKET,
+                read=False
+            )
+            db.add(customer_notification)
+        
+        db.commit()
+        return {"message": "Ticket priority updated successfully"}
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid priority value")
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to update ticket priority")
 
 @router.delete("/tickets/{ticket_id}/messages/{message_id}")
 def delete_ticket_message(
@@ -547,6 +594,19 @@ def resolve_ticket(
     )
     db.add(customer_notification)
     
+    # Notify supervisor about ticket resolution
+    from app.models.user import Supervisor
+    supervisors = db.query(User).join(Supervisor, User.id == Supervisor.user_id).all()
+    for supervisor in supervisors:
+        supervisor_notification = Notification(
+            user_id=supervisor.id,
+            title="Ticket Resolved by Agent",
+            message=f"Agent {current_user.full_name} resolved ticket #{ticket.id}",
+            type=NotificationType.TICKET,
+            read=False
+        )
+        db.add(supervisor_notification)
+    
     db.commit()
     
     return {"message": "Ticket resolved successfully"}
@@ -617,6 +677,19 @@ def approve_refund(
     ticket.status = TicketStatus.RESOLVED
     ticket.updated_at = datetime.utcnow()
     
+    # Notify supervisor about refund approval
+    from app.models.user import Supervisor
+    supervisors = db.query(User).join(Supervisor, User.id == Supervisor.user_id).all()
+    for supervisor in supervisors:
+        supervisor_notification = Notification(
+            user_id=supervisor.id,
+            title="Refund Approved by Agent",
+            message=f"Agent {current_user.full_name} approved refund of ${refund_data.get('amount', 'N/A')} for ticket #{ticket.id}",
+            type=NotificationType.TICKET,
+            read=False
+        )
+        db.add(supervisor_notification)
+    
     db.add(approval_message)
     db.add(customer_notification)
     db.commit()
@@ -667,8 +740,85 @@ def reject_refund(
     ticket.status = TicketStatus.RESOLVED
     ticket.updated_at = datetime.utcnow()
     
+    # Notify supervisor about refund rejection
+    from app.models.user import Supervisor
+    supervisors = db.query(User).join(Supervisor, User.id == Supervisor.user_id).all()
+    for supervisor in supervisors:
+        supervisor_notification = Notification(
+            user_id=supervisor.id,
+            title="Refund Rejected by Agent",
+            message=f"Agent {current_user.full_name} rejected refund for ticket #{ticket.id}. Reason: {reason}",
+            type=NotificationType.TICKET,
+            read=False
+        )
+        db.add(supervisor_notification)
+    
     db.add(rejection_message)
     db.add(customer_notification)
     db.commit()
     
     return {"message": "Refund rejected successfully", "ticket_id": ticket_id}
+
+# Notification APIs
+@router.get("/notifications")
+def get_notifications(
+    unread_only: bool = Query(False, description="Filter to show only unread notifications"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get agent notifications"""
+    query = db.query(Notification).filter(Notification.user_id == current_user.id)
+    
+    if unread_only:
+        query = query.filter(Notification.read == False)
+    
+    notifications = query.order_by(Notification.timestamp.desc()).limit(50).all()
+    
+    return [{
+        "id": notif.id,
+        "title": notif.title,
+        "message": notif.message,
+        "type": notif.type,
+        "read": notif.read,
+        "timestamp": notif.timestamp
+    } for notif in notifications]
+
+@router.put("/notifications/{notification_id}/read")
+def mark_notification_read(
+    notification_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Mark notification as read"""
+    notification = db.query(Notification).filter(
+        Notification.id == notification_id,
+        Notification.user_id == current_user.id
+    ).first()
+    
+    if not notification:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    
+    notification.read = True
+    db.commit()
+    
+    return {"message": "Notification marked as read"}
+
+@router.delete("/notifications/{notification_id}")
+def delete_notification(
+    notification_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete notification"""
+    notification = db.query(Notification).filter(
+        Notification.id == notification_id,
+        Notification.user_id == current_user.id
+    ).first()
+    
+    if not notification:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    
+    db.delete(notification)
+    db.commit()
+    
+    return {"message": "Notification deleted successfully"}

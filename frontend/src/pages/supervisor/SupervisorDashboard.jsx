@@ -305,8 +305,8 @@ export const SupervisorDashboard = () => {
 
             <CardContent className="pt-2 pb-0">
               <div className="relative w-full h-[400px] flex items-center justify-center -mb-2">
-                <ResponsiveContainer>
-                  <PieChart margin={{ top: 0, bottom: 0 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
                     <Pie
                       data={chartData}
                       cx="50%"

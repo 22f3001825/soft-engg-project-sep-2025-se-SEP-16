@@ -76,6 +76,13 @@ class AgentApiService {
     });
   }
 
+  async updateTicketPriority(ticketId, priority) {
+    return this.request(`/agent/tickets/${ticketId}/priority`, {
+      method: 'PUT',
+      body: JSON.stringify({ priority })
+    });
+  }
+
   async addTicketMessage(ticketId, messageData) {
     return this.request(`/agent/tickets/${ticketId}/messages`, {
       method: 'POST',
@@ -153,6 +160,24 @@ class AgentApiService {
 
   async getRefundExplanation(refundId) {
     return this.request(`/copilot/refunds/${refundId}/explanation`);
+  }
+
+  // Notifications
+  async getNotifications(unreadOnly = false) {
+    const params = unreadOnly ? '?unread_only=true' : '';
+    return this.request(`/agent/notifications${params}`);
+  }
+
+  async markNotificationRead(notificationId) {
+    return this.request(`/agent/notifications/${notificationId}/read`, {
+      method: 'PUT'
+    });
+  }
+
+  async deleteNotification(notificationId) {
+    return this.request(`/agent/notifications/${notificationId}`, {
+      method: 'DELETE'
+    });
   }
 }
 

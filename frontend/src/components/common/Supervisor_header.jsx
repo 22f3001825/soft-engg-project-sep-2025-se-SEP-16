@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bell, User, LogOut, Menu } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { notifications } from '../../data/dummyData';
+import { NotificationDropdown } from '../ui/notifications';
+import supervisorApi from '../../services/supervisorApi';
 import { Button } from '../ui/button';
 import {
   DropdownMenu,
@@ -19,8 +20,30 @@ export const Header = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const [notifications, setNotifications] = React.useState([]);
+
+  React.useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      const data = await supervisorApi.getNotifications();
+      setNotifications(data);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    }
+  };
+
+  const handleMarkRead = async (notificationId) => {
+    await supervisorApi.markNotificationRead(notificationId);
+  };
+
+  const handleDeleteNotification = async (notificationId) => {
+    await supervisorApi.deleteNotification(notificationId);
+  };
 
   const handleLogout = () => {
     logout();
@@ -66,6 +89,14 @@ export const Header = () => {
 
           {/* Right Section */}
           <div className="flex items-center space-x-4">
+            {/* Notifications */}
+            <NotificationDropdown 
+              notifications={notifications}
+              onMarkRead={handleMarkRead}
+              onDelete={handleDeleteNotification}
+              onRefresh={fetchNotifications}
+              userType="supervisor"
+            />
 
             {/* 🔹 Profile Menu */}
             <DropdownMenu>
