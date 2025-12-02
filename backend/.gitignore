@@ -2,3 +2,5 @@
 pyproject.toml
 uv.lock
 .env
+uploads
+.venv
