@@ -79,7 +79,7 @@ yarn install
 yarn start
 ```
 
-### 4. AI Services Configuration (Optional)
+### 4. AI Services Configuration 
 
 #### Ollama Setup
 ```bash
@@ -93,7 +93,7 @@ ollama pull "model_name"
 # self.model = "model_name"
 ```
 
-#### API Keys (Optional)
+#### API Keys 
 Create a `.env` file in the backend directory for enhanced AI features:
 ```env
 GROQ_API_KEY=your_groq_api_key_here
