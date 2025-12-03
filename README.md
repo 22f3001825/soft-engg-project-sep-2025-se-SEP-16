@@ -59,6 +59,9 @@ pip install -r requirements.txt
 # Initialize database
 python -c "from app.database import engine; from app.models.base import Base; Base.metadata.create_all(bind=engine)"
 
+# Seed database with test data
+python create_medium_seed.py
+
 # Run the application
 uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
