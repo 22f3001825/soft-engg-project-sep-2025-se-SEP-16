@@ -171,12 +171,7 @@ const VendorDashboard = React.memo(() => {
             <p className="text-gray-600 text-lg">Monitor product performance and customer satisfaction</p>
           </div>
           <div className="flex gap-3">
-            <Link to="/vendor/ai-copilot">
-              <Button className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 shadow-lg hover:shadow-xl transition-all duration-300">
-                <Star className="h-4 w-4 mr-2" />
-                AI Copilot
-              </Button>
-            </Link>
+
             <Link to="/vendor/complaints">
               <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300">
                 <Package className="h-4 w-4 mr-2" />
