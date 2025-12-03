@@ -96,9 +96,18 @@ def get_ticket_summary(
         viewed_by_agents=[current_user.id]
     )
     
-    db.add(summary)
-    db.commit()
-    db.refresh(summary)
+    try:
+        db.add(summary)
+        db.commit()
+        db.refresh(summary)
+    except Exception as e:
+        db.rollback()
+        # Check if summary already exists
+        existing = db.query(TicketSummary).filter(TicketSummary.ticket_id == ticket_id).first()
+        if existing:
+            summary = existing
+        else:
+            raise HTTPException(status_code=500, detail="Failed to create ticket summary")
     
     return {
         "id": summary.id,

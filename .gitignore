@@ -113,3 +113,8 @@ coverage/
 
 # Local development
 .local
+
+# Database files
+*.db
+backend/intellica.db
+backend/app/instance/intellica.db

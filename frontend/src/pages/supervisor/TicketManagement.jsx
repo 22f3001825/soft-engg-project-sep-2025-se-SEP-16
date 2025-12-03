@@ -8,7 +8,7 @@ import { toast } from "sonner";
 
 export const TicketManagement = () => {
   const navigate = useNavigate();
-  const [filter, setFilter] = useState("Open");
+  const [filter, setFilter] = useState("all");
   const [tickets, setTickets] = useState([]);
   const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -146,12 +146,32 @@ export const TicketManagement = () => {
   };
 
   const filteredTickets = tickets.filter((t) => {
-    if (searchQuery.trim() === "") return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      t.customer_name?.toLowerCase().includes(query) ||
-      t.id.toString().includes(query)
-    );
+    // Apply status filter
+    let statusMatch = true;
+    if (filter === "resolved") {
+      statusMatch = t.status === "RESOLVED";
+    } else if (filter === "closed") {
+      statusMatch = t.status === "CLOSED";
+    } else if (filter === "unassigned") {
+      statusMatch = !t.agent_name || t.agent_name === "Unassigned";
+    } else if (filter === "assigned") {
+      statusMatch = t.agent_name && t.agent_name !== "Unassigned";
+    } else if (filter === "open") {
+      statusMatch = t.status === "OPEN" || t.status === "IN_PROGRESS";
+    }
+    // filter === "all" shows everything
+    
+    // Apply search filter
+    let searchMatch = true;
+    if (searchQuery.trim() !== "") {
+      const query = searchQuery.toLowerCase();
+      searchMatch = (
+        t.customer_name?.toLowerCase().includes(query) ||
+        t.id.toString().includes(query)
+      );
+    }
+    
+    return statusMatch && searchMatch;
   });
 
   const getFilteredAgentsForDropdown = () => {
@@ -205,9 +225,18 @@ export const TicketManagement = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="border rounded-lg p-3 flex-1 max-w-md bg-white shadow-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all"
                 />
-                <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md px-6">
-                  Search
-                </Button>
+                <select
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  className="border rounded-lg p-3 bg-white shadow-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all"
+                >
+                  <option value="all">All Tickets</option>
+                  <option value="open">Open</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="closed">Closed</option>
+                  <option value="unassigned">Unassigned</option>
+                  <option value="assigned">Assigned</option>
+                </select>
               </div>
               
               <Button
@@ -281,18 +310,30 @@ export const TicketManagement = () => {
                                 >
                                   {ticket.agent_name && ticket.agent_name !== "Unassigned" ? "Reassign" : "Assign"}
                                 </button>
-                                <button
-                                  className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
-                                  onClick={() => { openModal("resolve", ticket); setDropdownOpen(null); }}
-                                >
-                                  Resolve
-                                </button>
-                                <button
-                                  className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700 rounded-b-lg"
-                                  onClick={() => { openModal("close", ticket); setDropdownOpen(null); }}
-                                >
-                                  Close
-                                </button>
+                                {ticket.status !== "RESOLVED" && ticket.status !== "CLOSED" && (
+                                  <button
+                                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
+                                    onClick={() => { openModal("resolve", ticket); setDropdownOpen(null); }}
+                                  >
+                                    Resolve
+                                  </button>
+                                )}
+                                {ticket.status === "RESOLVED" && (
+                                  <button
+                                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
+                                    onClick={() => { openModal("close", ticket); setDropdownOpen(null); }}
+                                  >
+                                    Close
+                                  </button>
+                                )}
+                                {ticket.status === "CLOSED" && (
+                                  <button
+                                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700 opacity-50 cursor-not-allowed"
+                                    disabled
+                                  >
+                                    Already Closed
+                                  </button>
+                                )}
                               </div>
                             )}
                           </div>

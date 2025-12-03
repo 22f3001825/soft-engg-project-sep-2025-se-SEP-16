@@ -184,7 +184,7 @@ export const TeamManagement = () => {
                       <th className="p-3 rounded-tl-xl">Agent</th>
                       <th className="p-3">Status</th>
                       <th className="p-3">Assigned</th>
-                      <th className="p-3">Resolved</th>
+                      <th className="p-3">Solved</th>
 
                       <th className="p-3 rounded-tr-xl">Action</th>
                     </tr>
@@ -207,7 +207,7 @@ export const TeamManagement = () => {
                           {agent.is_active ? 'Active' : 'Inactive'}
                         </td>
                         <td className="p-3">{agent.assigned_tickets}</td>
-                        <td className="p-3">{agent.resolved_tickets}</td>
+                        <td className="p-3">{agent.solved_tickets}</td>
                         <td className="p-3 flex flex-wrap gap-2">
                           <Button
                             size="sm"
@@ -264,7 +264,7 @@ export const TeamManagement = () => {
                 <strong>Assigned Tickets:</strong> {selectedAgent.assigned_tickets}
               </p>
               <p>
-                <strong>Resolved Tickets:</strong> {selectedAgent.resolved_tickets}
+                <strong>Solved Tickets:</strong> {selectedAgent.solved_tickets}
               </p>
               <p>
                 <strong>Department:</strong> {selectedAgent.department}

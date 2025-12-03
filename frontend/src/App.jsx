@@ -40,7 +40,7 @@ import { SupervisorProfile } from './pages/supervisor/SupervisorProfile';
 
 
 import { VendorDashboard } from './pages/vendor/VendorDashboard';
-import AICopilotPage from './pages/vendor/AICopilotPage';
+
 import { ProductComplaintsPage } from './pages/vendor/ProductComplaintsPage';
 import { ProductDetailsPage } from './pages/vendor/ProductDetailsPage';
 import { ProfilePage as VendorProfilePage } from './pages/vendor/ProfilePage';
@@ -246,14 +246,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/vendor/ai-copilot"
-              element={
-                <ProtectedRoute allowedRoles={['vendor']}>
-                  <AICopilotPage />
-                </ProtectedRoute>
-              }
-            />
+
             <Route
               path="/vendor/complaints"
               element={

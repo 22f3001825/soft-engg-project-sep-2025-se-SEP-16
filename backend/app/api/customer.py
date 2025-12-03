@@ -29,6 +29,7 @@ from app.models.ticket import Ticket, Message, TicketStatus, TicketPriority
 from app.models.product import Product, ProductComplaint, ComplaintStatus
 from app.models.analytics import Notification, NotificationType
 from app.services.auth import get_current_user
+from app.services.llm_service import llm_service
 from app.schemas.customer import (
     TicketCreate, MessageCreate, ReturnRequest, ProfileUpdate
 )
@@ -625,12 +626,59 @@ def create_ticket(
                 logger.warning(f"Invalid order ID provided: {order_id} for customer: {current_user.id}")
                 raise HTTPException(status_code=400, detail="Invalid order ID")
         
+        # Get customer data for priority classification
+        customer = db.query(Customer).filter(Customer.user_id == current_user.id).first()
+        
+        # Count recent tickets (last 30 days)
+        thirty_days_ago = datetime.now() - timedelta(days=30)
+        recent_tickets_count = db.query(Ticket).filter(
+            Ticket.customer_id == current_user.id,
+            Ticket.created_at >= thirty_days_ago
+        ).count()
+        
+        # Get total orders
+        total_orders = db.query(Order).filter(Order.customer_id == current_user.id).count()
+        
+        # Prepare customer data for classification
+        # Determine customer tier based on total orders (VIP if >= 10 orders)
+        customer_tier = "vip" if total_orders >= 10 else "regular"
+        
+        customer_data = {
+            "tier": customer_tier,
+            "total_orders": total_orders,
+            "recent_tickets": recent_tickets_count
+        }
+        
+        # Classify ticket priority automatically using Gemini API
+        logger.info(f"Classifying priority for ticket from customer {current_user.id}")
+        priority_result = llm_service.classify_ticket_priority(
+            ticket_message=description_sanitized,
+            subject=subject_sanitized,
+            category=getattr(ticket_data, 'category', 'General'),
+            customer_data=customer_data
+        )
+        
+        # Use classified priority, fallback to user-provided if classification failed
+        classified_priority = priority_result["priority"]
+        priority_confidence = priority_result["confidence"]
+        priority_reason = priority_result["reason"]
+        priority_method = priority_result["method"]
+        
+        logger.info(f"Ticket priority classified as {classified_priority} "
+                   f"(confidence: {priority_confidence:.2f}, method: {priority_method}, "
+                   f"reason: {priority_reason})")
+        
+        # Convert string priority to enum
+        priority_enum = TicketPriority.HIGH if classified_priority == "high" else \
+                       TicketPriority.MEDIUM if classified_priority == "medium" else \
+                       TicketPriority.LOW
+        
         ticket = Ticket(
             id=str(uuid.uuid4()),
             customer_id=current_user.id,
             subject=subject_sanitized,
             status=TicketStatus.OPEN,
-            priority=TicketPriority(ticket_data.priority),
+            priority=priority_enum,
             related_order_id=order_id
         )
     except HTTPException:
