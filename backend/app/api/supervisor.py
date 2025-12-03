@@ -70,8 +70,17 @@ def get_supervisor_dashboard(
         resolved_tickets_count = db.query(Ticket).filter(Ticket.status == TicketStatus.RESOLVED).count()
         closed_tickets_count = db.query(Ticket).filter(Ticket.status == TicketStatus.CLOSED).count()
         
+        # Debug: Check actual resolved tickets in database
+        resolved_tickets = db.query(Ticket).filter(Ticket.status == TicketStatus.RESOLVED).all()
+        logger.info(f"Resolved tickets found: {[t.id for t in resolved_tickets]}")
+        logger.info(f"Resolved count: {resolved_tickets_count}")
+        
         # Show in_progress as "assigned" tickets
         assigned_tickets = in_progress_tickets_count
+        
+        solved_tickets_count = resolved_tickets_count + closed_tickets_count
+        logger.info(f"Dashboard stats - Total: {total_tickets}, Resolved only: {resolved_tickets_count}, Closed only: {closed_tickets_count}, Solved tickets: {solved_tickets_count}")
+        logger.info(f"Returning dashboard data with solved_tickets: {solved_tickets_count}")
         
         # Recent tickets (last 5) - using correct relationships
         recent_tickets = db.query(Ticket).order_by(Ticket.created_at.desc()).limit(5).all()
@@ -107,8 +116,8 @@ def get_supervisor_dashboard(
                 Ticket.status.in_([TicketStatus.OPEN, TicketStatus.IN_PROGRESS])
             ).count()
             
-            # Count real resolved tickets
-            resolved_tickets_count = db.query(Ticket).filter(
+            # Count real solved tickets (resolved + closed)
+            agent_solved_tickets_count = db.query(Ticket).filter(
                 Ticket.agent_id == agent_user.id,
                 Ticket.status.in_([TicketStatus.RESOLVED, TicketStatus.CLOSED])
             ).count()
@@ -117,7 +126,7 @@ def get_supervisor_dashboard(
                 "id": agent_user.id,
                 "name": agent_user.full_name,
                 "assigned_tickets": assigned_tickets_count,
-                "resolved_tickets": resolved_tickets_count
+                "solved_tickets": agent_solved_tickets_count
             })
         
         dashboard_data = {
@@ -126,7 +135,7 @@ def get_supervisor_dashboard(
                 "active_agents": active_agents,
                 "open_tickets": open_tickets_count,
                 "assigned_tickets": assigned_tickets,
-                "resolved_tickets": resolved_tickets_count,
+                "solved_tickets": solved_tickets_count,
                 "closed_tickets": closed_tickets_count
             },
             "recent_tickets": recent_tickets_data,
@@ -140,6 +149,7 @@ def get_supervisor_dashboard(
         }
         
         logger.info(f"Dashboard data successfully retrieved for supervisor ID: {current_user.id}")
+        logger.info(f"Final dashboard_data stats: {dashboard_data['stats']}")
         return dashboard_data
         
     except Exception as e:
@@ -237,8 +247,8 @@ def get_all_agents(
         if status_filter and status_filter.lower() != agent_status.lower():
             continue
         
-        # Calculate real resolved tickets
-        resolved_tickets = db.query(Ticket).filter(
+        # Calculate real solved tickets (resolved + closed)
+        solved_tickets = db.query(Ticket).filter(
             Ticket.agent_id == agent_user.id,
             Ticket.status.in_([TicketStatus.RESOLVED, TicketStatus.CLOSED])
         ).count()
@@ -249,7 +259,7 @@ def get_all_agents(
             "email": agent_user.email,
             "is_active": agent_user.is_active,
             "assigned_tickets": len(assigned_tickets),
-            "resolved_tickets": resolved_tickets,
+            "solved_tickets": solved_tickets,
             "department": agent_profile.department if agent_profile else "Support",
             "current_tickets": [t.id for t in assigned_tickets]
         })

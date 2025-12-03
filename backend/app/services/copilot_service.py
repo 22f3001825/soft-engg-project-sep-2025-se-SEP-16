@@ -66,7 +66,9 @@ Respond with valid JSON only."""
             return self._fallback_summary(ticket, messages)
         
         try:
-            summary_data = json.loads(result['text'])
+            # Clean and parse JSON response
+            cleaned_text = self._clean_json_response(result['text'])
+            summary_data = json.loads(cleaned_text)
             logger.info(f"Successfully generated AI summary for ticket {ticket.id} using {result['model']}")
         except Exception as e:
             logger.error(f"Failed to parse JSON from LLM response for ticket {ticket.id}: {e}. Response: {result['text'][:200]}")
@@ -133,7 +135,8 @@ Format as JSON array."""
             return self._fallback_suggestions(ticket, customer)
         
         try:
-            suggestions = json.loads(result['text'])
+            cleaned_text = self._clean_json_response(result['text'])
+            suggestions = json.loads(cleaned_text)
             if not isinstance(suggestions, list):
                 suggestions = [suggestions]
         except:
@@ -207,7 +210,8 @@ Format as valid JSON."""
             return self._fallback_explanation(refund_request, fraud_check)
         
         try:
-            explanation = json.loads(result['text'])
+            cleaned_text = self._clean_json_response(result['text'])
+            explanation = json.loads(cleaned_text)
         except:
             explanation = self._parse_explanation_fallback(result['text'], refund_request)
         
@@ -305,5 +309,48 @@ Format as valid JSON."""
             "policy_references": [],
             "next_steps": ["Review in progress"]
         }
+    
+    def _clean_json_response(self, text: str) -> str:
+        """Clean LLM response to extract valid JSON"""
+        import html
+        
+        # Remove HTML encoding
+        text = html.unescape(text)
+        
+        # Remove markdown code blocks
+        if '```json' in text:
+            start = text.find('```json') + 7
+            end = text.find('```', start)
+            if end != -1:
+                text = text[start:end]
+            else:
+                text = text[start:]
+        elif '```' in text:
+            start = text.find('```') + 3
+            end = text.find('```', start)
+            if end != -1:
+                text = text[start:end]
+            else:
+                text = text[start:]
+        
+        # Find JSON object boundaries
+        if '{' in text and '}' in text:
+            start = text.find('{')
+            # Find matching closing brace
+            brace_count = 0
+            end = -1
+            for i in range(start, len(text)):
+                if text[i] == '{':
+                    brace_count += 1
+                elif text[i] == '}':
+                    brace_count -= 1
+                    if brace_count == 0:
+                        end = i + 1
+                        break
+            
+            if end != -1:
+                text = text[start:end]
+        
+        return text.strip()
 
 copilot_service = CopilotService()

@@ -79,6 +79,8 @@ export const SupervisorDashboard = () => {
     try {
       setLoading(true);
       const data = await supervisorApi.getDashboard();
+      console.log('Dashboard API response:', data);
+      console.log('Resolved tickets from API:', data.stats?.resolved_tickets);
       setDashboardData(data);
       
       // Use real chart data from API
@@ -104,7 +106,7 @@ export const SupervisorDashboard = () => {
           active_agents: 8,
           open_tickets: 42,
           assigned_tickets: 89,
-          resolved_tickets: 67,
+          solved_tickets: 67,
           closed_tickets: 47
         },
         team_performance: [
@@ -195,7 +197,7 @@ export const SupervisorDashboard = () => {
             { title: "Total Tickets", value: dashboardData.stats.total_tickets, icon: "BarChart3" },
             { title: "Active Agents", value: dashboardData.stats.active_agents, icon: "Activity" },
             { title: "Open Tickets", value: dashboardData.stats.open_tickets, icon: "TrendingUp" },
-            { title: "Resolved Tickets", value: dashboardData.stats.resolved_tickets, icon: "CheckCircle2" }
+            { title: "Solved Tickets", value: dashboardData.stats.solved_tickets, icon: "CheckCircle2" }
           ].map((stat, index) => {
             const Icon = ICONS[stat.icon];
             return (
@@ -282,7 +284,7 @@ export const SupervisorDashboard = () => {
                           {member.name}
                         </p>
                         <p className="text-sm text-gray-500">
-                          Assigned: {member.assigned_tickets} | Resolved: {member.resolved_tickets}
+                          Assigned: {member.assigned_tickets} | Solved: {member.solved_tickets}
                         </p>
                       </div>
                     </div>
