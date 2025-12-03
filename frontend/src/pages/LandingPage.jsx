@@ -89,7 +89,7 @@ const LandingPage = () => {
     { name: "Deepti Gurnani", roll: "21f3002204", role: "Product Manager" },
     { name: "Harsh Mathur", roll: "23f1000602", role: "Frontend Developer" },
     { name: "Harshita Jain", roll: "21f1003224", role: "Scrum Master" },
-    { name: "Mayank Singh", roll: "23f1000598", role: "Frontend Developer" },
+    { name: "Mayank Singh", roll: "23f1000598", role: "Full Stack Developer" },
     { name: "Rachita Vohra", roll: "22f1001847", role: "Tester" },
     { name: "Mohammad Aman", roll: "21f3000044", role: "Backend Developer" },
     { name: "Duvvuri Sai Kyvalya", roll: "21f1003975", role: "GenAI Developer" }
@@ -103,7 +103,7 @@ const LandingPage = () => {
   ];
 
   return (
-    <div className="min-h-screen text-slate-800 overflow-hidden" style={{backgroundColor: '#F4F9E9'}}>
+    <div className="min-h-screen text-slate-800 overflow-hidden" style={{ backgroundColor: '#F4F9E9' }}>
       <style>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(20px); }
@@ -111,9 +111,9 @@ const LandingPage = () => {
         }
         .fade-in { animation: fadeIn 0.6s ease-out forwards; }
       `}</style>
-      
+
       {/* NAVBAR */}
-      <nav className="fixed top-0 left-0 right-0 z-50" style={{backgroundColor: '#153243'}}>
+      <nav className="fixed top-0 left-0 right-0 z-50" style={{ backgroundColor: '#153243' }}>
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
@@ -123,7 +123,7 @@ const LandingPage = () => {
               </div>
               <span className="text-2xl font-bold text-white">Intellica</span>
             </div>
-            
+
             {/* Navigation Links */}
             <div className="hidden md:flex items-center space-x-8">
               <button onClick={() => scrollToSection('features')} className="text-white/80 hover:text-white font-medium transition-colors">
@@ -136,7 +136,7 @@ const LandingPage = () => {
                 Team
               </button>
             </div>
-            
+
             {/* Auth Buttons */}
             <div className="flex items-center space-x-4">
               <Link to="/login" className="text-white/80 hover:text-white font-medium transition-colors">
@@ -154,37 +154,37 @@ const LandingPage = () => {
       <section className="relative min-h-screen flex items-center justify-center pt-24 pb-16">
         <div className="container mx-auto px-6 text-center relative z-10 max-w-5xl">
           <div className="fade-in">
-            
+
             {/* Main Title */}
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-black mb-6 tracking-tight leading-tight">
               <span className="text-slate-800">
                 Intellica
               </span>
             </h1>
-            
+
             {/* Subtitle */}
             <p className="text-xl md:text-2xl text-slate-600 mb-12 max-w-3xl mx-auto leading-relaxed">
               Transform customer support with AI-powered intelligence and seamless collaboration
             </p>
-            
+
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-              <Link 
-                to="/register" 
+              <Link
+                to="/register"
                 className="bg-gradient-to-r from-blue-600 to-purple-600 px-10 py-4 text-lg font-semibold rounded-xl shadow-lg inline-flex items-center justify-center hover:shadow-xl transition-shadow duration-200 text-white"
               >
-                Get Started 
+                Get Started
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
-              
-              <Link 
-                to="/login" 
+
+              <Link
+                to="/login"
                 className="bg-white border border-slate-300 hover:border-blue-400 px-10 py-4 text-lg font-semibold rounded-xl shadow-sm inline-flex items-center justify-center hover:shadow-lg transition-all duration-200 text-slate-700 hover:text-blue-600"
               >
                 Sign In
               </Link>
             </div>
-            
+
             {/* AI Features - Enhanced Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
               <div style={{
@@ -197,16 +197,16 @@ const LandingPage = () => {
                 position: 'relative',
                 overflow: 'hidden'
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.boxShadow = '0 12px 28px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08)';
-                e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.3)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04)';
-                e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)';
-              }}>
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.boxShadow = '0 12px 28px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08)';
+                  e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04)';
+                  e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)';
+                }}>
                 <div className="flex items-center mb-4">
                   <div style={{
                     width: '52px',
@@ -250,16 +250,16 @@ const LandingPage = () => {
                 position: 'relative',
                 overflow: 'hidden'
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.boxShadow = '0 12px 28px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08)';
-                e.currentTarget.style.borderColor = 'rgba(168, 85, 247, 0.3)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04)';
-                e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)';
-              }}>
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.boxShadow = '0 12px 28px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08)';
+                  e.currentTarget.style.borderColor = 'rgba(168, 85, 247, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04)';
+                  e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)';
+                }}>
                 <div className="flex items-center mb-4">
                   <div style={{
                     width: '52px',
@@ -295,7 +295,7 @@ const LandingPage = () => {
             </div>
           </div>
         </div>
-        
+
         <div
           className="absolute bottom-12 left-1/2 transform -translate-x-1/2 cursor-pointer"
           onClick={() => scrollToSection('features')}
@@ -320,7 +320,7 @@ const LandingPage = () => {
               Deliver exceptional customer support with our comprehensive suite of intelligent tools
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
               <div key={index} style={{
@@ -333,16 +333,16 @@ const LandingPage = () => {
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 position: 'relative'
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-6px)';
-                e.currentTarget.style.boxShadow = '0 16px 32px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08)';
-                e.currentTarget.style.borderColor = 'rgba(148, 163, 184, 0.4)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04)';
-                e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)';
-              }}>
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-6px)';
+                  e.currentTarget.style.boxShadow = '0 16px 32px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08)';
+                  e.currentTarget.style.borderColor = 'rgba(148, 163, 184, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04)';
+                  e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)';
+                }}>
                 <div className="mb-5">
                   <div className={`bg-gradient-to-r ${feature.gradient}`} style={{
                     width: '52px',
@@ -357,7 +357,7 @@ const LandingPage = () => {
                     <feature.icon className="h-6 w-6 text-white" />
                   </div>
                 </div>
-                
+
                 <h3 style={{
                   fontSize: '18px',
                   fontWeight: '700',
@@ -396,7 +396,7 @@ const LandingPage = () => {
               Tailored experiences that empower every member of your support team
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-10">
             {roles.map((item, index) => (
               <div key={index} style={{
@@ -409,16 +409,16 @@ const LandingPage = () => {
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 position: 'relative'
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-8px)';
-                e.currentTarget.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.14), 0 6px 12px rgba(0, 0, 0, 0.08)';
-                e.currentTarget.style.borderColor = 'rgba(148, 163, 184, 0.4)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04)';
-                e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)';
-              }}>
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-8px)';
+                  e.currentTarget.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.14), 0 6px 12px rgba(0, 0, 0, 0.08)';
+                  e.currentTarget.style.borderColor = 'rgba(148, 163, 184, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04)';
+                  e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)';
+                }}>
                 <div className="mb-6">
                   <div className={`bg-gradient-to-r ${item.color}`} style={{
                     width: '58px',
@@ -433,7 +433,7 @@ const LandingPage = () => {
                     <item.icon className="h-7 w-7 text-white" />
                   </div>
                 </div>
-                
+
                 <h3 style={{
                   fontSize: '20px',
                   fontWeight: '700',
@@ -443,7 +443,7 @@ const LandingPage = () => {
                 }}>
                   {item.role}
                 </h3>
-                
+
                 <ul className="space-y-3">
                   {item.features.map((feature, idx) => (
                     <li key={idx} className="flex items-start">
@@ -497,16 +497,16 @@ const LandingPage = () => {
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 position: 'relative'
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-6px)';
-                e.currentTarget.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.14), 0 6px 12px rgba(0, 0, 0, 0.08)';
-                e.currentTarget.style.borderColor = 'rgba(148, 163, 184, 0.4)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04)';
-                e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)';
-              }}>
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-6px)';
+                  e.currentTarget.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.14), 0 6px 12px rgba(0, 0, 0, 0.08)';
+                  e.currentTarget.style.borderColor = 'rgba(148, 163, 184, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04)';
+                  e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)';
+                }}>
                 <div className="mb-5 relative">
                   <div style={{
                     width: '68px',
@@ -526,7 +526,7 @@ const LandingPage = () => {
                     {member.name.split(' ').map(n => n[0]).join('')}
                   </div>
                 </div>
-                
+
                 <h3 style={{
                   fontSize: '18px',
                   fontWeight: '700',
@@ -536,7 +536,7 @@ const LandingPage = () => {
                 }}>
                   {member.name}
                 </h3>
-                
+
                 <p style={{
                   color: '#3b82f6',
                   fontSize: '12px',
@@ -546,7 +546,7 @@ const LandingPage = () => {
                 }}>
                   {member.roll}
                 </p>
-                
+
                 <div style={{
                   display: 'inline-block',
                   padding: '8px 14px',
@@ -580,11 +580,11 @@ const LandingPage = () => {
               <span className="ml-4 text-2xl font-bold text-slate-800 group-hover:text-blue-600 transition-colors">Intellica</span>
             </Link>
           </div>
-          
+
           <p className="text-slate-600 mb-6">
             © 2025 Intellica. Advanced Customer Support Platform.
           </p>
-          
+
           <div className="flex items-center justify-center gap-3 text-sm text-slate-500">
             <Sparkles className="h-4 w-4 text-purple-500" />
             <span>Built with passion by an amazing team</span>
