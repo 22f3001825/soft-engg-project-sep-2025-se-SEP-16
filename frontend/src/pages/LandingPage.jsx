@@ -90,7 +90,7 @@ const LandingPage = () => {
     { name: "Harsh Mathur", roll: "23f1000602", role: "Frontend Developer" },
     { name: "Harshita Jain", roll: "21f1003224", role: "Scrum Master" },
     { name: "Mayank Singh", roll: "23f1000598", role: "Full Stack Developer" },
-    { name: "Rachita Vohra", roll: "22f1001847", role: "Tester" },
+    { name: "Rachita Vohra", roll: "22f1001847", role: "Developer & Tester" },
     { name: "Mohammad Aman", roll: "21f3000044", role: "Backend Developer" },
     { name: "Duvvuri Sai Kyvalya", roll: "21f1003975", role: "GenAI Developer" }
   ];
@@ -289,7 +289,7 @@ const LandingPage = () => {
                   lineHeight: '1.65',
                   fontWeight: '400'
                 }}>
-                  Smart assistance for agents, vendors & supervisors
+                  Intelligent agent assistant with automated insights and recommendations
                 </div>
               </div>
             </div>
