@@ -24,16 +24,16 @@ class LLMService:
         self.model = os.getenv("OLLAMA_MODEL", "gemma2:2b")
         self.timeout = 60
         
-        # Grok API configuration (primary - fastest!)
+        # Groq API configuration (primary - fastest!)
         self.grok_api_key = os.getenv("GROK_API_KEY")
         self.grok_model = os.getenv("GROK_MODEL", "llama-3.1-8b-instant")
         self.grok_base_url = "https://api.groq.com/openai/v1"
         
-        # Initialize Grok if API key is available
+        # Initialize Groq if API key is available
         if self.grok_api_key and self.grok_api_key not in ["your_api_key_here", "GROK_API_KEY"]:
-            logger.info(f"Grok API initialized with model: {self.grok_model}")
+            logger.info(f"Groq API initialized with model: {self.grok_model}")
         else:
-            logger.warning("Grok API key not found. Will use Gemini as primary.")
+            logger.warning("Groq API key not found. Will use Gemini as primary.")
         
         # Gemini API configuration (secondary fallback)
         self.gemini_api_key = os.getenv("GEMINI_API_KEY")
@@ -525,5 +525,10 @@ Respond with ONLY a JSON object:
             "reason": "Classified using rule-based fallback",
             "method": "rule_based"
         }
+
+    def generate_response(self, prompt: str, system_prompt: Optional[str] = None) -> str:
+        """Simple wrapper for generate method that returns just the text"""
+        result = self.generate(prompt, system_prompt)
+        return result.get('text', '')
 
 llm_service = LLMService()

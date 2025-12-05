@@ -240,22 +240,18 @@ Format as valid JSON."""
     
     def _fallback_summary(self, ticket: Ticket, messages: List[Message]) -> Dict:
         """Fallback summary when LLM unavailable"""
-        # Get first message preview
-        first_msg_preview = messages[0].content[:150] + "..." if messages and len(messages[0].content) > 150 else (messages[0].content if messages else "")
-        
         return {
-            "summary": f"Customer support request: {ticket.subject}. Agent review required.",
+            "summary": f"Ticket regarding: {ticket.subject}. Contains {len(messages)} messages.",
             "key_points": [
-                f"Topic: {ticket.subject}",
+                f"Subject: {ticket.subject}",
                 f"Status: {ticket.status.value if hasattr(ticket.status, 'value') else ticket.status}",
-                f"Priority: {ticket.priority.value if hasattr(ticket.priority, 'value') else ticket.priority}",
-                f"Message preview: {first_msg_preview}" if first_msg_preview else "No message content"
+                f"Messages: {len(messages)}"
             ],
             "customer_sentiment": "NEUTRAL",
             "urgency_level": ticket.priority.value if hasattr(ticket.priority, 'value') else "MEDIUM",
             "detected_category": "General",
             "suggested_actions": ["Review ticket details", "Respond to customer"],
-            "model_used": "fallback",
+            "model_used": "fallback_summary",
             "generation_time_ms": 0,
             "confidence_score": 0.3
         }

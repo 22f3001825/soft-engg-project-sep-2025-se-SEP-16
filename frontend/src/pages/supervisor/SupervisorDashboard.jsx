@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Header } from "../../components/common/Supervisor_header";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
+import AICopilot from "../../components/supervisor/AICopilot";
 import {
   BarChart3,
   Activity,
@@ -244,6 +245,9 @@ export const SupervisorDashboard = () => {
             );
           }) : []}
         </div>
+
+        {/* ---------- AI Copilot Section ---------- */}
+        <AICopilot />
 
         {/* ---------- Team Performance & Ticket Chart ---------- */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

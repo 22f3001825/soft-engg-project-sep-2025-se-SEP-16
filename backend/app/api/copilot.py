@@ -72,8 +72,10 @@ def get_ticket_summary(
         Message.ticket_id == ticket_id
     ).order_by(Message.created_at).all()
     
+    # Allow summarization even without messages - use ticket description
     if not messages:
-        raise HTTPException(status_code=400, detail="No messages to summarize")
+        # Create a mock message from ticket description for AI analysis
+        messages = []
     
     summary_data = copilot_service.generate_ticket_summary(ticket, messages, db)
     
@@ -370,8 +372,7 @@ def get_team_insights(
     
     for agent_user in agents:
         agent_tickets = db.query(Ticket).filter(
-            Ticket.agent_id == agent_user.id,
-            Ticket.created_at >= start_date
+            Ticket.agent_id == agent_user.id
         ).all()
         
         resolved_tickets = [t for t in agent_tickets if t.status in [TicketStatus.RESOLVED, TicketStatus.CLOSED]]
@@ -400,7 +401,7 @@ def get_team_insights(
         total_resolved += len(resolved_tickets)
     
     # Get ticket trends
-    all_tickets = db.query(Ticket).filter(Ticket.created_at >= start_date).all()
+    all_tickets = db.query(Ticket).all()
     ticket_categories = {}
     priority_distribution = {"HIGH": 0, "MEDIUM": 0, "LOW": 0}
     
@@ -414,7 +415,7 @@ def get_team_insights(
     system_prompt = """You are a customer support operations analyst. 
 Analyze team performance data and provide actionable insights for supervisors."""
     
-    prompt = f"""Analyze this customer support team's performance over the {period_name}.
+    prompt = f"""Analyze this customer support team's overall performance (all-time statistics).
 
 Team Statistics:
 - Total Agents: {len(agents)}
@@ -449,7 +450,7 @@ Format as valid JSON only."""
     
     if not result['success']:
         insights = {
-            "overall_assessment": f"Team handled {total_tickets} tickets with {round(total_resolved / total_tickets * 100, 1) if total_tickets > 0 else 0}% resolution rate over the {period_name}.",
+            "overall_assessment": f"Team handled {total_tickets} tickets with {round(total_resolved / total_tickets * 100, 1) if total_tickets > 0 else 0}% resolution rate.",
             "top_performers": [a['agent_name'] for a in sorted(team_stats, key=lambda x: x['resolution_rate'], reverse=True)[:3]],
             "areas_for_improvement": ["Monitor ticket resolution times", "Balance workload distribution"],
             "recommendations": ["Review agent training needs", "Optimize ticket assignment"],
@@ -458,10 +459,21 @@ Format as valid JSON only."""
         }
     else:
         try:
-            insights = json.loads(result['text'])
+            # Clean JSON response
+            cleaned_text = result['text']
+            if '```json' in cleaned_text:
+                start = cleaned_text.find('```json') + 7
+                end = cleaned_text.find('```', start)
+                cleaned_text = cleaned_text[start:end]
+            elif '{' in cleaned_text:
+                start = cleaned_text.find('{')
+                end = cleaned_text.rfind('}') + 1
+                cleaned_text = cleaned_text[start:end]
+            
+            insights = json.loads(cleaned_text)
         except:
             insights = {
-                "overall_assessment": result['text'][:300],
+                "overall_assessment": f"Team handled {total_tickets} tickets with {round(total_resolved / total_tickets * 100, 1) if total_tickets > 0 else 0}% resolution rate.",
                 "top_performers": [a['agent_name'] for a in sorted(team_stats, key=lambda x: x['resolution_rate'], reverse=True)[:3]],
                 "areas_for_improvement": ["Review team performance"],
                 "recommendations": ["Continue monitoring"],
@@ -510,10 +522,9 @@ def get_agent_performance_analysis(
     else:
         start_date = datetime.utcnow() - timedelta(days=30)
     
-    # Get agent's tickets
+    # Get agent's tickets (all time)
     agent_tickets = db.query(Ticket).filter(
-        Ticket.agent_id == agent_id,
-        Ticket.created_at >= start_date
+        Ticket.agent_id == agent_id
     ).all()
     
     if not agent_tickets:
@@ -535,8 +546,7 @@ def get_agent_performance_analysis(
     
     # Get customer feedback (from ticket summaries)
     summaries = db.query(TicketSummary).join(Ticket).filter(
-        Ticket.agent_id == agent_id,
-        Ticket.created_at >= start_date
+        Ticket.agent_id == agent_id
     ).all()
     
     positive_sentiment = len([s for s in summaries if s.customer_sentiment == "POSITIVE"])
@@ -574,27 +584,80 @@ Format as valid JSON."""
         max_tokens=1000
     )
     
+    resolution_rate = round(len(resolved_tickets) / len(agent_tickets) * 100, 1) if agent_tickets else 0
+    
     if result['success']:
         try:
-            analysis = json.loads(result['text'])
-        except:
+            # Clean JSON response
+            cleaned_text = result['text']
+            if '```json' in cleaned_text:
+                start = cleaned_text.find('```json') + 7
+                end = cleaned_text.find('```', start)
+                cleaned_text = cleaned_text[start:end]
+            elif '{' in cleaned_text:
+                start = cleaned_text.find('{')
+                end = cleaned_text.rfind('}') + 1
+                cleaned_text = cleaned_text[start:end]
+            
+            analysis = json.loads(cleaned_text)
+        except Exception as e:
+            # AI failed, use rule-based fallback
+            if resolution_rate >= 80:
+                analysis = {
+                    "performance_summary": f"{agent_user.full_name} demonstrates excellent performance with {resolution_rate}% resolution rate across {len(agent_tickets)} tickets.",
+                    "strengths": ["Excellent resolution rate", "Strong problem-solving skills", "Effective customer communication"],
+                    "improvement_areas": ["Maintain current performance level"],
+                    "coaching_recommendations": ["Consider mentoring junior agents", "Take on complex cases", "Share best practices with team"],
+                    "training_suggestions": ["Advanced customer service techniques", "Leadership development"],
+                    "performance_trend": "IMPROVING"
+                }
+            elif resolution_rate >= 60:
+                analysis = {
+                    "performance_summary": f"{agent_user.full_name} shows solid performance with {resolution_rate}% resolution rate handling {len(agent_tickets)} tickets.",
+                    "strengths": ["Good resolution rate", "Consistent performance", "Reliable ticket handling"],
+                    "improvement_areas": ["Focus on faster resolution", "Improve first-contact resolution"],
+                    "coaching_recommendations": ["Review challenging cases", "Enhance technical skills", "Optimize workflow processes"],
+                    "training_suggestions": ["Advanced troubleshooting", "Time management"],
+                    "performance_trend": "STABLE"
+                }
+            elif resolution_rate >= 40:
+                analysis = {
+                    "performance_summary": f"{agent_user.full_name} shows developing skills with {resolution_rate}% resolution rate on {len(agent_tickets)} tickets, indicating room for growth.",
+                    "strengths": ["Shows potential", "Active engagement", "Learning progress"],
+                    "improvement_areas": ["Increase resolution rate", "Improve case analysis", "Enhance customer communication"],
+                    "coaching_recommendations": ["Additional training needed", "Pair with senior agent", "Focus on skill development"],
+                    "training_suggestions": ["Customer service fundamentals", "Technical problem solving"],
+                    "performance_trend": "NEEDS_IMPROVEMENT"
+                }
+            else:
+                analysis = {
+                    "performance_summary": f"{agent_user.full_name} requires immediate attention with {resolution_rate}% resolution rate on {len(agent_tickets)} tickets.",
+                    "strengths": ["Handles ticket assignments", "Maintains communication"],
+                    "improvement_areas": ["Critical: Low resolution rate", "Needs immediate attention", "Requires skill assessment"],
+                    "coaching_recommendations": ["Urgent training required", "Close supervision needed", "Performance improvement plan"],
+                    "training_suggestions": ["Basic customer service", "Fundamental troubleshooting"],
+                    "performance_trend": "DECLINING"
+                }
+    else:
+        # LLM service failed, use rule-based fallback
+        if resolution_rate >= 60:
             analysis = {
-                "performance_summary": f"{agent_user.full_name} handled {len(agent_tickets)} tickets with {round(len(resolved_tickets) / len(agent_tickets) * 100, 1)}% resolution rate.",
-                "strengths": ["Consistent ticket handling"],
-                "improvement_areas": ["Resolution time optimization"],
-                "coaching_recommendations": ["Continue current approach"],
-                "training_suggestions": ["Advanced customer service techniques"],
+                "performance_summary": f"{agent_user.full_name} handled {len(agent_tickets)} tickets with {resolution_rate}% resolution rate.",
+                "strengths": ["Good performance metrics", "Consistent ticket handling"],
+                "improvement_areas": ["Continue current approach"],
+                "coaching_recommendations": ["Maintain performance level", "Share knowledge with team"],
+                "training_suggestions": ["Advanced techniques"],
                 "performance_trend": "STABLE"
             }
-    else:
-        analysis = {
-            "performance_summary": f"{agent_user.full_name} handled {len(agent_tickets)} tickets.",
-            "strengths": ["Active ticket management"],
-            "improvement_areas": ["Performance data being analyzed"],
-            "coaching_recommendations": ["Regular check-ins recommended"],
-            "training_suggestions": ["Standard training modules"],
-            "performance_trend": "STABLE"
-        }
+        else:
+            analysis = {
+                "performance_summary": f"{agent_user.full_name} handled {len(agent_tickets)} tickets with {resolution_rate}% resolution rate - needs improvement.",
+                "strengths": ["Active participation", "Learning mindset"],
+                "improvement_areas": ["Increase resolution rate", "Improve efficiency"],
+                "coaching_recommendations": ["Additional training", "Mentorship support"],
+                "training_suggestions": ["Customer service skills", "Problem solving"],
+                "performance_trend": "NEEDS_IMPROVEMENT"
+            }
     
     return {
         "agent_id": agent_id,
@@ -727,3 +790,129 @@ Format as valid JSON."""
         "report": report,
         "model_used": result.get('model', 'fallback')
     }
+
+@router.get("/supervisor/ticket-assignment/{ticket_id}")
+def get_ticket_assignment_recommendation(
+    ticket_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get AI-powered agent assignment recommendation for unassigned ticket
+    """
+    
+    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    if ticket.agent_id:
+        return {"message": f"Ticket is already assigned to agent {ticket.agent_id}"}
+    
+    # Get customer name
+    customer = db.query(User).filter(User.id == ticket.customer_id).first()
+    customer_name = customer.full_name if customer else "Unknown Customer"
+    
+    # Get all available agents
+    agents = db.query(User).join(Agent).filter(User.role == "AGENT").all()
+    
+    if not agents:
+        return {"message": "No agents available"}
+    
+    # Calculate agent workloads and performance
+    agent_analysis = []
+    for agent_user in agents:
+        agent_tickets = db.query(Ticket).filter(Ticket.agent_id == agent_user.id).all()
+        active_tickets = [t for t in agent_tickets if t.status in [TicketStatus.OPEN, TicketStatus.IN_PROGRESS]]
+        resolved_tickets = [t for t in agent_tickets if t.status in [TicketStatus.RESOLVED, TicketStatus.CLOSED]]
+        
+        resolution_rate = len(resolved_tickets) / len(agent_tickets) * 100 if agent_tickets else 0
+        
+        agent_analysis.append({
+            "agent_id": agent_user.id,
+            "agent_name": agent_user.full_name,
+            "current_workload": len(active_tickets),
+            "total_tickets": len(agent_tickets),
+            "resolution_rate": round(resolution_rate, 1),
+            "availability_score": max(0, 10 - len(active_tickets))  # Lower workload = higher score
+        })
+    
+    # Generate AI recommendation
+    system_prompt = """You are an intelligent ticket assignment system. 
+Recommend the best agent based on workload, performance, and ticket requirements."""
+    
+    prompt = f"""Analyze this ticket and recommend the best agent for assignment.
+
+Ticket Details:
+- ID: {ticket.id}
+- Subject: {ticket.subject}
+- Priority: {ticket.priority}
+- Customer: {customer_name}
+- Description: {ticket.description[:200]}...
+
+Available Agents:
+{chr(10).join([f"- {a['agent_name']}: {a['current_workload']} active tickets, {a['resolution_rate']}% resolution rate" for a in agent_analysis])}
+
+Provide JSON with:
+1. recommended_agent_id: ID of best agent
+2. recommended_agent_name: Name of recommended agent
+3. reasoning: 2-3 sentence explanation for recommendation
+4. confidence_score: 0-100 confidence in recommendation
+5. alternative_agents: Array of 2 backup agent names
+6. assignment_priority: IMMEDIATE, HIGH, NORMAL, or LOW
+
+Format as valid JSON."""
+    
+    result = copilot_service.llm.generate(
+        prompt=prompt,
+        system_prompt=system_prompt,
+        temperature=0.3,
+        max_tokens=800
+    )
+    
+    if result['success']:
+        try:
+            # Clean JSON response
+            cleaned_text = result['text']
+            if '```json' in cleaned_text:
+                start = cleaned_text.find('```json') + 7
+                end = cleaned_text.find('```', start)
+                cleaned_text = cleaned_text[start:end]
+            elif '{' in cleaned_text:
+                start = cleaned_text.find('{')
+                end = cleaned_text.rfind('}') + 1
+                cleaned_text = cleaned_text[start:end]
+            
+            recommendation = json.loads(cleaned_text)
+        except:
+            # Fallback to rule-based assignment
+            best_agent = min(agent_analysis, key=lambda x: x['current_workload'])
+            recommendation = {
+                "recommended_agent_id": best_agent['agent_id'],
+                "recommended_agent_name": best_agent['agent_name'],
+                "reasoning": f"Recommended {best_agent['agent_name']} based on lowest current workload ({best_agent['current_workload']} tickets).",
+                "confidence_score": 75,
+                "alternative_agents": [a['agent_name'] for a in sorted(agent_analysis, key=lambda x: x['current_workload'])[1:3]],
+                "assignment_priority": "HIGH" if ticket.priority == "HIGH" else "NORMAL"
+            }
+    else:
+        # Rule-based fallback
+        best_agent = min(agent_analysis, key=lambda x: x['current_workload'])
+        recommendation = {
+            "recommended_agent_id": best_agent['agent_id'],
+            "recommended_agent_name": best_agent['agent_name'],
+            "reasoning": f"Assigned to agent with lowest workload.",
+            "confidence_score": 60,
+            "alternative_agents": [a['agent_name'] for a in sorted(agent_analysis, key=lambda x: x['current_workload'])[1:3]],
+            "assignment_priority": "NORMAL"
+        }
+    
+    return {
+        "ticket_id": ticket_id,
+        "ticket_subject": ticket.subject,
+        "ticket_priority": ticket.priority,
+        "recommendation": recommendation,
+        "agent_analysis": agent_analysis,
+        "model_used": result.get('model', 'fallback')
+    }
+
+

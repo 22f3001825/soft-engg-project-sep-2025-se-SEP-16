@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Header } from "../../components/common/Supervisor_header";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
+import AgentWorkloadModal from "../../components/supervisor/AgentWorkloadModal";
 import supervisorApi from "../../services/supervisorApi";
 import { toast } from "sonner";
 
@@ -17,6 +18,7 @@ export const TicketManagement = () => {
   const [selectedAgent, setSelectedAgent] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(null);
+  const [showWorkloadModal, setShowWorkloadModal] = useState(false);
 
   // Toast
   const [toast, setToast] = useState(null);
@@ -240,10 +242,10 @@ export const TicketManagement = () => {
               </div>
               
               <Button
-                className="bg-gradient-to-r from-gray-100 via-white to-gray-200 text-gray-800 font-semibold border border-gray-300 shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all duration-300 whitespace-nowrap"
-                onClick={() => navigate("/supervisor/all_customers")}
+                onClick={() => setShowWorkloadModal(true)}
+                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all duration-300 whitespace-nowrap"
               >
-                View All Customers
+                Agent Workload
               </Button>
             </div>
           </CardContent>
@@ -470,6 +472,11 @@ export const TicketManagement = () => {
             </div>
           </div>
         )}
+
+        <AgentWorkloadModal 
+          isOpen={showWorkloadModal} 
+          onClose={() => setShowWorkloadModal(false)} 
+        />
       </main>
     </div>
   );
