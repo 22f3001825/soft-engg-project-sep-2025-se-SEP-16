@@ -46,7 +46,7 @@ export const SupervisorProfile = () => {
       setPerformanceData({
         totalTickets: data.stats.total_tickets,
         activeAgents: data.stats.active_agents,
-        resolvedTickets: data.stats.resolved_tickets,
+        solvedTickets: data.stats.solved_tickets,
         loading: false
       });
     } catch (error) {
@@ -227,9 +227,9 @@ export const SupervisorProfile = () => {
 
                     <div className="text-center p-5 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border border-purple-100 hover:shadow-md transition">
                       <Award className="h-6 w-6 text-purple-600 mx-auto mb-2" />
-                      <Label className="text-xs text-gray-500">Resolved Tickets</Label>
+                      <Label className="text-xs text-gray-500">Solved Tickets</Label>
                       <p className="text-lg font-bold text-purple-700 mt-1">
-                        {performanceData.resolvedTickets}
+                        {performanceData.solvedTickets}
                       </p>
                     </div>
                   </>

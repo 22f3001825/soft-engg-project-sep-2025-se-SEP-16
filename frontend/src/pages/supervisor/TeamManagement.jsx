@@ -17,7 +17,9 @@ export const TeamManagement = () => {
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showBlockModal, setShowBlockModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isUnblockAction, setIsUnblockAction] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(null);
 
   // Toast Notification
   const [toast, setToast] = useState(null);
@@ -70,6 +72,11 @@ export const TeamManagement = () => {
     setIsUnblockAction(!a.is_active);
     setShowBlockModal(true);
   };
+  
+  const handleDeleteClick = (a) => {
+    setSelectedAgent(a);
+    setShowDeleteModal(true);
+  };
   const handleConfirmBlock = async () => {
     try {
       await supervisorApi.updateAgentStatus(selectedAgent.id, isUnblockAction);
@@ -97,6 +104,27 @@ export const TeamManagement = () => {
     }
     
     setShowBlockModal(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      await supervisorApi.deleteAgent(selectedAgent.id);
+      
+      setAgents((prev) => prev.filter(x => x.id !== selectedAgent.id));
+      
+      setToast({
+        type: "success",
+        message: `${selectedAgent.name} has been deleted successfully.`,
+      });
+    } catch (error) {
+      console.error('Failed to delete agent:', error);
+      setToast({
+        type: "error",
+        message: error.message || "Failed to delete agent",
+      });
+    }
+    
+    setShowDeleteModal(false);
   };
 
   return (
@@ -186,7 +214,7 @@ export const TeamManagement = () => {
                       <th className="p-3">Assigned</th>
                       <th className="p-3">Solved</th>
 
-                      <th className="p-3 rounded-tr-xl">Action</th>
+                      <th className="p-3 text-center rounded-tr-xl">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -208,31 +236,38 @@ export const TeamManagement = () => {
                         </td>
                         <td className="p-3">{agent.assigned_tickets}</td>
                         <td className="p-3">{agent.solved_tickets}</td>
-                        <td className="p-3 flex flex-wrap gap-2">
-                          <Button
-                            size="sm"
-                            className="bg-indigo-500 hover:bg-indigo-600 text-white"
-                            onClick={() => handleViewDetails(agent)}
-                          >
-                            View Details
-                          </Button>
-                          {!agent.is_active ? (
+                        <td className="p-3 text-center">
+                          <div className="relative">
                             <Button
                               size="sm"
-                              className="bg-green-500 hover:bg-green-600 text-white"
-                              onClick={() => handleBlockClick(agent)}
+                              className="bg-indigo-500 hover:bg-indigo-600 text-white"
+                              onClick={() => setDropdownOpen(dropdownOpen === agent.id ? null : agent.id)}
                             >
-                              Unblock
+                              Actions ▼
                             </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              className="bg-red-500 hover:bg-red-600 text-white"
-                              onClick={() => handleBlockClick(agent)}
-                            >
-                              Block
-                            </Button>
-                          )}
+                            {dropdownOpen === agent.id && (
+                              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                                <button
+                                  className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
+                                  onClick={() => { handleViewDetails(agent); setDropdownOpen(null); }}
+                                >
+                                  View Details
+                                </button>
+                                <button
+                                  className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
+                                  onClick={() => { handleBlockClick(agent); setDropdownOpen(null); }}
+                                >
+                                  {agent.is_active ? 'Block Agent' : 'Unblock Agent'}
+                                </button>
+                                <button
+                                  className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
+                                  onClick={() => { handleDeleteClick(agent); setDropdownOpen(null); }}
+                                >
+                                  Delete Agent
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -318,6 +353,39 @@ export const TeamManagement = () => {
                 onClick={handleConfirmBlock}
               >
                 {isUnblockAction ? "Confirm Unblock" : "Confirm Block"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---------- Delete Agent Modal ---------- */}
+      {showDeleteModal && selectedAgent && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md border border-gray-100">
+            <h2 className="text-xl font-bold mb-4 text-red-600">
+              Delete Agent
+            </h2>
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to permanently delete <strong>{selectedAgent.name}</strong>? 
+              This action cannot be undone and will remove all agent data.
+            </p>
+            <p className="text-sm text-red-500 mb-4">
+              Note: Agent cannot be deleted if they have active tickets assigned.
+            </p>
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="secondary"
+                className="bg-gray-200 text-gray-700 hover:bg-gray-300"
+                onClick={() => setShowDeleteModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="bg-red-500 hover:bg-red-600 text-white"
+                onClick={handleConfirmDelete}
+              >
+                Delete Agent
               </Button>
             </div>
           </div>

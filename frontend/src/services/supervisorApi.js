@@ -93,6 +93,16 @@ class SupervisorApiService {
     });
   }
 
+  async deleteAgent(agentId) {
+    return this.request(`/supervisor/agents/${agentId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  async getAgentWorkload() {
+    return this.request('/supervisor/agents/workload');
+  }
+
   // Customers
   async getCustomers(search = null, statusFilter = null) {
     const params = new URLSearchParams();

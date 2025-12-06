@@ -266,6 +266,55 @@ def get_all_agents(
     
     return result
 
+@router.get("/agents/workload")
+def get_agents_workload(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get agent workload summary for better ticket assignment"""
+    agents = db.query(User).join(Agent).filter(User.role == "AGENT").all()
+    
+    agent_stats = []
+    for agent in agents:
+        # Get all tickets for this agent
+        all_tickets = db.query(Ticket).filter(Ticket.agent_id == agent.id).all()
+        active_tickets = [t for t in all_tickets if t.status in [TicketStatus.OPEN, TicketStatus.IN_PROGRESS]]
+        resolved_tickets = [t for t in all_tickets if t.status in [TicketStatus.RESOLVED, TicketStatus.CLOSED]]
+        
+        resolution_rate = (len(resolved_tickets) / len(all_tickets) * 100) if all_tickets else 0
+        
+        # Determine availability status
+        if len(active_tickets) == 0:
+            availability = "FREE"
+        elif len(active_tickets) <= 3:
+            availability = "LIGHT_LOAD"
+        elif len(active_tickets) <= 6:
+            availability = "MODERATE_LOAD"
+        else:
+            availability = "HEAVY_LOAD"
+        
+        agent_stats.append({
+            "agent_id": agent.id,
+            "agent_name": agent.full_name,
+            "active_tickets": len(active_tickets),
+            "total_handled": len(all_tickets),
+            "resolved_count": len(resolved_tickets),
+            "resolution_rate": round(resolution_rate, 1),
+            "availability": availability,
+            "recommended": availability in ["FREE", "LIGHT_LOAD"]
+        })
+    
+    # Sort by availability (best agents first)
+    agent_stats.sort(key=lambda x: (x["active_tickets"], -x["resolution_rate"]))
+    
+    return {
+        "agents": agent_stats,
+        "summary": {
+            "total_agents": len(agents),
+            "available_agents": len([a for a in agent_stats if a["availability"] in ["FREE", "LIGHT_LOAD"]])
+        }
+    }
+
 @router.get("/customers")
 def get_all_customers(
     search: Optional[str] = Query(None),
@@ -462,6 +511,47 @@ def update_agent_status(
     
     action = "unblocked" if status_data.is_active else "blocked"
     return {"message": f"Agent {agent_user.full_name} has been {action}"}
+
+@router.delete("/agents/{agent_id}")
+def delete_agent(
+    agent_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete agent (for when agent leaves company)"""
+    agent = db.query(User).filter(User.id == agent_id, User.role == "AGENT").first()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    
+    # Check if agent has active tickets
+    active_tickets = db.query(Ticket).filter(
+        Ticket.agent_id == agent_id,
+        Ticket.status.in_([TicketStatus.OPEN, TicketStatus.IN_PROGRESS])
+    ).count()
+    
+    if active_tickets > 0:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot delete agent with {active_tickets} active tickets. Please reassign tickets first."
+        )
+    
+    try:
+        agent_name = agent.full_name
+        
+        # Delete agent profile first (foreign key constraint)
+        agent_profile = db.query(Agent).filter(Agent.user_id == agent_id).first()
+        if agent_profile:
+            db.delete(agent_profile)
+        
+        # Delete user record
+        db.delete(agent)
+        db.commit()
+        
+        return {"message": f"Agent {agent_name} has been deleted successfully"}
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error deleting agent {agent_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to delete agent")
 
 @router.put("/customers/{customer_id}/status")
 def update_customer_status(

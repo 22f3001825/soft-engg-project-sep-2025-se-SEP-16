@@ -15,6 +15,7 @@ export const SupervisorCustomers = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [isUnblockAction, setIsUnblockAction] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(null);
 
   const [notification, setNotification] = useState(null);
 
@@ -210,31 +211,32 @@ export const SupervisorCustomers = () => {
                         <td className="p-4">{customer.total_orders}</td>
                         <td className="p-4">{customer.total_tickets}</td>
                         <td className="p-4">{customer.active_tickets}</td>
-                        <td className="p-4 flex justify-center gap-2 flex-wrap">
-                          <Button
-                            size="sm"
-                            className="bg-indigo-500 hover:bg-indigo-600 text-white"
-                            onClick={() => handleViewDetails(customer)}
-                          >
-                            View Details
-                          </Button>
-                          {customer.status === "Blocked" ? (
+                        <td className="p-4 text-center">
+                          <div className="relative">
                             <Button
                               size="sm"
-                              className="bg-green-500 hover:bg-green-600 text-white"
-                              onClick={() => handleBlockClick(customer)}
+                              className="bg-indigo-500 hover:bg-indigo-600 text-white"
+                              onClick={() => setDropdownOpen(dropdownOpen === customer.id ? null : customer.id)}
                             >
-                              Unblock
+                              Actions ▼
                             </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              className="bg-red-500 hover:bg-red-600 text-white"
-                              onClick={() => handleBlockClick(customer)}
-                            >
-                              Block
-                            </Button>
-                          )}
+                            {dropdownOpen === customer.id && (
+                              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                                <button
+                                  className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
+                                  onClick={() => { handleViewDetails(customer); setDropdownOpen(null); }}
+                                >
+                                  View Details
+                                </button>
+                                <button
+                                  className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
+                                  onClick={() => { handleBlockClick(customer); setDropdownOpen(null); }}
+                                >
+                                  {customer.status === "Blocked" ? 'Unblock Customer' : 'Block Customer'}
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
