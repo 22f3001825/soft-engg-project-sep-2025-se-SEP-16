@@ -25,24 +25,22 @@ yarn build
 
 ## Demo Credentials
 
-Select the desired role from the dropdown in the login form, then use one of the following credentials:
+The database is pre-seeded with test users. Use these credentials to explore different portals:
 
-* **Customer**
+### Customer Portal
+- **Email**: ali.jawad@gmail.com
+- **Password**: customer123
 
-  * Username: customer@intellica.com
-  * Password: customer123
+### Agent Portal
+- **Email**: emma.wilson@intellica.com
+- **Password**: agent123
 
-* **Agent**
+### Supervisor Portal
+- **Email**: supervisor.demo@intellica.com
+- **Password**: demo2024
 
-  * Username: agent@intellica.com
-  * Password: agent123
+### Vendor Portal
+- **Email**: vendor@techmart.com
+- **Password**: vendor123
 
-* **Supervisor**
-
-  * Username: supervisor@intellica.com
-  * Password: supervisor123
-
-* **Vendor**
-
-  * Username: vendor@intellica.com
-  * Password: vendor123
+**Note**: More test accounts are available in the backend README.

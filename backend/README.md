@@ -29,33 +29,52 @@
    pip install -r requirements.txt
    ```
 
-4. **Initialize database**
+4. **Initialize database (skip if intellica.db already exists)**
    ```bash
-   # Create database tables automatically
    python -c "from app.database import engine; from app.models.base import Base; Base.metadata.create_all(bind=engine)"
    ```
 
-5. **Run the application**
+5. **Seed database with test data (skip if intellica.db already exists)**
+   ```bash
+   python create_medium_seed.py
+   ```
+   
+   **Note**: If the database file (intellica.db) already exists in the backend directory, skip steps 4 and 5.
+
+6. **Configure AI Services (Recommended)**
+   
+   Create a `.env` file in the backend directory:
+   ```env
+   GROK_API_KEY=your_groq_api_key_here
+   GROK_MODEL=llama-3.1-8b-instant
+   GEMINI_API_KEY=your_gemini_api_key_here
+   ```
+   
+   **Important**: 
+   - Get your Groq API key from: https://console.groq.com/keys
+   - The application uses `GROK_API_KEY` as the environment variable name
+   - **Groq API provides fast, production-ready AI responses**
+   - Ollama is used as a fallback if API keys are not configured (slower performance)
+
+7. **Ollama Setup (Fallback Only)**
+   
+   Only needed if you don't configure API keys:
+   ```bash
+   # Run Ollama server
+   ollama serve
+   
+   # Pull a model (in another terminal)
+   ollama pull "model_name"
+   
+   # Update model name in app/services/llm_service.py
+   # self.model = "model_name"
+   ```
+
+8. **Run the application**
    ```bash
    uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
    ```
    The API will be available at `http://127.0.0.1:8000`
-
-
-6. **Run Ollama**
-   ```bash
-   ollama serve
-   ```
-
-7. **Pull ollama model(in another terminal)**
-   ```bash
-   ollama pull "model_name"
-   ```
-7. **Update the model name in the code**
-   ```bash
-   Update model name in llm_service.py
-   self.model = "model_name"
-   ```
 
 
 ## Login Credentials
