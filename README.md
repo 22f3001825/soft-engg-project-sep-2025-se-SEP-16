@@ -12,7 +12,6 @@ Intellica is a comprehensive customer support platform that leverages artificial
 - **Multi-Role Portal** - Dedicated dashboards for customers, agents, supervisors, and vendors
 - **AI-Powered Intelligence** - RAG Chatbot and AI Copilot for intelligent assistance
 - **Analytics & Insights** - Comprehensive analytics with trend analysis and performance metrics
-- **Secure & Reliable** - Enterprise-grade security with role-based access control
 
 ## 🏗️ Architecture
 
@@ -38,6 +37,8 @@ git clone <repository-url>
 cd soft-engg-project-sep-2025-se-SEP-16
 ```
 
+**Important**: Ensure you have activated the virtual environment before running any Python commands.
+
 ### 2. Backend Setup
 
 ```bash
@@ -56,13 +57,16 @@ source venv/bin/activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Initialize database
+# Initialize database (skip if intellica.db already exists)
 python -c "from app.database import engine; from app.models.base import Base; Base.metadata.create_all(bind=engine)"
 
-# Seed database with test data
+# Seed database with test data (skip if intellica.db already exists)
 python create_medium_seed.py
 
-# Run the application
+# Note: If the database file (intellica.db) already exists in the backend directory,
+# you can skip the database initialization and seeding steps above.
+
+# Run the application (ensure virtual environment is activated)
 uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
@@ -81,7 +85,26 @@ yarn start
 
 ### 4. AI Services Configuration 
 
-#### Ollama Setup
+#### API Keys (Recommended)
+
+Create a `.env` file in the backend directory for optimal AI performance:
+```env
+GROK_API_KEY=your_groq_api_key_here
+GROK_MODEL=llama-3.1-8b-instant
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+**Important Note**: 
+- The service is **Groq** (https://groq.com) - get your API key from their website
+- However, the application uses `GROK_API_KEY` as the environment variable name (custom naming convention)
+- Get your Groq API key from: https://console.groq.com/keys
+- **Groq API provides fast, production-ready AI responses**
+- Ollama is used as a fallback if API keys are not configured (slower performance)
+
+#### Ollama Setup (Fallback Only)
+
+Ollama is used as a fallback when API keys are unavailable. It provides slower responses but works offline:
+
 ```bash
 # Run Ollama server
 ollama serve
@@ -93,14 +116,6 @@ ollama pull "model_name"
 # self.model = "model_name"
 ```
 
-#### API Keys 
-Create a `.env` file in the backend directory for enhanced AI features:
-```env
-GROQ_API_KEY=your_groq_api_key_here
-GROQ_MODEL=llama-3.1-8b-instant
-GEMINI_API_KEY=your_gemini_api_key_here
-```
-
 ## 🚀 Running the Application
 
 ### Development Mode
@@ -108,7 +123,10 @@ GEMINI_API_KEY=your_gemini_api_key_here
 1. **Start Backend Server**:
    ```bash
    cd backend
-   uvicorn app.main:app --host 127.0.0.1 --port 8000 
+   # Activate virtual environment first
+   # Windows: venv\Scripts\activate
+   # macOS/Linux: source venv/bin/activate
+   uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
    ```
    Backend will run on `http://127.0.0.1:8000`
    API Documentation: `http://127.0.0.1:8000/docs`
@@ -220,14 +238,6 @@ yarn build
 
 # The build files will be in frontend/build directory
 ```
-
-##  Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ## License
 
