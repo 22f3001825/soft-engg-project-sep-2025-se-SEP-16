@@ -222,7 +222,7 @@ The database is pre-seeded with test users. Use these credentials to explore dif
 | **Harshita Jain** | 21f1003224 | Scrum Master |
 | **Mayank Singh** | 23f1000598 | Full Stack Developer |
 | **Rachita Vohra** | 22f1001847 | Developer & Tester |
-| **Mohammad Aman** | 21f3000044 | Backend Developer |
+| **Mohd Aman** | 21f3000044 | Backend Developer |
 | **Duvvuri Sai Kyvalya** | 21f1003975 | GenAI Developer |
 
 ## 📝 API Documentation
