@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🎯 Intellica
+# Intellica
 
 ### AI-Powered Customer Support Platform
 
