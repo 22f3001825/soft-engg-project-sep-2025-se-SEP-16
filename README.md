@@ -388,18 +388,7 @@ The optimized production build will be available in `frontend/build` directory.
 
 *Software Engineering Project - September 2025*
 
-<!-- 
-====================================================================================
-TO ADD YOUR TEAM PHOTO:
-1. Save your team photo from Google Sheets/Drive
-2. Create a folder: docs/images/ in your repository root
-3. Upload your photo there (e.g., team-photo.jpg or team-sep-16.jpg)
-4. Uncomment the line below and replace 'team-photo.jpg' with your actual filename
-5. Delete this comment block after adding the photo
-====================================================================================
--->
-
-<!-- ![Team SEP-16](docs/images/team-photo.jpg) -->
+![Team SEP-16](Team/Team-16.jpg) 
 
 <br>
 
@@ -457,7 +446,7 @@ This project is developed as part of a software engineering course at **IIT Madr
 <div align="center">
 
 
-*IIT Madras | Software Engineering Project | 2025
+IIT Madras | Software Engineering Project | 2025
 
 ### ⭐ Star us on GitHub if you find this project useful!
 
