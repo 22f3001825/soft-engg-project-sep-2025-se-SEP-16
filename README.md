@@ -114,8 +114,8 @@ Intellica is a customer support platform that harnesses the power of artificial 
 └── 🗄️ Database (SQLite)
     ├── Relational data model
     ├── Real-time updates
-    ├── File storage support
-    └── Transaction management
+    └── File storage support
+     
 ```
 
 ---
