@@ -388,7 +388,7 @@ The optimized production build will be available in `frontend/build` directory.
 
 *Software Engineering Project - September 2025*
 
-![Team SEP-16](Team/Team-16.jpg) 
+![Team SEP-16](Team-16.jpg) 
 
 <br>
 
