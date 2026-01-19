@@ -89,35 +89,6 @@ Intellica is a customer support platform that harnesses the power of artificial 
 
 </div>
 
-### 🔧 Technical Highlights
-
-```
-📦 Project Structure
-├── 🎨 Frontend (React.js)
-│   ├── Multi-role dashboards
-│   ├── Real-time messaging
-│   ├── Responsive UI/UX
-│   └── Component-based architecture
-│
-├── ⚙️ Backend (FastAPI)
-│   ├── RESTful API endpoints
-│   ├── JWT authentication
-│   ├── SQLAlchemy ORM
-│   └── Role-based access control
-│
-├── 🤖 AI Services
-│   ├── RAG (Retrieval-Augmented Generation)
-│   ├── LLM Integration (Groq/Gemini)
-│   ├── Local AI (Ollama fallback)
-│   └── ML-based classification
-│
-└── 🗄️ Database (SQLite)
-    ├── Relational data model
-    ├── Real-time updates
-    └── File storage support
-     
-```
-
 ---
 
 ## 🚀 Quick Start
